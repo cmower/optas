@@ -35,8 +35,8 @@ class Solver:
     def set_parameter(self, name, value):
         self.params[name] = cs.DM(value)
 
-    def set_initial_seed(self, start_state):
-        self.start_state = cs.vec(cs.DM(start_state))
+    def set_initial_seed(self, init_seed):
+        self.start_state = cs.vec(cs.DM(init_seed))
 
     def reset(self):
         self.p = self.builder.params.dict2vec(self.params)
