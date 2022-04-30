@@ -58,7 +58,7 @@ class Solver:
         assert self.__called_solve, "you must call solve before stats"
         stats = self.casadi_solver.stats()
         self.__called_solver = False
-        return stats        
+        return stats
 
     def solution2msg(self, solution, i=-1):
         q = cs.reshape(solution['x'], self.builder.ndof, self.builder.N).toarray()
