@@ -31,6 +31,11 @@ class Solver:
         )
         self.__called_reset = False
         self.__called_solve = False
+        self.__cost = cs.Function('cost', [builder.q, builder.params.vec()], [builder.cost])
+
+    def cost(self, q, params):
+        p = self.builder.params.dict2vec(params)
+        return self.__cost(q, p)
 
     def set_parameter(self, name, value):
         self.params[name] = cs.DM(value)
