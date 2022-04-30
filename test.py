@@ -31,8 +31,9 @@ def main():
     cost_term1 = cs.sumsqr(eff_pos - eff_goal)
     builder.add_cost_term(cost_term1)
 
-    cost_term2 = 0.1*cs.sumsqr(q - qnom)
+    cost_term2 = 0.1*cs.sumsqr(q - qnom)/7.
     builder.add_cost_term(cost_term2)
+
 
     for i in range(N-1):
         old_eff = builder.get_end_effector_position(i)
