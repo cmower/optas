@@ -66,6 +66,9 @@ def main():
         srv(js, 0.01)
         print("Finished", i+1, "of", N)
 
+    qsol = cs.reshape(solution['x'], builder.ndof, N)
+    print("cost = ", solver.cost(qsol, solver.params))
+
 
 if __name__ == '__main__':
     main()
