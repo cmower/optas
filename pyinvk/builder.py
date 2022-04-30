@@ -57,7 +57,7 @@ class SolverBuilder:
 
     def add_eq_constraint(self, name, constraint):
         """Add equality constraint g(q) == 0"""
-        self.eq_constraints[name] = constraint  # must be constraint == 0        
+        self.eq_constraints[name] = constraint  # must be constraint == 0
 
     def get_q(self, i=-1):
         """Get symbolic joint angles"""
