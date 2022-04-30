@@ -71,14 +71,17 @@ class SolverBuilder:
         return self.fk_dict['lower']
 
     def get_upper_q_limits(self):
-        """Get upper joint limits"""        
+        """Get upper joint limits"""
         return self.fk_dict['upper']
+
+    def get_end_effector_transformation_matrix(self, i=-1):
+        q = self.get_q(i)
+        T = self.fk_dict['T_fk']
+        return T(q)
 
     def get_end_effector_position(self, i=-1):
         """Get end effector position (function of joint angles)"""
-        q = self.get_q(i)
-        T = self.fk_dict['T_fk']
-        tf = T(q)
+        tf = self.get_end_effector_transformation_matrix(i)
         return tf[:3, 3]
 
     def get_end_effector_quaternion(self, i=-1):
@@ -101,7 +104,7 @@ class SolverBuilder:
         # lo <= q <= up
         #
         # q - lo >= 0    lower_g_ineq
-        # up - q >= 0    upper_g_ineq         
+        # up - q >= 0    upper_g_ineq
         joint_limit = cs.Function('jlim', [q], [cs.vertcat(q-lo, up-q)])
         joint_limit_ = joint_limit.map(self.N)
         self.ineq_constraints['__joint_limit_constraint__'] = joint_limit_(self.q)
@@ -110,7 +113,7 @@ class SolverBuilder:
         """Enforce initial state constraint"""
         if self.N < 2: raise ValueError(f"{self.N=} must be 2 or greater")
         self.eq_constraints['__start_state_constraint__'] = self.get_q(0) - cs.DM(qstart)
-        
+
     # Build solver
     def build_solver(self, solver_name):
         """Build and retrn solver"""
