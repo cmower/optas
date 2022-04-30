@@ -46,7 +46,13 @@ def main():
 
     # Use solver
     goal = np.array([-0.5, -0.5, 0.5])
+
     solver.set_parameter('eff_goal', goal)
+
+    init_seed = cs.DM.ones(builder.ndof, N)
+    for i in range(N):
+        init_seed[:, i] = qnom
+    solver.set_initial_seed(init_seed)
 
     solver.reset()
     solution = solver.solve()
