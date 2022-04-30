@@ -86,6 +86,10 @@ class SolverBuilder:
         quat = self.fk_dict['quaternion_fk']
         return quat(q)
 
+    def get_end_effector_rotation_matrix(self, i=-1):
+        tf = self.get_end_effector_transformation_matrix(i)
+        return tf[:3, :3]
+
     # Common constraints
     def enforce_joint_limits(self):
         """Enforce joint limit (inequality) constraints"""
