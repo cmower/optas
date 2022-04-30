@@ -19,7 +19,7 @@ class SolverBuilder:
         self.tip = tip
         self.N = N
 
-        self.robot_parser = u2c.URDFparser()
+        self.robot_parser = u2c.URDFparser(use_jit=False)
         self.robot_parser.from_file(urdf_file_name)
 
         # FK dict from parser, contains:
