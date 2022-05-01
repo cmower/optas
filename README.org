@@ -22,7 +22,6 @@ _Method_
   - figure of eight trajectory
   - end-effector position evolution
   - computation time
-  - success
 - pyinvk solvers
   - =casadi-*=, =scipy-*=
 - compare against
