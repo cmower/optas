@@ -22,7 +22,7 @@ _Method_
   - =casadi-*=, =scipy-*=
 - compare against
   - TracIK
-  - EXOTica (=snopt=, =iksolver=, =scipy-*=, =aico=, =LM=)
+  - EXOTica (=snopt=, =scipy-*=)
 
 _Expected Plots_
 
@@ -31,8 +31,17 @@ _Expected Plots_
 - joint difference vs time
 
 *** TODO [#C] Implement experiments
+DEADLINE: <2022-05-02 Mon>
 
-*** TODO [#C] Run experiments
+- [-] =pyinvk= solvers
+  - [X] ipopt
+  - [ ] snopt
+  - [ ] knitro
+- [X] =trac_ik=
+- [X] exotica
+
+*** TODO [#C] Run =pyinvk= experiments 
+DEADLINE: <2022-05-02 Mon>
 
 ** TODO [#C] Type hints for python scripts
 
