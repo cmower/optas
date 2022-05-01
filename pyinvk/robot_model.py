@@ -59,9 +59,9 @@ class RobotModel:
         """Return the symbolic end-effector position"""
         T = self.get_end_effector_transformation_matrix(q)
         return T[:3, 3]
-    
+
     def get_end_effector_quaternion(self, q):
         """Return the symbolic end-effector quaternion"""
         self.__check_q(q)
-        quat = self.fk_dict['quaternion_fk']
+        quat = self.__fk_dict['quaternion_fk']
         return quat(q)
