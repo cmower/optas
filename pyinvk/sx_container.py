@@ -22,9 +22,9 @@ class SXContainer(collections.OrderedDict):
 
     def __setitem__(self, label: str, value: SX) -> None:
         """Set new SX item"""
-        assert isinstance(value, SX), "value must be of type casadi.casadi.SX"
+        assert isinstance(value, (SX, float)), f"value must be of type casadi.casadi.SX/float, not {type(value)}"
         if label in self: raise KeyError(f"'{label}' already exists")
-        super().__setitem__(label, value)
+        super().__setitem__(label, cs.SX(value))
 
     def vec(self) -> SX:
         """Vectorize SXContainer"""
