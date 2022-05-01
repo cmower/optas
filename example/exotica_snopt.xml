@@ -2,25 +2,25 @@
 <IKSolverDemoConfig>
 
   <SnoptIKConstrainedSolver Name="MySolver" Debug="0" />
-  
+
   <EndPoseProblem Name="FigureEightTracking">
-    
+
     <PlanningScene>
-      
+
       <Scene>
         <JointGroup>arm</JointGroup>
         <URDF>kuka_lwr.urdf</URDF>
         <SRDF>kuka_lwr.srdf</SRDF>
 
 	<Links>
-	  <Link Name="Target"/>	
-	</Links>	
+	  <Link Name="Target"/>
+	</Links>
       </Scene>
-      
+
     </PlanningScene>
 
     <Maps>
-      
+
       <EffFrame Name="Positionl">
         <EndEffector>
           <Frame Link="lwr_arm_7_link" Base="Target"/>
@@ -30,11 +30,11 @@
       <EffFrame Name="Positionr">
         <EndEffector>
           <Frame Link="lwr_arm_7_link" Base="Target"/>
-        </EndEffector>	
-      </EffFrame> 
-      
+        </EndEffector>
+      </EffFrame>
+
       <JointPose Name="JointPose"/>
-      
+
     </Maps>
 
     <Cost>
@@ -43,12 +43,12 @@
 
     <Inequality>
       <Task Task="Positionl" Rho="-0.001"/>
-      <Task Task="Positionr" Rho="0.001"/>            
+      <Task Task="Positionr" Rho="0.001"/>
     </Inequality>
 
     <UseBounds>1</UseBounds>
     <StartState>0 0 0 0 0 0 0</StartState>
     <W> 1 1 1 1 1 1 1 </W>
   </EndPoseProblem>
-  
+
 </IKSolverDemoConfig>
