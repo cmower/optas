@@ -1,4 +1,5 @@
 import casadi as cs
+import numpy as np
 from urdf2casadi import urdfparser as u2c
 
 class RobotModel:
@@ -44,7 +45,8 @@ class RobotModel:
 
     def __check_q(self, q):
         """Check q is correct type/shape"""
-        if not isinstance(q, (cs.casadi.SX, cs.casadi.DM)): raise TypeError("q must be casadi.casadi.SX/DM")
+        if not isinstance(q, (cs.casadi.SX, cs.casadi.DM, list, tuple, np.ndarray)): raise TypeError(f"q must be casadi.casadi.SX/DM not {type(q)}")
+        q = cs.SX(q)  # ensure q is symbolic
         if q.shape != (self.ndof, 1): raise ValueError(f"q is incorrect shape, expected {self.ndof}-by-1, got {q.shape[0]}-by-{q.shape[1]}")
 
     def get_end_effector_transformation_matrix(self, q):
@@ -57,9 +59,32 @@ class RobotModel:
         """Return the symbolic end-effector position"""
         T = self.get_end_effector_transformation_matrix(q)
         return T[:3, 3]
-    
+
     def get_end_effector_quaternion(self, q):
         """Return the symbolic end-effector quaternion"""
         self.__check_q(q)
-        quat = self.fk_dict['quaternion_fk']
+        quat = self.__fk_dict['quaternion_fk']
         return quat(q)
+
+    def get_end_effector_euler(self, q):
+        quat = self.get_end_effector_quaternion(q)
+        qw = quat[3]
+        qx = quat[0]
+        qy = quat[1]
+        qz = quat[2]
+        sinr_cosp = 2 * (qw * qx + qy * qz)
+        cosr_cosp = 1 - 2 * (qx * qx + qy * qy)
+        roll = cs.arctan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2 * (qw * qy - qz * qx)
+        pitch = cs.if_else(
+            sinp**2 >= 1.0,
+            0.5*cs.sign(sinp)*cs.np.pi,
+            cs.arcsin(sinp),
+        )
+
+        siny_cosp = 2 * (qw * qz + qx * qy)
+        cosy_cosp = 1 - 2 * (qy * qy + qz * qz)
+        yaw = cs.arctan2(siny_cosp, cosy_cosp)
+
+        return cs.vertcat(roll, pitch, yaw)
