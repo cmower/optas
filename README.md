@@ -1,2 +1,0 @@
-# pyik
-Python Inverse Kinematics.

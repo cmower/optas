@@ -1,74 +1,91 @@
+import sys
 import rospy
 import casadi as cs
 import numpy as np
 from math import radians
 from pprint import pprint
+from sensor_msgs.msg import JointState
 from ros_pybullet_interface.srv import ResetJointState
 from custom_ros_tools.ros_comm import get_srv_handler
-from pyinvk.builder import SolverBuilder
+from custom_ros_tools.robot import resolve_joint_order
+
+from pyinvk.builder import OptimizationBuilder
+from pyinvk.robot_model import RobotModel
+from pyinvk.solver import CasadiSolver, ScipySolver
 
 def main():
 
     # Setup ros
     rospy.init_node('test_pyinvk')
-    srv = get_srv_handler('/rpbi/kuka_lwr/move_to_joint_state', ResetJointState)
+    pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
 
-    # Setup
+    # Setup constants
     urdf = 'kuka_lwr.urdf'
     tip = 'lwr_arm_7_link'
     root = 'base'
     qnom = cs.DM([0, radians(30), 0, -radians(90), 0, radians(60), 0])
     N = 20
 
-    # Build solver
-    builder = SolverBuilder(urdf, root, tip, N)
+    # Setup robot model and optimization builder
+    robot_model = RobotModel(urdf, root, tip)
+    builder = OptimizationBuilder(robot_model, N)
 
-    q = builder.get_q() # symbolic q
-    eff_pos = builder.get_end_effector_position()  # function of q
-
+    # Get required casadi variables/parameters
+    qcurr = builder.add_parameter('qcurr', robot_model.ndof)
+    qstart = builder.get_q(0)
+    qfinal = builder.get_q(N-1)
+    eff_pos = robot_model.get_end_effector_position(qfinal)
     eff_goal = builder.add_parameter('eff_goal', 3)
 
+    # Setup cost function
     cost_term1 = cs.sumsqr(eff_pos - eff_goal)
-    builder.add_cost_term(cost_term1)
+    builder.add_cost_term('eff_goal', cost_term1)
 
-    cost_term2 = 0.1*cs.sumsqr(q - qnom)/7.
-    builder.add_cost_term(cost_term2)
+    cost_term2 = 0.0
+    for k in range(N-1):
+        qc = builder.get_q(k)
+        qn = builder.get_q(k+1)
+        cost_term2 += cs.sumsqr(qn - qc)
+    builder.add_cost_term('min_dist', cost_term2)
 
-
-    for i in range(N-1):
-        old_eff = builder.get_end_effector_position(i)
-        new_eff = builder.get_end_effector_position(i+1)
-        builder.add_cost_term(cs.sumsqr(old_eff-new_eff))
-
+    # Setup constriants
     builder.enforce_joint_limits()
-    builder.enforce_start_state(qnom)
+    builder.add_eq_constraint('start_state', qcurr - qstart)
 
-    solver = builder.build_solver('ipopt')
+    optimization = builder.build()
 
-    # Use solver
-    goal = np.array([-0.5, -0.5, 0.5])
+    if sys.argv[2] == 'scipy':
+        solver = ScipySolver(optimization)
+        solver.setup('trust-constr', options={'disp': True})
 
-    solver.set_parameter('eff_goal', goal)
+    elif sys.argv[2] == 'casadi':
+        solver = CasadiSolver(optimization)
+        solver.setup('ipopt')
 
-    init_seed = cs.DM.ones(builder.ndof, N)
+    init_seed = cs.DM.ones(robot_model.ndof, N)
     for i in range(N):
         init_seed[:, i] = qnom
-    solver.set_initial_seed(init_seed)
 
-    solver.reset()
+    params = {
+        'eff_goal': np.array([-0.5, float(sys.argv[1])*0.4, 0.5]),
+        'qcurr': cs.DM(resolve_joint_order(rospy.wait_for_message('rpbi/kuka_lwr/joint_states', JointState), robot_model.joint_names).position),
+    }    
+
+    solver.reset(init_seed, params)
+    
     solution = solver.solve()
 
-    pprint(solver.stats())
+    jointmsgs = solver.solution2msgs(solution)
 
-    pprint(solution)
-
+    rate = rospy.Rate(10)
     for i in range(N):
-        js = solver.solution2msg(solution, i)
-        srv(js, 0.01)
-        print("Finished", i+1, "of", N)
-
-    qsol = cs.reshape(solution['x'], builder.ndof, N)
-    print("cost = ", solver.cost(qsol, solver.params))
+        js = jointmsgs[i]
+        js.header.stamp = rospy.Time.now()
+        pub.publish(js)
+        print("Published", i+1, "of", N)
+        rate.sleep()
+        
+    print("cost=", optimization.cost(cs.vec(solution), optimization.parameters.dict2vec(params)))
 
 
 if __name__ == '__main__':

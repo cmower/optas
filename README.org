@@ -1,0 +1,11 @@
+#+title: pyinvk
+
+Python Inverse Kinematics.
+
+* Todo notes
+
+** TODO [#C] Handle linear constraints 
+
+The =OptimizationBuilder= should have additional containers for linear constraints.
+Scipy can handle linear constraints, but these need to be defined explicitly.
+
