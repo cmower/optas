@@ -105,6 +105,11 @@ class ScipySolver(Solver):
         # x0 set during solve
 
         # Setup constraints
+        method_handles_constraints = method in {'trust-constr', 'SLSQP', 'COBYLA'}
+        n_constraints = self._optimization.Ng+self._optimization.Nh
+        if (not method_handles_constraints) and (n_constraints > 0):
+            raise RuntimeError(f"you have defined constraints but the method '{method}' does not handle constraints")
+
         constraints = None
         if method == 'trust-constr':
             constraints = self.__setup_constraints_trust_constr()
@@ -150,7 +155,7 @@ class ScipySolver(Solver):
 
         # Setup
         if (self._optimization.Ng+self._optimization.Nh) == 0: return None
-        c = []        
+        c = []
 
         # Inequality constraints
         if self._optimization.Ng > 0:
@@ -211,7 +216,7 @@ class ScipySolver(Solver):
                 self.i += 1
 
         self.__minimize_input['callback'] = Callback()
-        
+
         self.__minimize_input['x0'] = self._q_init.toarray().flatten()
         self.__stats = minimize(**self.__minimize_input)
         return cs.reshape(self.__stats.x, self._optimization.ndof, self._optimization.N)
