@@ -206,16 +206,15 @@ class ScipySolver(Solver):
 
     def _solve(self):
 
+        # class Callback:
+        #     def __init__(self):
+        #         self.i = 0
 
-        class Callback:
-            def __init__(self):
-                self.i = 0
+        #     def __call__(self, *args, **kwargs):
+        #         print("iter:", self.i)
+        #         self.i += 1
 
-            def __call__(self, *args, **kwargs):
-                print("iter:", self.i)
-                self.i += 1
-
-        self.__minimize_input['callback'] = Callback()
+        # self.__minimize_input['callback'] = Callback()
 
         self.__minimize_input['x0'] = self._q_init.toarray().flatten()
         self.__stats = minimize(**self.__minimize_input)
