@@ -1,5 +1,5 @@
 # pyinvk
 
-![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
+![Alt Text](fig8.gif)
 
 Python Inverse Kinematics.
