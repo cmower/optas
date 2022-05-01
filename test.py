@@ -56,7 +56,7 @@ def main():
 
     if sys.argv[2] == 'scipy':
         solver = ScipySolver(optimization)
-        solver.setup('trust-constr', options={'disp': True})
+        solver.setup('SLSQP', options={'disp': True})
 
     elif sys.argv[2] == 'casadi':
         solver = CasadiSolver(optimization)
