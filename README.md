@@ -12,10 +12,10 @@ Python Inverse Kinematics.
 
 # Comparisons
 
-![Alt Text](./examples/fig/time.pdf)
+![Alt Text](./examples/fig/time.png)
 
-![Alt Text](./examples/fig/err.pdf)
+![Alt Text](./examples/fig/err.png)
 
-![Alt Text](./examples/fig/err_eul.pdf)
+![Alt Text](./examples/fig/err_eul.png)
 
-![Alt Text](./examples/fig/jdiff.pdf)
+![Alt Text](./examples/fig/jdiff.png)

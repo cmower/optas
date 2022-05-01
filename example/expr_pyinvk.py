@@ -429,10 +429,10 @@ def main():
     ax_jdiff.set_ylim(bottom=0)
     ax_jdiff.set_xlim(0, Ntraj)
 
-    fig_time.savefig('./fig/time.pdf')
-    fig_jdiff.savefig('./fig/jdiff.pdf')
-    fig_err.savefig('./fig/err.pdf')
-    fig_err_eul.savefig('./fig/err_eul.pdf')
+    fig_time.savefig('./fig/time.png')
+    fig_jdiff.savefig('./fig/jdiff.png')
+    fig_err.savefig('./fig/err.png')
+    fig_err_eul.savefig('./fig/err_eul.png')
     
     plt.show()
 
