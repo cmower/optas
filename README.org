@@ -2,6 +2,12 @@
 
 Python Inverse Kinematics.
 
+* Install
+
+1. =$ git clone git@github.com:cmower/pyinvk.git=
+2. =$ cd pyinvk=
+3. =$ pip install .=
+
 * Todo notes
 
 ** TODO [#C] Handle linear constraints 
