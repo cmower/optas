@@ -65,3 +65,26 @@ class RobotModel:
         self.__check_q(q)
         quat = self.__fk_dict['quaternion_fk']
         return quat(q)
+
+    def get_end_effector_euler(self, q):
+        quat = self.get_end_effector_quaternion(q)
+        qw = quat[3]
+        qx = quat[0]
+        qy = quat[1]
+        qz = quat[2]
+        sinr_cosp = 2 * (qw * qx + qy * qz)
+        cosr_cosp = 1 - 2 * (qx * qx + qy * qy)
+        roll = cs.arctan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2 * (qw * qy - qz * qx)
+        pitch = cs.if_else(
+            sinp**2 >= 1.0,
+            0.5*cs.sign(sinp)*cs.np.pi,
+            cs.arcsin(sinp),
+        )
+
+        siny_cosp = 2 * (qw * qz + qx * qy)
+        cosy_cosp = 1 - 2 * (qy * qy + qz * qz)
+        yaw = cs.arctan2(siny_cosp, cosy_cosp)
+
+        return cs.vertcat(roll, pitch, yaw)
