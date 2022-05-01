@@ -19,7 +19,7 @@ class OptimizationBuilder:
     def add_cost_term(self, name, cost_term):
         """Add cost term"""
         if isinstance(cost_term, (cs.casadi.SX, cs.casadi.DM)):
-            assert cost_terms.shape == (1, 1), "cost term must have shape 1-by-1"
+            assert cost_term.shape == (1, 1), "cost term must have shape 1-by-1"
         self.__optimization.cost_terms[name] = cost_term
 
     def add_parameter(self, name, m=1, n=1):
