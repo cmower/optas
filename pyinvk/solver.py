@@ -129,7 +129,7 @@ class ScipySolver(Solver):
                     fun=lambda q: self._optimization.g(q, self._p).toarray().flatten(),
                     lb=self._optimization.lbg.toarray().flatten(),
                     ub=self._optimization.ubg.toarray().flatten(),
-                    # jac=lambda q: self._optimization.g_jacobian(q, self._p).toarray(),
+                    jac=lambda q: self._optimization.g_jacobian(q, self._p).toarray(),
                 )
             )
 
@@ -140,7 +140,7 @@ class ScipySolver(Solver):
                     fun=lambda q: self._optimization.h(q, self._p).toarray().flatten(),
                     lb=self._optimization.lbh.toarray().flatten(),
                     ub=self._optimization.ubh.toarray().flatten(),
-                    # jac=lambda q: self._optimization.h_jacobian(q, self._p).toarray(),
+                    jac=lambda q: self._optimization.h_jacobian(q, self._p).toarray(),
                 )
             )
 
