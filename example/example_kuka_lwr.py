@@ -24,7 +24,7 @@ def main():
     tip = 'lwr_arm_7_link'
     root = 'base'
     qnom = cs.DM([0, radians(30), 0, -radians(90), 0, radians(60), 0])
-    N = 20
+    N = int(sys.argv[4])
 
     # Setup robot model and optimization builder
     robot_model = RobotModel(urdf, root, tip)
@@ -41,26 +41,28 @@ def main():
     cost_term1 = cs.sumsqr(eff_pos - eff_goal)
     builder.add_cost_term('eff_goal', cost_term1)
 
-    cost_term2 = 0.0
-    for k in range(N-1):
-        qc = builder.get_q(k)
-        qn = builder.get_q(k+1)
-        cost_term2 += cs.sumsqr(qn - qc)
-    builder.add_cost_term('min_dist', cost_term2)
+    if N > 1:
+        cost_term2 = 0.0
+        for k in range(N-1):
+            qc = builder.get_q(k)
+            qn = builder.get_q(k+1)
+            cost_term2 += cs.sumsqr(qn - qc)
+        builder.add_cost_term('min_dist', cost_term2)
 
     # Setup constriants
     builder.enforce_joint_limits()
-    builder.add_eq_constraint('start_state', qcurr - qstart)
+    if N > 1:
+        builder.add_eq_constraint('start_state', qcurr - qstart)
 
     optimization = builder.build()
 
     if sys.argv[2] == 'scipy':
         solver = ScipySolver(optimization)
-        solver.setup('SLSQP', options={'disp': True})
+        solver.setup(sys.argv[3], options={'disp': True})
 
     elif sys.argv[2] == 'casadi':
         solver = CasadiSolver(optimization)
-        solver.setup('ipopt')
+        solver.setup(sys.argv[3])
 
     init_seed = cs.DM.ones(robot_model.ndof, N)
     for i in range(N):
