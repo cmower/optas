@@ -75,7 +75,7 @@ def main():
     
     solution = solver.solve()
 
-    jointmsgs = solver.solution2msgs(solution)
+    jointmsgs = solver.solution_to_ros_joint_state_msgs(solution)
 
     rate = rospy.Rate(10)
     for i in range(N):
