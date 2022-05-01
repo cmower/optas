@@ -1,4 +1,5 @@
 import casadi as cs
+import numpy as np
 from urdf2casadi import urdfparser as u2c
 
 class RobotModel:
@@ -44,7 +45,8 @@ class RobotModel:
 
     def __check_q(self, q):
         """Check q is correct type/shape"""
-        if not isinstance(q, (cs.casadi.SX, cs.casadi.DM)): raise TypeError("q must be casadi.casadi.SX/DM")
+        if not isinstance(q, (cs.casadi.SX, cs.casadi.DM, list, tuple, np.ndarray)): raise TypeError(f"q must be casadi.casadi.SX/DM not {type(q)}")
+        q = cs.SX(q)  # ensure q is symbolic
         if q.shape != (self.ndof, 1): raise ValueError(f"q is incorrect shape, expected {self.ndof}-by-1, got {q.shape[0]}-by-{q.shape[1]}")
 
     def get_end_effector_transformation_matrix(self, q):
