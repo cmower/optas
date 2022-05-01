@@ -8,6 +8,8 @@ DM = cs.casadi.DM
 
 class SXContainer(collections.OrderedDict):
 
+    """Container for SX variables"""
+
     def __add__(self, other):
         """Add two SXContainer's"""
         assert isinstance(other, SXContainer), f"cannot add SXContainer with a variable of type {type(other)}"

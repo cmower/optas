@@ -4,6 +4,8 @@ from .optimization import Optimization
 
 class OptimizationBuilder:
 
+    """Class that builds an optimization problem"""
+
     def __init__(self, robot_model, N=1):
         self.__robot_model = robot_model
         self.__optimization = Optimization(robot_model, N)
@@ -46,24 +48,7 @@ class OptimizationBuilder:
         self.__optimization.lbq = cs.vec(lower)
         self.__optimization.ubq = cs.vec(upper)
 
+    # Main build method
+
     def build(self):
         return self.__optimization.finalize()
-
-    # # Build solver
-    # def build(self, solver_name):
-    #     """Build and retrn solver"""
-
-    #     self.constraints = self.ineq_constraints + self.eq_constraints
-
-    #     problem = {
-    #         'x': cs.vec(self.q),
-    #         'f': self.cost,
-    #         'p': self.params.vec(),
-    #         'g': self.constraints.vec(),
-    #     }
-
-    #     casadi_solver = cs.nlpsol('solver', solver_name,  problem)
-
-    #     return Solver(casadi_solver, self)
-
-

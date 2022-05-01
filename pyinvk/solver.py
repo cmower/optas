@@ -5,6 +5,8 @@ from sensor_msgs.msg import JointState
 
 class Solver(abc.ABC):
 
+    """Base solver class"""
+
     def __init__(self, optimization):
         assert optimization.optimization_problem_is_finalized, "optimization problem is not finalized"
         self._optimization = optimization
@@ -15,13 +17,16 @@ class Solver(abc.ABC):
 
     @abc.abstractmethod
     def _setup(self, *args, **kwargs):
+        """Setup the solver, must be implemented in child-class"""
         pass
 
     def setup(self, *args, **kwargs):
+        """Setup the solver class"""
         self._setup(*args, **kwargs)
         self.__called_setup = True
 
     def reset(self, init_seed, parameters):
+        """Reset the optimization problem"""
         assert self.__called_setup, "you must call setup before reset"
         self._q_init = cs.vec(init_seed)
         self._p = self._optimization.parameters.dict2vec(parameters)
@@ -30,9 +35,11 @@ class Solver(abc.ABC):
 
     @abc.abstractmethod
     def _solve(self):
+        """Call solver to solve the optimization problem, must be implemented in child-class"""
         pass
 
     def solve(self):
+        """Solve the optimization problem"""
         assert self.__called_setup, "you must call setup before solve"
         assert self.__called_reset, "you must call reset before solve"
         sol = self._solve()
@@ -41,14 +48,17 @@ class Solver(abc.ABC):
 
     @abc.abstractmethod
     def _stats(self):
+        """Return stats from the previous call to solve, must be implemented in child-class"""
         pass
 
     def stats(self):
+        """Return stats from solver"""
         assert self.__called_setup, "you must call setup before setup"
         assert self.__called_solve, "you must call solve before stats"
         return self._stats()
 
-    def solution2msgs(self, solution):
+    def solution_to_ros_joint_state_msgs(self, solution):
+        """Convert a solution to a list of ROS sensor_msgs/JointState messages"""
         return [
             JointState(
                 name=self._optimization.robot_model.joint_names,
@@ -60,7 +70,10 @@ class Solver(abc.ABC):
 
 class CasadiSolver(Solver):
 
+    """Casadi solver"""
+
     def _setup(self, solver_name, solver_options={}):
+        """Setup casadi solver"""
         assert self._optimization.optimization_problem_is_finalized, "optimization must be finalized"
 
         constraints = self._optimization.ineq_constraints+self._optimization.eq_constraints
@@ -77,6 +90,7 @@ class CasadiSolver(Solver):
         self.__solver = solver = cs.nlpsol('solver', solver_name, problem, solver_options)
 
     def _solve(self):
+        """Solve the problem using casadi"""
         sol = self.__solver(
             x0=self._q_init, p=self._p,
             lbx=self.__lbx, ubx=self.__ubx,
@@ -87,12 +101,16 @@ class CasadiSolver(Solver):
         return cs.reshape(sol['x'], self._optimization.ndof, self._optimization.N)
 
     def _stats(self):
+        """Return the stats from the casadi solver"""
         return self.__stats
 
 
 class ScipySolver(Solver):
 
+    """Scipy solver"""
+
     def _setup(self, method=None, tol=None, options=None):
+        """Setup the scipy solver"""
         self.__minimize_input = dict(
             fun=lambda q: self._optimization.cost(q, self._p).toarray().flatten()[0],
             method=method,
@@ -122,6 +140,7 @@ class ScipySolver(Solver):
         self.__stats = None
 
     def __setup_constraints_trust_constr(self):
+        """Return constraints in format accepted by trust-constr"""
 
         # Setup
         if (self._optimization.Ng+self._optimization.Nh) == 0: return None
@@ -152,6 +171,7 @@ class ScipySolver(Solver):
         return c
 
     def __setup_constraints_SLSQP(self):
+        """Return constraints in format accepted by SLSQP"""        
 
         # Setup
         if (self._optimization.Ng+self._optimization.Nh) == 0: return None
@@ -176,6 +196,7 @@ class ScipySolver(Solver):
         return c
 
     def __setup_constraints_COBYLA(self):
+        """Return constraints in format accepted by COBYLA"""        
 
         # Setup
         if (self._optimization.Ng+self._optimization.Nh) == 0: return None
@@ -205,6 +226,7 @@ class ScipySolver(Solver):
         return c
 
     def _solve(self):
+        """Solve the optimization problem using scipy"""
 
         # class Callback:
         #     def __init__(self):
@@ -221,4 +243,5 @@ class ScipySolver(Solver):
         return cs.reshape(self.__stats.x, self._optimization.ndof, self._optimization.N)
 
     def _stats(self):
+        """Return stats from scipy solver"""
         return self.__stats

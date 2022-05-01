@@ -99,6 +99,7 @@ class Optimization:
         self.ubh = None
 
     def finalize(self):
+        """Finalize the optimization problem"""
 
         if self.optimization_problem_is_finalized:
             raise RuntimeError("finalize should only be called once")
