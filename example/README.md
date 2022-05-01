@@ -7,3 +7,18 @@ Start the simulator using
 ```
 
 In another terminal, you can now run the examples.
+
+## `example_kuka_lwr.py`
+
+```
+  $ python example_kuka_lwr.py SIDE INTERFACE SLSQP N
+```
+- `SIDE`, `1` (left) or `-1` (right)
+- `INTERFACE`, `casadi` or `scipy`
+- `METHOD`
+  - when `INTERFACE=casadi`, `ipopt`, `snopt`, `knitro` or any other plugin solver name
+  - when `INTERFACE=scipy`, `method` as in [`scipy.optimize.minimize` documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
+- `N`, discretization, positive (non-zero) integer
+
+
+
