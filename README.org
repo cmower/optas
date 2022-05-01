@@ -10,10 +10,28 @@ Python Inverse Kinematics.
 
 * Todo notes
 
-** TODO [#C] Handle linear constraints 
+** TODO [#C] Type hints for python scripts
+
+** TODO [#C] Handle linear constraints
 
 The =OptimizationBuilder= class should have additional containers for linear constraints.
 Scipy can handle linear constraints, but these need to be defined explicitly.
 Currently, I just pass all constraints as generic nonlinear constraints.
 This update would likely lead to speedups.
 
+** TODO [#C] Investigate if it's possible to get FK to other links on robot using =urdf2casadi=
+
+In theory this is possible since you can call =parser.get_forward_kinematics= for different root/tip.
+However, the problem will be passing the correct joint angles.
+
+** TODO [#C] Remove runtime warnings from Scipy solvers
+
+In the =ScipySolver= class, I just pass Jacobian/Hessians regardless whether the desired method uses them or not.
+This leads to run-time warning like the following.
+
+#+begin_src
+/home/chris/.local/lib/python3.8/site-packages/scipy/optimize/_minimize.py:522: RuntimeWarning: Method SLSQP does not use Hessian information (hess).
+  warn('Method %s does not use Hessian information (hess).' % method,
+#+end_src
+
+Ideally, I would handle this internally to prevent these warnings being thrown.
