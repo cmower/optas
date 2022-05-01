@@ -17,7 +17,7 @@ def main():
 
     # Setup ros
     rospy.init_node('test_pyinvk')
-    pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
+    pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=1)
 
     # Setup constants
     urdf = 'kuka_lwr.urdf'
