@@ -1,4 +1,4 @@
-#+title: pyinvk
+# pyinvk
 
 ![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
 
