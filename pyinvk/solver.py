@@ -143,7 +143,7 @@ class ScipySolver(Solver):
         """Return constraints in format accepted by trust-constr"""
 
         # Setup
-        if (self._optimization.Ng+self._optimization.Nh) == 0: return None
+        if (self._optimization.Ng+self._optimization.Nh) == 0: return []
         c = []
 
         # Inequality constraints
@@ -174,7 +174,7 @@ class ScipySolver(Solver):
         """Return constraints in format accepted by SLSQP"""        
 
         # Setup
-        if (self._optimization.Ng+self._optimization.Nh) == 0: return None
+        if (self._optimization.Ng+self._optimization.Nh) == 0: return []
         c = []
 
         # Inequality constraints
@@ -199,7 +199,7 @@ class ScipySolver(Solver):
         """Return constraints in format accepted by COBYLA"""        
 
         # Setup
-        if (self._optimization.Ng+self._optimization.Nh) == 0: return None
+        if (self._optimization.Ng+self._optimization.Nh) == 0: return []
         c = []
 
         # Inequality constraints
