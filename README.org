@@ -10,6 +10,28 @@ Python Inverse Kinematics.
 
 * Todo notes
 
+** TODO [#C] Run experiments for =pyinvk=
+
+_Method_
+
+- One cycle of the figure a of eight.
+- Problem: 1 step (i.e. =N=1=), end-effector position goal with joint limits. Start from same configuration.
+- Collect:
+  - figure of eight trajectory
+  - end-effector position evolution
+  - computation time
+  - success
+- pyinvk solvers
+  - =casadi-*=, =scipy-*=
+- compare against
+  - TracIK
+  - EXOTica (=snopt=, =iksolver=, =scipy-*=, =aico=, =LM=)
+
+_Expected Plots_
+
+- computation time vs time
+- accuracy of end-effector trajectory vs time
+
 ** TODO [#C] Type hints for python scripts
 
 ** TODO [#C] Handle linear constraints
