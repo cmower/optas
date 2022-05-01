@@ -54,6 +54,10 @@ def main():
     if N > 1:
         builder.add_eq_constraint('start_state', qcurr - qstart)
 
+    if sys.argv[3] == 'snopt':
+        # qstart[0] +big_number >=  0
+        builder.add_ineq_constraint('dummy_constraint_for_snopt', qstart[0] + 1e5)
+
     optimization = builder.build()
 
     if sys.argv[2] == 'scipy':
