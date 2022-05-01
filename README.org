@@ -10,7 +10,9 @@ Python Inverse Kinematics.
 
 * Todo notes
 
-** TODO [#C] Run experiments for =pyinvk=
+** TODO [#C] Experiments for =pyinvk=
+
+*** Experiments
 
 _Method_
 
@@ -31,6 +33,10 @@ _Expected Plots_
 
 - computation time vs time
 - accuracy of end-effector trajectory vs time
+
+*** TODO [#C] Implement experiments
+
+*** TODO [#C] Run experiments
 
 ** TODO [#C] Type hints for python scripts
 
