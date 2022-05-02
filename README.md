@@ -2,7 +2,79 @@
 
 ![Alt Text](fig8.gif)
 
-Python Inverse Kinematics.
+`pyinvk` is a library that allows you to setup an inverse kinematic problem with optional constraints.
+The package interfaces with several open-source and commerical solvers.
+
+`pyinvk` builds on top of [CasADi](https://web.casadi.org/), and [`urdf2casadi`](https://github.com/mahaarbo/urdf2casadi).
+
+# Example
+
+The following code sets up the problem:
+```
+
+    min ||eff_pos(q) - eff_pos_goal||^2 + 0.1*||q - qnom||^2
+	 q
+
+	 s.t.
+
+	 qlo <= q <= qhi
+
+```
+
+```python
+import casadi as cs
+import numpy as np
+from math import radians
+
+from pyinvk.robot_model import RobotModel
+from pyinvk.builder import OptimizationBuilder
+from pyinvk.solver import CasadiSolver, ScipySolver
+
+# Setup robot model
+urdf = 'kuka_lwr.urdf' # urdf file in examples/
+tip = 'lwr_arm_7_link'
+root = 'base'
+robot_model = RobotModel(urdf, root, tip)
+
+
+# Create optimization builder
+N = 1  # number of points in joint trajectory
+builder = OptimizationBuilder(robot_model, N)
+q = builder.get_q()
+
+# Specify problem
+eff_pos = robot_model.get_end_effector_position(q)
+eff_pos_goal = builder.add_parameter('eff_pos_goal', 3)
+qnom = builder.add_parameter('qnominal', robot_model.ndof)
+builder.add_cost_term('goal', cs.sumsqr(eff_pos - eff_pos_goal))
+builder.add_cost_term('nominal', 0.1*cs.sumsqr(q - qnom))
+builder.enforce_joint_limits()  # specifies limits qlo/qhi as defined in urdf
+
+# Build optimization
+optimization = builder.build()
+
+# Create solver (note, scipy uses scipy.optimize.minimize)
+Solver = CasadiSolver
+#Solver = ScipySolver
+
+solver = Solver(optimization)
+solver.setup('ipopt', {})  # pass solver options in {}
+
+# Setup initial seed and parameters
+init_seed = np.array([0, radians(30), 0, -radians(90), 0, radians(60), 0])
+
+params = {
+  'eff_pos_goal': np.array([0.5, 0.5, 0.5]),
+  'qnominal': np.array([0, radians(30), 0, -radians(90), 0, radians(60), 0])
+}
+
+
+# Reset and solve optimization problem
+solver.reset(init_seed, params)
+solution = solver.solve()
+
+```
+
 
 # Install
 
