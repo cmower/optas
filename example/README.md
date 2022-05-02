@@ -11,7 +11,7 @@ In another terminal, you can now run the examples.
 ## `example_kuka_lwr.py`
 
 ```
-  $ python example_kuka_lwr.py SIDE INTERFACE SLSQP N
+  $ python example_kuka_lwr.py SIDE INTERFACE METHOD N
 ```
 - `SIDE`, `1` (left) or `-1` (right)
 - `INTERFACE`, `casadi` or `scipy`
