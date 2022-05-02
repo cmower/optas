@@ -87,7 +87,7 @@ class CasadiSolver(Solver):
         self.__ubx = self._optimization.ubq
         self.__lbg = cs.vertcat(self._optimization.lbg, self._optimization.lbh)
         self.__ubg = cs.vertcat(self._optimization.ubg, self._optimization.ubh)
-        self.__solver = solver = cs.nlpsol('solver', solver_name, problem, solver_options)
+        self.__solver = cs.nlpsol('solver', solver_name, problem, solver_options)
 
     def _solve(self):
         """Solve the problem using casadi"""
