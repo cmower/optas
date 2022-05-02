@@ -73,6 +73,8 @@ This leads to run-time warning like the following.
 
 Ideally, I would handle this internally to prevent these warnings being thrown.
 
-** TODO [#B] Package'ify =pyinvk= and host on pip
-DEADLINE: <2022-05-13 Fri>
+** DONE [#B] Package'ify =pyinvk= and host on pip
+CLOSED: [2022-05-02 Mon 17:50] DEADLINE: <2022-05-13 Fri>
+
+** TODO [#B] Add unit tests for =pyinvk=
 
