@@ -21,4 +21,14 @@ In another terminal, you can now run the examples.
 - `N`, discretization, positive (non-zero) integer
 
 
+## Comparisons
 
+# Best comparisons
+
+![Alt Text](fig/time.png)
+
+![Alt Text](fig/err.png)
+
+![Alt Text](fig/err_eul.png)
+
+![Alt Text](fig/jdiff.png)
