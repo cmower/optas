@@ -88,6 +88,14 @@ solution = solver.solve()
 
 # Install
 
+## Pip
+
+```
+pip install pyinvk
+```
+
+## From source
+
 1. `$ git clone git@github.com:cmower/pyinvk.git`
 2. `$ cd pyinvk`
 3. `$ pip install .`
