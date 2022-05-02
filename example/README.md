@@ -57,7 +57,7 @@ The following show some of the solvers compared.
 
 The following show all the solvers that were compared.
 
-![Alt Text](fig/all/Time.png)
+![Alt Text](fig/all/time.png)
 
 ![Alt Text](fig/all/err.png)
 
