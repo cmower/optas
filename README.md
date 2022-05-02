@@ -18,7 +18,7 @@ Let us specify the inverse kinematic optimization problem with constraints:
 ```
 
     min ||eff_pos(q) - eff_pos_goal||^2 + 0.1*||q - qnom||^2
-	 q
+     q
 
 	 s.t.
 
