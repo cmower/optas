@@ -70,7 +70,7 @@ class Optimization:
 
         self.optimization_problem_is_finalized = False
 
-        # Setup class attributes that are set when finalize is called
+        # Setup class attributes that are set by optimization builder
         self.Nq = None
         self.sx_q = None
         self.sx_p = None
@@ -97,43 +97,3 @@ class Optimization:
 
         self.lbh = None
         self.ubh = None
-
-    def finalize(self):
-        """Finalize the optimization problem"""
-
-        if self.optimization_problem_is_finalized:
-            raise RuntimeError("finalize should only be called once")
-
-        self.sx_q = cs.vec(self.q)
-        self.sx_p = self.parameters.vec()
-        self.sx_cost = cs.sum1(self.cost_terms.vec())
-        self.sx_g = self.ineq_constraints.vec()
-        self.sx_h = self.eq_constraints.vec()
-
-        self.Nq = self.sx_q.numel()
-
-        fin = [self.sx_q, self.sx_p]
-
-        def setup_funs(label, fun_sx):
-            funj_sx = cs.jacobian(fun_sx, self.sx_q)
-            fun = cs.Function(label, fin, [fun_sx])
-            funj = cs.Function(label+'_jacobian', fin, [funj_sx])
-            funh = cs.Function(label+'_hessian', fin, [cs.jacobian(funj_sx, self.sx_q)])
-            return fun, funj, funh
-
-        self.cost, self.cost_jacobian, self.cost_hessian = setup_funs('cost', self.sx_cost)
-        self.g, self.g_jacobian, self.g_hessian = setup_funs('g', self.sx_g)
-        self.h, self.h_jacobian, self.h_hessian = setup_funs('h', self.sx_h)
-
-        self.Ng = self.sx_g.numel()
-        self.Nh = self.sx_h.numel()
-
-        self.lbg = cs.DM.zeros(self.ineq_constraints.numel())
-        self.ubg = self.BIG_NUMBER*cs.DM.ones(self.ineq_constraints.numel())
-
-        self.lbh = cs.DM.zeros(self.eq_constraints.numel())
-        self.ubh = cs.DM.zeros(self.eq_constraints.numel())
-
-        self.optimization_problem_is_finalized = True
-
-        return self
