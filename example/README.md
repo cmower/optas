@@ -29,6 +29,10 @@ PC specs experiments were run on:
 - 16 core Intel Core i9-9900KF CPU @ 3.60GHz,
 - NVIDIA Corporation TU104 [GeForce RTX 2080 SUPER],
 
+### Method
+
+![Alt Text](../fig8.gif)
+
 ### Best comparisons
 
 The following show the best performing solvers.
