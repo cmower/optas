@@ -9,4 +9,10 @@ setup(
     author_email='cmower@ed.ac.uk',
     license='BSD 2-Clause License',
     packages=['pyinvk'],
+    install_requires=[
+        'numpy',
+        'casadi',
+        'urdf2casadi',
+        'scipy',
+    ]
 )
