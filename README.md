@@ -23,6 +23,7 @@ The following code sets up the problem:
 	 s.t.
 
 	 qlo <= q <= qhi
+	 eff_pos_z(q) >= 0.1  # keep end-effector z-position above 0.1
 
 ```
 
@@ -54,6 +55,8 @@ qnom = builder.add_parameter('qnominal', robot_model.ndof)
 builder.add_cost_term('goal', cs.sumsqr(eff_pos - eff_pos_goal))
 builder.add_cost_term('nominal', 0.1*cs.sumsqr(q - qnom))
 builder.enforce_joint_limits()  # specifies limits qlo/qhi as defined in urdf
+g = eff_pos[2] - 0.1  # all inequality constraints must be defined such that g >= 0
+builder.add_ineq_constraint('zlim', g)
 
 # Build optimization
 optimization = builder.build()
