@@ -31,6 +31,14 @@ PC specs experiments were run on:
 
 ### Method
 
+Several IK packages exist and are in common use.
+Two alteratives are compared against `pyinvk`: [TracIK](http://wiki.ros.org/trac_ik) and [EXOTica](https://github.com/ipab-slmc/exotica).
+We make several comparisons between `pyinvk` and these packages.
+TracIK solves a specific IK, therefore we implement the same problem using `pyinvk` (see `run_expr` in [expr_pyinvk.py](https://github.com/cmower/pyinvk/blob/1392b07284ef917b876e1f84c6cb5958576ed36d/example/expr_pyinvk.py#L294-L381)) and EXOTica (see [`exotica.xml`](https://github.com/cmower/pyinvk/blob/master/example/exotica.xml)).
+A dual [figure of eight motion](https://github.com/cmower/pyinvk/blob/1392b07284ef917b876e1f84c6cb5958576ed36d/example/expr_pyinvk.py#L66-L81) is designed as the desired task space motion.
+The following shows the motion being executed on a KUKA LWR.
+The simulation is setup using the [`ros_pybullet_interface`](https://github.com/cmower/ros_pybullet_interface).
+
 ![Alt Text](../fig8.gif)
 
 ### Best comparisons
