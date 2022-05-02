@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pyinvk',
-    version='1.0',
+    version='1.0.0',
     description='Python Inverse Kinematics.',
     url='https://github.com/cmower/pyinvk',
     author='Christopher E. Mower',
