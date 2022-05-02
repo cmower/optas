@@ -41,6 +41,16 @@ The simulation is setup using the [`ros_pybullet_interface`](https://github.com/
 
 ![Alt Text](../fig8.gif)
 
+### Metrics
+
+We compare solvers and the resulting motion based on the following metrics
+- CPU time, i.e. time it takes to call the solver and return a solution
+- position error, i.e. `||eff_pos - eff_pos_goal||`
+- rotation error, i.e. `||eff_eul - eff_eul_goal||`
+- joint difference, i.e. `||qseed - qsol||`
+
+In all cases, lower values indicate higher performance.
+
 ### Best comparisons
 
 The following show the best performing solvers.
