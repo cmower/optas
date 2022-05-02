@@ -6,7 +6,8 @@ Python Inverse Kinematics.
 
 * Todo notes
 
-** TODO [#C] Experiments for =pyinvk=
+** DONE [#C] Experiments for =pyinvk=
+CLOSED: [2022-05-02 Mon 11:59]
 
 *** Experiments
 
@@ -30,18 +31,23 @@ _Expected Plots_
 - accuracy of end-effector trajectory vs time
 - joint difference vs time
 
-*** TODO [#C] Implement experiments
-DEADLINE: <2022-05-02 Mon>
+*** DONE [#C] Implement experiments
+CLOSED: [2022-05-02 Mon 11:57] DEADLINE: <2022-05-02 Mon>
 
-- [-] =pyinvk= solvers
+- [X] =pyinvk= solvers
   - [X] ipopt
-  - [ ] snopt
-  - [ ] knitro
+  - [X] +snopt+
+  - [X] +knitro+
 - [X] =trac_ik=
 - [X] exotica
 
-*** TODO [#C] Run =pyinvk= experiments 
-DEADLINE: <2022-05-02 Mon>
+  [2022-05-02 Mon]
+  Knitro had some very strange errors.
+  Not sure if this is a problem with the formulation or something else.
+  I have some linking issue on both my PC's with SNOPT.
+
+*** DONE [#C] Run =pyinvk= experiments 
+CLOSED: [2022-05-02 Mon 11:58] DEADLINE: <2022-05-02 Mon>
 
 ** TODO [#C] Type hints for python scripts
 
@@ -68,3 +74,7 @@ This leads to run-time warning like the following.
 #+end_src
 
 Ideally, I would handle this internally to prevent these warnings being thrown.
+
+** TODO [#B] Package'ify =pyinvk= and host on pip
+DEADLINE: <2022-05-13 Fri>
+
