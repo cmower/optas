@@ -1,6 +1,6 @@
 # pyinvk
 
-![Alt Text](fig8.gif)
+![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
 
 `pyinvk` is a library that allows you to setup an inverse kinematic problem with optional constraints.
 The package interfaces with several open-source and commerical solvers.
