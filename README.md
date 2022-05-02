@@ -14,7 +14,7 @@ New interfaces can be added by implementing a class that inherits from `Solver` 
 
 # Example
 
-The following code sets up the problem:
+Let us specify the inverse kinematic optimization problem with constraints:
 ```
 
     min ||eff_pos(q) - eff_pos_goal||^2 + 0.1*||q - qnom||^2
@@ -26,6 +26,8 @@ The following code sets up the problem:
 	 eff_pos_z(q) >= 0.1  # keep end-effector z-position above 0.1
 
 ```
+
+The following Python code shows how to specify the above problem and call a solver.
 
 ```python
 import casadi as cs
