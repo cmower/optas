@@ -63,7 +63,7 @@ builder.add_ineq_constraint('zlim', g)
 # Build optimization
 optimization = builder.build()
 
-# Create solver (note, scipy uses scipy.optimize.minimize)
+# Create solver
 Solver = CasadiSolver
 #Solver = ScipySolver
 
