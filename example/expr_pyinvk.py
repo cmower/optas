@@ -85,8 +85,8 @@ def run_expr_exotica_scipy(method):
     t = 0.
     urdf = 'kuka_lwr.urdf'
     tip = 'lwr_arm_7_link'
-    root = 'base'    
-    robot_model = RobotModel(urdf, root, tip)        
+    root = 'base'
+    robot_model = RobotModel(urdf, root, tip)
 
     qstart = np.array([0, radians(30), 0, -radians(90), 0, radians(60), 0])
 
@@ -104,7 +104,7 @@ def run_expr_exotica_scipy(method):
     eff_err = []
     joint_diff = []
     eff_eul_err = []
-    
+
     rate = rospy.Rate(50)
     for i in range(Ntraj):
 
@@ -134,7 +134,7 @@ def run_expr_exotica_scipy(method):
         eff_evolution.append(effpost)
         eff_err.append(np.linalg.norm(np.array(effpost) - eff_goal_))
         eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))
-        
+
         # Publish joint state
         js = JointState(name=robot_model.joint_names, position=solution)
         js.header.stamp = rospy.Time.now()
@@ -157,8 +157,8 @@ def run_expr_exotica_snopt():
     t = 0.
     urdf = 'kuka_lwr.urdf'
     tip = 'lwr_arm_7_link'
-    root = 'base'    
-    robot_model = RobotModel(urdf, root, tip)        
+    root = 'base'
+    robot_model = RobotModel(urdf, root, tip)
 
     qstart = np.array([0, radians(30), 0, -radians(90), 0, radians(60), 0])
 
@@ -176,7 +176,7 @@ def run_expr_exotica_snopt():
     eff_err = []
     joint_diff = []
     eff_eul_err = []
-    
+
     rate = rospy.Rate(50)
     for i in range(Ntraj):
 
@@ -205,7 +205,7 @@ def run_expr_exotica_snopt():
         effpost = robot_model.get_end_effector_position(cs.DM(solution)).toarray().flatten().tolist()
         eff_evolution.append(effpost)
         eff_err.append(np.linalg.norm(np.array(effpost) - eff_goal_))
-        eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))        
+        eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))
 
         # Publish joint state
         js = JointState(name=robot_model.joint_names, position=solution)
@@ -221,20 +221,20 @@ def run_expr_exotica_snopt():
     ax_err.plot(np.arange(Ntraj)[1:], eff_err[1:], marker, ms=marker_size, label='exotica-snopt')
     ax_jdiff.plot(np.arange(Ntraj), joint_diff, marker, ms=marker_size, label='exotica-snopt')
     ax_err_eul.plot(np.arange(Ntraj), eff_eul_err, marker, ms=marker_size, label='exotica-snopt')
-    
-    return eff_evolution, comp_time        
-    
+
+    return eff_evolution, comp_time
+
 
 def run_expr_trac_ik():
-    
+
     # Setup constants
     qstart = cs.DM([0, radians(30), 0, -radians(90), 0, radians(60), 0])
     N = 1
     t = 0.
     urdf = 'kuka_lwr.urdf'
     tip = 'lwr_arm_7_link'
-    root = 'base'    
-    robot_model = RobotModel(urdf, root, tip)    
+    root = 'base'
+    robot_model = RobotModel(urdf, root, tip)
 
     # Load solver and get joint names
     with open(urdf, 'r') as urdf:
@@ -263,7 +263,7 @@ def run_expr_trac_ik():
             xg, yg, zg,
             rx, ry, rz, rq,
             eff_b_tol, eff_b_tol, eff_b_tol, eff_b_tol, eff_b_tol, eff_b_tol,
-        )        
+        )
         t1 = time.time_ns()
 
 
@@ -272,7 +272,7 @@ def run_expr_trac_ik():
         effpost = robot_model.get_end_effector_position(cs.DM(solution)).toarray().flatten().tolist()
         eff_evolution.append(effpost)
         eff_err.append(np.linalg.norm(np.array(effpost) - eff_goal_))
-        eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))        
+        eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))
 
         # Publish joint state
         js = JointState(name=joint_names, position=solution)
@@ -288,8 +288,8 @@ def run_expr_trac_ik():
     ax_err.plot(np.arange(Ntraj)[1:], eff_err[1:], marker, ms=marker_size, label='trak_ik')
     ax_jdiff.plot(np.arange(Ntraj), joint_diff, marker, ms=marker_size, label='trac_ik')
     ax_err_eul.plot(np.arange(Ntraj), eff_eul_err, marker, ms=marker_size, label='trac_ik')
-    
-    return eff_evolution, comp_time    
+
+    return eff_evolution, comp_time
 
 def run_expr(solver_interface, solver_name, solver_options):
 
@@ -299,7 +299,7 @@ def run_expr(solver_interface, solver_name, solver_options):
     t = 0.
     urdf = 'kuka_lwr.urdf'
     tip = 'lwr_arm_7_link'
-    root = 'base'    
+    root = 'base'
 
     # Setup robot model and optimization builder
     robot_model = RobotModel(urdf, root, tip)
@@ -321,7 +321,7 @@ def run_expr(solver_interface, solver_name, solver_options):
         builder.add_ineq_constraint(f'rot_dist_err_{i}', eff_b_tol**2 - (eff_eul[i] - eul_goal[i])**2)
         builder.add_ineq_constraint(f'euclidian_dist_err_{i}', eff_b_tol**2 - (eff_goal[i] - eff_pos[i])**2)
     # builder.add_ineq_constraint(f'rot_err', eff_b_tol**2 - cs.sumsqr(eff_quat))
-    
+
     # Build optimization
     optimization = builder.build()
 
@@ -377,7 +377,7 @@ def run_expr(solver_interface, solver_name, solver_options):
     ax_err.plot(np.arange(Ntraj)[1:], eff_err[1:], marker, ms=marker_size, label='pyinvk-'+solver_interface+'-'+solver_name)
     ax_jdiff.plot(np.arange(Ntraj), joint_diff, marker, ms=marker_size, label='pyinvk-'+solver_interface+'-'+solver_name)
     ax_err_eul.plot(np.arange(Ntraj), eff_eul_err, marker, ms=marker_size, label='pyinvk-'+solver_interface+'-'+solver_name)
-    
+
     return eff_evolution, comp_time
 
 def main():
@@ -385,33 +385,35 @@ def main():
     # Setup experiments
     exprs = [
         # ('casadi', 'snopt', {}),
-        # ('casadi', 'knitro', {}),
+        # ('casadi', 'knitro', {'print_time': 0}),
         ('casadi', 'ipopt', {'ipopt.print_level': 0, 'print_time': 0}),
         ('scipy', 'SLSQP', None),
         ('scipy', 'COBYLA', None),
         # ('scipy', 'trust-constr', None),
         'trac_ik',
         ('exotica_scipy', 'SLSQP'),
-        'exotica_snopt',
+        # ('exotica_scipy', 'COBYLA'),
+        # ('exotica_scipy', 'trust-constr'),
+        # 'exotica_snopt',
     ]
 
     # Shuffle expr order
     random.shuffle(exprs)
 
-    # Run experiments    
+    # Run experiments
     for e in exprs:
         if e == 'trac_ik':
             run_expr_trac_ik()
         elif e == 'exotica_snopt':
-            run_expr_exotica_snopt()            
+            run_expr_exotica_snopt()
         elif e[0] == 'exotica_scipy':
             run_expr_exotica_scipy(e[1])
         else:
             run_expr(*e)
-    
+
     # Plot results
-    dt_ = 1.0/float(100)    
-    ax_time.plot([0, Ntraj], [1000*dt_, 1000*dt_], '--r', label='100Hz')    
+    dt_ = 1.0/float(100)
+    ax_time.plot([0, Ntraj], [1000*dt_, 1000*dt_], '--r', label='100Hz')
     ax_time.legend(loc='upper left')
     ax_time.grid()
     ax_time.set_ylim(bottom=0)
@@ -423,7 +425,7 @@ def main():
     ax_err_eul.legend(loc='upper left')
     ax_err_eul.grid()
     ax_err_eul.set_xlim(0, Ntraj)
-    ax_err_eul.set_ylim(bottom=0)    
+    ax_err_eul.set_ylim(bottom=0)
     ax_jdiff.legend(loc='upper left')
     ax_jdiff.grid()
     ax_jdiff.set_ylim(bottom=0)
@@ -433,7 +435,7 @@ def main():
     fig_jdiff.savefig('./fig/jdiff.png')
     fig_err.savefig('./fig/err.png')
     fig_err_eul.savefig('./fig/err_eul.png')
-    
+
     plt.show()
 
 if __name__ == '__main__':
