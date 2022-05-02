@@ -6,6 +6,11 @@
 The package interfaces with several open-source and commerical solvers.
 
 `pyinvk` builds on top of [CasADi](https://web.casadi.org/), and [`urdf2casadi`](https://github.com/mahaarbo/urdf2casadi).
+This allows you to compute deriviates of the FK to arbitrary order.
+The Jacobian/Hessian's are automatically passed to the desired solvers.
+
+`pyinvk` interfaces with CasADi solvers (e.g. IPOPT, SNOPT), and also Scipy optimization routines (see *method* parameter for the [`scipy.optimize.minimize`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) method).
+New interfaces can be added by implementing a class that inherits from `Solver` in [`solvers.py`](https://github.com/cmower/pyinvk/blob/master/pyinvk/solver.py).
 
 # Example
 
