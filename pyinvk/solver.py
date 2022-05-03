@@ -1,11 +1,6 @@
 import abc
 import casadi as cs
 from scipy.optimize import minimize, NonlinearConstraint
-ROS_AVAILABLE = True
-try:
-    from sensor_msgs.msg import JointState
-except ImportError:
-    ROS_AVAILABLE = False
 
 class Solver(abc.ABC):
 
@@ -61,17 +56,7 @@ class Solver(abc.ABC):
         assert self.__called_solve, "you must call solve before stats"
         return self._stats()
 
-    def solution_to_ros_joint_state_msgs(self, solution):
-        """Convert a solution to a list of ROS sensor_msgs/JointState messages"""
-        assert ROS_AVAILABLE, "ROS is not intalled, you can not use solution_to_ros_joint_state_msgs"
-        return [
-            JointState(
-                name=self._optimization.robot_model.joint_names,
-                position=solution[:,i].toarray().flatten().tolist(),
-            )
-            for i in range(solution.shape[1])
 
-        ]
 
 class CasadiSolver(Solver):
 

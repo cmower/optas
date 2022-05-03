@@ -24,6 +24,12 @@ from pyinvk.solver import CasadiSolver, ScipySolver
 
 from trac_ik_python.trac_ik_wrap import TRAC_IK
 
+save_results = False
+try:
+    save_results = sys.argv[1] == 'saveres'
+except IndexError:
+    pass
+
 # Setup ros
 rospy.init_node('test_pyinvk')
 pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=1)
@@ -363,9 +369,7 @@ def run_expr(solver_interface, solver_name, solver_options):
         eff_eul_err.append(np.linalg.norm(eul_goal - robot_model.get_end_effector_euler(solution).toarray().flatten()))
 
         # Publish joint state
-        jointmsgs = solver.solution_to_ros_joint_state_msgs(solution)
-        js = jointmsgs[0]
-        js.header.stamp = rospy.Time.now()
+        js = robot_model.to_ros_joint_state_msg(solution)
         pub.publish(js)
         print('pyinvk-'+solver_interface+'-'+solver_name, "published", i+1, "of", Ntraj)
         t += dt
@@ -387,11 +391,11 @@ def main():
         # ('casadi', 'snopt', {}),
         # ('casadi', 'knitro', {'print_time': 0}),
         ('casadi', 'ipopt', {'ipopt.print_level': 0, 'print_time': 0}),
-        ('scipy', 'SLSQP', None),
-        ('scipy', 'COBYLA', None),
+        # ('scipy', 'SLSQP', None),
+        # ('scipy', 'COBYLA', None),
         # ('scipy', 'trust-constr', None),
         'trac_ik',
-        ('exotica_scipy', 'SLSQP'),
+        # ('exotica_scipy', 'SLSQP'),
         # ('exotica_scipy', 'COBYLA'),
         # ('exotica_scipy', 'trust-constr'),
         # 'exotica_snopt',
@@ -431,10 +435,11 @@ def main():
     ax_jdiff.set_ylim(bottom=0)
     ax_jdiff.set_xlim(0, Ntraj)
 
-    fig_time.savefig('./fig/time.png')
-    fig_jdiff.savefig('./fig/jdiff.png')
-    fig_err.savefig('./fig/err.png')
-    fig_err_eul.savefig('./fig/err_eul.png')
+    if save_results:
+        fig_time.savefig('./fig/time.png')
+        fig_jdiff.savefig('./fig/jdiff.png')
+        fig_err.savefig('./fig/err.png')
+        fig_err_eul.savefig('./fig/err_eul.png')
 
     plt.show()
 
