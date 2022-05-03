@@ -1,6 +1,12 @@
 import casadi as cs
 import numpy as np
 from urdf2casadi import urdfparser as u2c
+ROS_AVAILABLE = True
+try:
+    import rospy
+    from sensor_msgs.msg import JointState
+except ImportError:
+    ROS_AVAILABLE = False
 
 class RobotModel:
 
@@ -88,3 +94,13 @@ class RobotModel:
         yaw = cs.arctan2(siny_cosp, cosy_cosp)
 
         return cs.vertcat(roll, pitch, yaw)
+
+    def to_ros_joint_state_msg(self, q):
+        """Convert joint angles to a list of ROS sensor_msgs/JointState messages"""
+        assert ROS_AVAILABLE, "ROS is not installed, you can not call to_ros_joint_state_msg"
+        assert isinstance(q, (cs.casadi.DM, np.ndarray)), f"cannot parse q of type {type(q)} as joint state message"
+        q = cs.DM(q).toarray().flatten()
+        assert q.shape[0] == self.ndof, "q is incorrect shape"
+        msg = JointState(name=self.joint_names, position=q)
+        msg.header.stamp = rospy.Time.now()
+        return msg

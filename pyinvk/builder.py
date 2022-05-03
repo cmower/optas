@@ -8,7 +8,7 @@ class OptimizationBuilder:
 
     def __init__(self, robot_model, N=1):
         self.__robot_model = robot_model
-        self.__optimization = Optimization(robot_model, N)
+        self.__optimization = Optimization(robot_model.ndof, N)
 
     def get_q(self, i=-1):
         """Get symbolic joint angles"""

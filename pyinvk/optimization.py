@@ -49,11 +49,10 @@ class Optimization:
 
     BIG_NUMBER = 1.0e9
 
-    def __init__(self, robot_model, N):
+    def __init__(self, ndof, N):
 
         # Set class attributes
-        self.robot_model = robot_model
-        self.ndof = robot_model.ndof
+        self.ndof = ndof
         self.N = N
 
         # Setup decision variables
