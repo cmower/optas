@@ -81,12 +81,9 @@ def main():
     
     solution = solver.solve()
 
-    jointmsgs = solver.solution_to_ros_joint_state_msgs(solution)
-
     rate = rospy.Rate(10)
     for i in range(N):
-        js = jointmsgs[i]
-        js.header.stamp = rospy.Time.now()
+        js = robot_model.to_ros_joint_state_msg(solution[:,i])
         pub.publish(js)
         print("Published", i+1, "of", N)
         rate.sleep()
