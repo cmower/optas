@@ -1,3 +1,4 @@
+import numpy as np
 import casadi as cs
 from .optimization import Optimization
 
@@ -35,6 +36,38 @@ class OptimizationBuilder:
     def add_eq_constraint(self, name, constraint):
         """Add equality constraint g(q) == 0"""
         self.__optimization.eq_constraints[name] = constraint  # must be constraint == 0
+
+    # Common cost terms
+
+    def add_end_effector_position_goal(self, param_name='eff_pos_goal', weight=1.0):
+        """Add cost term modelling end-effector position goal for end state"""
+        q = self.get_q()
+        eff_pos = self.__robot_model.get_end_effector_position(eff_pos)
+        eff_pos_goal = self.add_parameter(eff_pos_goal_name, 3)
+        term = float(weight)*cs.sumsqr(eff_pos - eff_pos_goal)
+        self.add_cost_term('__end_effector_end_position_goal__', term)
+
+    def add_nominal_configuration(self, param_name='qnom', weight=1.0):
+        """Add nominal configuration cost term"""
+
+        # Ensure weight is a list of N elements
+        if isinstance(weight, float):
+            weight = [weight]*self.__optimization.N
+        elif isinstance(weight, list):
+            assert len(weight)==self.__optimization.N, f"incorrect length for list, expecting {self.__optimization.N}, got {len(weight)}"
+        elif isinstance(weight, np.ndarray):
+            assert weight.flatten().shape[0]==self.__optimization.N, f"incorrect shape for numpy array, expecting ({self.__optimization.N},), got {weight.shape}"
+            weight = weight.flatten().tolist()
+        else:
+            raise TypeError(f"can not handle weight with type {type(weight)}")
+
+        # Add nominal terms
+        qnom = self.add_parameter('qnom', self.__robot_model.ndof, self.__optimization.N)
+        for i, w in enumerate(weight):
+            q = self.get_q(i)
+            qn = qnom[:, i]
+            term = w*cs.sumsqr(q - qn)
+            self.add_cost_term(f'__nominal_configuration_{i}__', term)
 
     # Common constraints
 
