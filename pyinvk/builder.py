@@ -62,7 +62,7 @@ class OptimizationBuilder:
             raise TypeError(f"can not handle weight with type {type(weight)}")
 
         # Add nominal terms
-        qnom = self.add_parameter('qnom', self.__robot_model.ndof, self.__optimization.N)
+        qnom = self.add_parameter(param_name, self.__robot_model.ndof, self.__optimization.N)
         for i, w in enumerate(weight):
             q = self.get_q(i)
             qn = qnom[:, i]
