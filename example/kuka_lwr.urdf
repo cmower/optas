@@ -368,6 +368,7 @@
     <parent link="base"/>
     <child link="lwr_arm_0_link"/>
   </joint>
+  
   <joint name="lwr_arm_0_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0 0 0.11"/>
     <axis xyz="0 0 1"/>
@@ -377,6 +378,7 @@
     <parent link="lwr_arm_0_link"/>
     <child link="lwr_arm_1_link"/>
   </joint>
+  
   <joint name="lwr_arm_1_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0 0 0.2005"/>
     <axis xyz="0 1 0"/>
