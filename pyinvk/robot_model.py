@@ -1,106 +1,119 @@
 import casadi as cs
-import numpy as np
-from urdf2casadi import urdfparser as u2c
-ROS_AVAILABLE = True
-try:
-    import rospy
-    from sensor_msgs.msg import JointState
-except ImportError:
-    ROS_AVAILABLE = False
+from urdf_parser_py.urdf import URDF, Joint, Link, Pose
+from .tf import transformation_matrix_fixed, \
+    transformation_matrix_prismatic, \
+    transformation_matrix_revolute, \
+    euler_from_transformation_matrix, \
+    quaternion_product, \
+    quaternion_fixed, \
+    quaternion_revolute
 
 class RobotModel:
 
     """Robot model class"""
 
-    def __init__(self, urdf_file_name, root, tip):
+    def __init__(self, urdf_filename, base_link_name='baselink', base_xyz=[0.0, 0.0, 0.0], base_rpy=[0.0, 0.0, 0.0], base_joint_name='basejoint'):
 
-        # Setup parser
-        self.__parser = u2c.URDFparser(use_jit=False)
-        self.__parser.from_file(urdf_file_name)
+        # Load robot from urdf
+        self.robot = URDF.from_xml_file(urdf_filename)
 
-        # FK dict from parser, contains:
-        # - joint_names
-        # - upper
-        # - lower
-        # - joint_list
-        # - q
-        # - quaternion_fk
-        # - dual_quaternion_fk
-        # - T_fk
-        self.__fk_dict = self.__parser.get_forward_kinematics(root, tip)
+        # Ensure base names are not already defined
+        assert base_link_name not in self.robot.link_map, f"given base link name '{base_link_name}' already exists"
+        assert base_joint_name not in self.robot.joint_map, f"given base joint name '{base_joint_name}' already exists"
+
+        # Add base
+        self.robot.add_link(Link(name=base_link_name))
+        self.robot.add_joint(Joint(name=base_joint_name, parent=base_link_name, child=self.robot.links[0].name, joint_type='fixed', origin=Pose(xyz=base_xyz, rpy=base_rpy)))
 
     @property
     def ndof(self):
         """Number of Degrees Of Freedom"""
-        return self.__fk_dict['q'].shape[0]
+        return sum([jnt.type != 'fixed' for jnt in self.robot.joints])
 
     @property
-    def joint_names(self):
-        """Joint names"""
-        return self.__fk_dict['joint_names']
+    def actuated_joint_names(self):
+        """Names of actuated joints"""
+        return [jnt.name for jnt in self.robot.joints if jnt.type != 'fixed']
 
     @property
-    def lower_joint_limits(self):
-        """Lower joint limits"""
-        return self.__fk_dict['lower']
+    def lower_actuated_joint_limits(self):
+        """Lower position limits for actuated joints"""
+        return [jnt.limit.lower for jnt in self.robot.joints if jnt.type != 'fixed']
 
     @property
-    def upper_joint_limits(self):
-        """Upper joint limits"""
-        return self.__fk_dict['upper']
+    def upper_actuated_joint_limits(self):
+        """Upper position limits for actuated joints"""
+        return [jnt.limit.upper for jnt in self.robot.joints if jnt.type != 'fixed']
 
-    def __check_q(self, q):
-        """Check q is correct type/shape"""
-        if not isinstance(q, (cs.casadi.SX, cs.casadi.DM, list, tuple, np.ndarray)): raise TypeError(f"q must be casadi.casadi.SX/DM not {type(q)}")
-        q = cs.SX(q)  # ensure q is symbolic
-        if q.shape != (self.ndof, 1): raise ValueError(f"q is incorrect shape, expected {self.ndof}-by-1, got {q.shape[0]}-by-{q.shape[1]}")
+    def _get_joint_chain(self, parent, child):
+        return [
+            self.robot.joint_map[name]
+            for name in self.robot.get_chain(parent, child)
+            if name in self.robot.joint_map
+        ]
 
-    def get_end_effector_transformation_matrix(self, q):
-        """Return the symbolic end-effector transformation matrix"""
-        self.__check_q(q)
-        T = self.__fk_dict['T_fk']
-        return T(q)
+    @staticmethod
+    def _get_joint_origin(joint):
+        if joint.origin is not None:
+            xyz = cs.DM(joint.origin.xyz)
+            rpy = cs.DM(joint.origin.rpy)
+        else:
+            xyz = cs.DM.zeros(3)
+            rpy = cs.DM.zeros(3)
+        return xyz, rpy
 
-    def get_end_effector_position(self, q):
-        """Return the symbolic end-effector position"""
-        T = self.get_end_effector_transformation_matrix(q)
-        return T[:3, 3]
+    @staticmethod
+    def _get_joint_axis(joint):
+        if joint.axis is not None:
+            axis = cs.DM(joint.axis)
+        else:
+            axis = cs.DM([1.0, 0.0, 0.0])
+        return axis
 
-    def get_end_effector_quaternion(self, q):
-        """Return the symbolic end-effector quaternion"""
-        self.__check_q(q)
-        quat = self.__fk_dict['quaternion_fk']
-        return quat(q)
+    def fk(self, parent, child):
 
-    def get_end_effector_euler(self, q):
-        quat = self.get_end_effector_quaternion(q)
-        qw = quat[3]
-        qx = quat[0]
-        qy = quat[1]
-        qz = quat[2]
-        sinr_cosp = 2 * (qw * qx + qy * qz)
-        cosr_cosp = 1 - 2 * (qx * qx + qy * qy)
-        roll = cs.arctan2(sinr_cosp, cosr_cosp)
+        # Initialize variables
+        q = cs.SX.sym('q', self.ndof)
+        T = cs.SX.eye(4)
+        quat = cs.SX([0.0, 0.0, 0.0, 1.0])
 
-        sinp = 2 * (qw * qy - qz * qx)
-        pitch = cs.if_else(
-            sinp**2 >= 1.0,
-            0.5*cs.sign(sinp)*cs.np.pi,
-            cs.arcsin(sinp),
-        )
+        # Iterate over joints
+        for joint in self._get_joint_chain(parent, child):
 
-        siny_cosp = 2 * (qw * qz + qx * qy)
-        cosy_cosp = 1 - 2 * (qy * qy + qz * qz)
-        yaw = cs.arctan2(siny_cosp, cosy_cosp)
+            # Handle fixed joints
+            if joint.type == 'fixed':
+                xyz, rpy = RobotModel._get_joint_origin(joint)
+                T = T @ transformation_matrix_fixed(xyz, rpy)
+                quat = quaternion_product(quat, quaternion_fixed(rpy))
+                continue
 
-        return cs.vertcat(roll, pitch, yaw)
+            # Get actuated joint variable
+            joint_index = self.actuated_joint_names.index(joint.name)
+            qi = q[joint_index]
 
-    def to_ros_joint_state_msg(self, q):
-        """Convert joint angles to a list of ROS sensor_msgs/JointState messages"""
-        assert ROS_AVAILABLE, "ROS is not installed, you can not call to_ros_joint_state_msg"
-        assert isinstance(q, (cs.casadi.DM, np.ndarray)), f"cannot parse q of type {type(q)} as joint state message"
-        q = cs.DM(q).toarray().flatten()
-        assert q.shape[0] == self.ndof, "q is incorrect shape"
-        msg = JointState(name=self.joint_names, position=q)
-        msg.header.stamp = rospy.Time.now()
-        return msg
+            # Handle actuated joints
+            if joint.type == 'prismatic':
+                xyz, rpy = RobotModel._get_joint_origin(joint)
+                axis = RobotModel._get_joint_axis(joint)
+                T = T @ transformation_matrix_prismatic(xyz, rpy, axis, qi)
+                quat = quaternion_product(quat, quaternion_fixed(rpy))
+
+            elif joint.type in {'revolute', 'continuous'}:
+                xyz, rpy = RobotModel._get_joint_origin(joint)
+                axis = RobotModel._get_joint_axis(joint)
+                axis /= cs.norm_fro(axis)  # ensure axis is normalized
+                T = T @ transformation_matrix_revolute(xyz, rpy, axis, qi)
+                quat = quaternion_product(quat, quaternion_revolute(xyz, rpy, axis, qi))
+
+        # Get Euler angles and position
+        eul = euler_from_transformation_matrix(T)
+        pos = T[:3, 3]
+
+        return {
+            'T': cs.Function('T', [q], [T]),
+            'pos': cs.Function('pos', [q], [pos]),
+            'pos_jac': cs.Function('pos_jac', [q], [cs.jacobian(pos, q)]),
+            'eul': cs.Function('eul', [q], [eul]),
+            'eul_jac': cs.Function('eul_jac', [q], [cs.jacobian(eul, q)]),
+            'quat': cs.Function('quat', [q], [quat]),
+        }

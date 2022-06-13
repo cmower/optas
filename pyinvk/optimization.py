@@ -1,98 +1,122 @@
 import casadi as cs
-from .sx_container import SXContainer
-
 
 class Optimization:
 
     """
 
-    Optimization
-    ============
-
-    Scalars/vectors:
-    ----------------
-
-    q [R^(ndof x N) ]
-      joint angles
-
-    p [R^Np]
-      parameters
-
-    BIG_NUMBER [float]
-      use big number instead of inf
-
-    methods:
-    --------
-
-    cost [R^(ndof x N) -> R]
-      cost function
-
-    g [R^(ndof x N) -> R^Ng]
-      inequality constraints
-
-    h [R^(ndof x N) -> R^Nh]
-      equality constraints
-
-    Problem formulation:
-    --------------------
-
-    min  cost(q, p)
-     q
+    min  f(x, p)
+     x
 
       st
 
-          lbq     <=   q         <= ubq
-          lbg=0   <=   g(q, p)   <= ubg=BIG_NUMBER
-          lbh=0   <=   h(q, p)   <= ubh=0
+          lbg=0   <=   g(x, p)   <= ubg=big_number
+          lbh=0   <=   h(x, p)   <= ubh=0
+
+
+    Additional defined methods, including
+    - 1st/2nd derivatives
+    - upper/lower bounds
+    - dimensions
+
+    u(x, p) = [  g(x, p) ]
+              [  h(x, p) ]
+
+              [  g(x, p) ]    [  u(x, p) ]
+    v(x, p) = [  h(x, p) ]  = [ -h(x, p) ]
+              [ -h(x, p) ]
 
     """
 
-    BIG_NUMBER = 1.0e9
+    big_number = 1.0e9
 
-    def __init__(self, ndof, N):
-
-        # Set class attributes
-        self.ndof = ndof
-        self.N = N
-
-        # Setup decision variables
-        self.q = cs.SX.sym('q', self.ndof, N)
-
-        # Setup optimization attributes
-        self.parameters = SXContainer()
-        self.cost_terms = SXContainer()
-        self.ineq_constraints = SXContainer()
-        self.eq_constraints = SXContainer()
-
-        self.lbq = -self.BIG_NUMBER*cs.DM.ones(self.q.numel())
-        self.ubq = self.BIG_NUMBER*cs.DM.ones(self.q.numel())
-
-        self.optimization_problem_is_finalized = False
-
-        # Setup class attributes that are set by optimization builder
-        self.Nq = None
-        self.sx_q = None
-        self.sx_p = None
-        self.sx_cost = None
-        self.sx_g = None
-        self.sx_h = None
-
-        self.cost = None
-        self.cost_jacobian = None
-        self.cost_hessian = None
-
-        self.Ng = None
+    def __init__(self):
+        self.f = None
         self.g = None
-        self.g_jacobian = None
-        self.g_hessian = None
-
-        self.Nh = None        
         self.h = None
-        self.h_jacobian = None
-        self.h_hessian = None
+        self.df = None
+        self.dg = None
+        self.dh = None
+        self.ddf = None
+        self.ddg = None
+        self.ddh = None
+        self.decision_variables = None
+        self.parameters = None
+        self.cost_terms = None
+        self.ineq_constraints = None
+        self.eq_constraints = None
 
-        self.lbg = None
-        self.ubg = None
+    @property
+    def nx(self):
+        return self.decision_variables.numel()
 
-        self.lbh = None
-        self.ubh = None
+    @property
+    def np(self):
+        return self.parameters.numel()
+
+    @property
+    def ng(self):
+        return self.g.numel_out()
+
+    @property
+    def nh(self):
+        return self.h.numel_out()
+
+    @property
+    def lbg(self):
+        return cs.DM.zeros(self.ng)
+
+    @property
+    def ubg(self):
+        return self.big_number*cs.DM.ones(self.ng)
+
+    @property
+    def lbh(self):
+        return cs.DM.zeros(self.nh)
+
+    @property
+    def ubh(self):
+        return cs.DM.zeros(self.nh)
+
+    # Additional methods
+
+    def u(self, x, p):
+        return cs.vertcat(self.g(x, p), self.h(x, p))
+
+    def du(self, x, p):
+        return cs.vertcat(self.dg(x, p), self.dh(x, p))
+
+    def ddu(self, x, p):
+        return cs.vertcat(self.ddg(x, p), self.ddh(x, p))
+
+    @property
+    def nu(self):
+        return self.ng + self.nh
+
+    @property
+    def lbu(self):
+        return cs.vertcat(self.lbg, self.lbh)
+
+    @property
+    def ubu(self):
+        return cs.vertcat(self.ubg, self.ubh)
+
+    def v(self, x, p):
+        return cs.vertcat(self.g(x, p), self.h(x, p), -self.h(x, p))
+
+    def dv(self, x, p):
+        return cs.vertcat(self.dg(x, p), self.dh(x, p), -self.dh(x, p))
+
+    def ddv(self, x, p):
+        return cs.vertcat(self.ddg(x, p), self.ddh(x, p), -self.ddh(x, p))
+
+    @property
+    def nv(self):
+        return self.ng + 2*self.nh
+
+    @property
+    def lbv(self):
+        return cs.DM.zeros(self.nv)
+
+    @property
+    def ubv(self):
+        return cs.vertcat(self.ubg, cs.DM.zeros(2*self.nh))

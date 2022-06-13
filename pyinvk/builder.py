@@ -1,130 +1,110 @@
-import numpy as np
 import casadi as cs
 from .optimization import Optimization
-
+from .sx_container import SXContainer
 
 class OptimizationBuilder:
 
     """Class that builds an optimization problem"""
 
-    def __init__(self, robot_model, N=1):
-        self.__robot_model = robot_model
-        self.__optimization = Optimization(robot_model.ndof, N)
+    def __init__(self, robots, T=1, dorder=0):
 
-    def get_q(self, i=-1):
-        """Get symbolic joint angles"""
-        return self.__optimization.q[:, i]
+        # Input check
+        assert T >= 1, "T must be strictly positive"
+        assert dorder >= 0, "dorder must be non-negative"
+        assert T >= (dorder+1), f"for the given dorder ({dorder=}), T must be greater than {dorder+1}"
 
-    # Update problem spec
+        # Set class attributes
+        self.dorder = dorder
+        self.robots = robots
+
+        # Setup decision variables
+        self.decision_variables = SXContainer()
+        for robot_name, robot in robots.items():
+            for d in range(dorder+1):
+                n = OptimizationBuilder.statename(robot_name, d)
+                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-d)
+
+        # Setup containers for parameters, cost terms, ineq/eq constraints
+        self.parameters = SXContainer()
+        self.cost_terms = SXContainer()
+        self.ineq_constraints = SXContainer()
+        self.eq_constraints = SXContainer()
+
+        # Create optimization object
+        self.optimization = Optimization()
+
+    @staticmethod
+    def statename(robot_name, d):
+        return robot_name + '/' + 'd'*d + 'q'
+
+    def get_state(self, robot_name, t, d=0):
+        assert 0 <= d <= self.dorder, f"{d=}, d is outside the acceptable range [0, {self.dorder}]"
+        states = self.decision_variables[OptimizationBuilder.statename(robot_name, d)]
+        return states[:, t]
+
+    def add_decision_variables(self, name, m=1, n=1):
+        x = cs.SX.sym(name, m, n)
+        self.decision_variables[name] = x
+        return x
 
     def add_cost_term(self, name, cost_term):
-        """Add cost term"""
-        if isinstance(cost_term, (cs.casadi.SX, cs.casadi.DM)):
-            assert cost_term.shape == (1, 1), "cost term must have shape 1-by-1"
-        self.__optimization.cost_terms[name] = cost_term
+        assert cost_term.shape == (1, 1), "cost terms must be scalars"
+        self.cost_terms[name] = cost_term
 
     def add_parameter(self, name, m=1, n=1):
-        """Add parameter"""
         p = cs.SX.sym(name, m, n)
-        self.__optimization.parameters[name] = p
+        self.parameters[name] = p
         return p
 
-    def add_ineq_constraint(self, name, constraint):
-        """Add inequality constraint g(q) >= 0"""
-        self.__optimization.ineq_constraints[name] = constraint  # must be constraint >= 0
+    def add_ineq_constraint(self, name, c, lbc=None, ubc=None):
 
-    def add_eq_constraint(self, name, constraint):
-        """Add equality constraint g(q) == 0"""
-        self.__optimization.eq_constraints[name] = constraint  # must be constraint == 0
+        c_ = cs.vec(c)
+        constraint = c_
 
-    # Common cost terms
+        if lbc is not None:
+            constraint -= cs.vec(lbc)
 
-    def add_end_effector_position_goal(self, param_name='eff_pos_goal', weight=1.0):
-        """Add cost term modelling end-effector position goal for end state"""
-        q = self.get_q()
-        eff_pos = self.__robot_model.get_end_effector_position(eff_pos)
-        eff_pos_goal = self.add_parameter(eff_pos_goal_name, 3)
-        term = float(weight)*cs.sumsqr(eff_pos - eff_pos_goal)
-        self.add_cost_term('__end_effector_end_position_goal__', term)
+        if ubc is not None:
+            constraint = cs.vertcat(constraint, cs.vec(ubc) - c_)
 
-    def add_nominal_configuration(self, param_name='qnom', weight=1.0):
-        """Add nominal configuration cost term"""
+        self.ineq_constraints[name] = constraint
 
-        # Ensure weight is a list of N elements
-        if isinstance(weight, float):
-            weight = [weight]*self.__optimization.N
-        elif isinstance(weight, list):
-            assert len(weight)==self.__optimization.N, f"incorrect length for list, expecting {self.__optimization.N}, got {len(weight)}"
-        elif isinstance(weight, np.ndarray):
-            assert weight.flatten().shape[0]==self.__optimization.N, f"incorrect shape for numpy array, expecting ({self.__optimization.N},), got {weight.shape}"
-            weight = weight.flatten().tolist()
-        else:
-            raise TypeError(f"can not handle weight with type {type(weight)}")
-
-        # Add nominal terms
-        qnom = self.add_parameter(param_name, self.__robot_model.ndof, self.__optimization.N)
-        for i, w in enumerate(weight):
-            q = self.get_q(i)
-            qn = qnom[:, i]
-            term = w*cs.sumsqr(q - qn)
-            self.add_cost_term(f'__nominal_configuration_{i}__', term)
-
-    # Common constraints
-
-    def enforce_joint_limits(self):
-        """Enforce joint limit constraints"""
-
-        lower = cs.DM.zeros(self.__robot_model.ndof, self.__optimization.N)
-        upper = cs.DM.zeros(self.__robot_model.ndof, self.__optimization.N)
-        for i in range(self.__optimization.N):
-            lower[:, i] = self.__robot_model.lower_joint_limits
-            upper[:, i] = self.__robot_model.upper_joint_limits
-
-        self.__optimization.lbq = cs.vec(lower)
-        self.__optimization.ubq = cs.vec(upper)
-
-    # Main build method
+    def add_eq_constraint(self, name, c, eq=None):
+        constraint = cs.vec(c)
+        if eq is not None:
+            constraint -= cs.vec(eq)
+        self.eq_constraints[name] = constraint
 
     def build(self):
 
-        # Ensure problem is not already built
-        if self.__optimization.optimization_problem_is_finalized:
-            raise RuntimeError("build should only be called once")
+        x = self.decision_variables.vec()
+        p = self.parameters.vec()
 
-        # Setup vectorized symbolic variables
-        self.__optimization.sx_q    = cs.vec(self.__optimization.q)                  # decision variables, joint angles
-        self.__optimization.sx_p    = self.__optimization.parameters.vec()           # problem parameters
-        self.__optimization.sx_cost = cs.sum1(self.__optimization.cost_terms.vec())  # cost function
-        self.__optimization.sx_g    = self.__optimization.ineq_constraints.vec()     # inequality constraints
-        self.__optimization.sx_h    = self.__optimization.eq_constraints.vec()       # equality constraints
+        f = cs.sum1(self.cost_terms.vec())
+        df = cs.jacobian(f, x)
+        ddf = cs.jacobian(df, x)
+        self.optimization.f = cs.Function('f', [x, p], [f])
+        self.optimization.df = cs.Function('df', [x, p], [df])
+        self.optimization.ddf = cs.Function('ddf', [x, p], [ddf])
 
-        self.__optimization.Nq = self.__optimization.sx_q.numel()  # number of decision variables
+        g = self.ineq_constraints.vec()
+        dg = cs.jacobian(g, x)
+        ddg = cs.jacobian(dg, x)
+        self.optimization.g = cs.Function('g', [x, p], [g])
+        self.optimization.dg = cs.Function('dg', [x, p], [dg])
+        self.optimization.ddg = cs.Function('ddg', [x, p], [ddg])
 
-        # Method that sets up forward symbolic function and its jacobian/hessian
-        fin = [self.__optimization.sx_q, self.__optimization.sx_p]  # all these function have same input
+        h = self.eq_constraints.vec()
+        dh = cs.jacobian(h, x)
+        ddh = cs.jacobian(dh, x)
+        self.optimization.h = cs.Function('h', [x, p], [h])
+        self.optimization.dh = cs.Function('dh', [x, p], [dh])
+        self.optimization.ddh = cs.Function('ddh', [x, p], [ddh])
 
-        def setup_funs(label, fun_sx):
-            funj_sx = cs.jacobian(fun_sx, self.__optimization.sx_q)
-            fun = cs.Function(label, fin, [fun_sx])
-            funj = cs.Function(label+'_jacobian', fin, [funj_sx])
-            funh = cs.Function(label+'_hessian', fin, [cs.jacobian(funj_sx, self.__optimization.sx_q)])
-            return fun, funj, funh
+        self.optimization.decision_variables = self.decision_variables
+        self.optimization.parameters = self.parameters
+        self.optimization.cost_terms = self.cost_terms
+        self.optimization.ineq_constraints = self.ineq_constraints
+        self.optimization.eq_constraints = self.eq_constraints
 
-        # Setup cost function, and inequality/equality constraint functions
-        self.__optimization.cost, self.__optimization.cost_jacobian, self.__optimization.cost_hessian = setup_funs('cost', self.__optimization.sx_cost)
-        self.__optimization.g,    self.__optimization.g_jacobian,    self.__optimization.g_hessian    = setup_funs('g', self.__optimization.sx_g)
-        self.__optimization.h,    self.__optimization.h_jacobian,    self.__optimization.h_hessian    = setup_funs('h', self.__optimization.sx_h)
-
-        self.__optimization.Ng = self.__optimization.sx_g.numel()  # number of inequality constraints
-        self.__optimization.Nh = self.__optimization.sx_h.numel()  # number of equality constraints
-
-        self.__optimization.lbg = cs.DM.zeros(self.__optimization.ineq_constraints.numel())                               # inequality constraint lower bound, i.e. 0
-        self.__optimization.ubg = self.__optimization.BIG_NUMBER*cs.DM.ones(self.__optimization.ineq_constraints.numel()) # inequality constraint upper bound, i.e. inf (big number)
-
-        self.__optimization.lbh = cs.DM.zeros(self.__optimization.eq_constraints.numel())  # equality constraint lower bound, i.e. 0
-        self.__optimization.ubh = cs.DM.zeros(self.__optimization.eq_constraints.numel())  # equality constraint upper bound, i.e. 0
-
-        # Finalize optimization problem and return
-        self.__optimization.optimization_problem_is_finalized = True  # optimization problem is now finalized
-
-        return self.__optimization
+        return self.optimization
