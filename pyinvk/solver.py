@@ -1,6 +1,7 @@
 import casadi as cs
 from abc import ABC, abstractmethod
-from scipy.optimize import minimize, NonlinearConstraint
+from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
+from scipy.sparse import csr_matrix
 
 class Solver(ABC):
 
@@ -109,6 +110,13 @@ class ScipyMinimizeSolver(Solver):
             hess = lambda x, p: self.optimization.ddf(x, p).toarray()
             self.minimize_input['hess'] = hess
 
+        self.constraints_are_linear = None
+        if method == 'trust-constr':
+            x = cs.SX.sym('x', self.optimization.nx)
+            p = cs.SX.sym('p', self.optimization.np)
+            u = self.optimization.u(x, p)
+            self.constraints_are_linear = cs.is_linear(u, x)
+
     def solve(self):
 
         if (self.method in ScipyMinimizeSolver.methods_handle_constraints):
@@ -116,18 +124,29 @@ class ScipyMinimizeSolver(Solver):
             if self.method != 'trust-constr':
                 constraints = [{
                     'type': 'ineq',
-                    'fun': lambda x: self.optimization.v(x, self.p.toarray().flatten()).toarray().flatten(),
-                    'jac': lambda x: self.optimization.dv(x, self.p.toarray().flatten()).toarray(),
+                    'fun': lambda x: self.optimization.v(x, self.p).toarray().flatten(),
+                    'jac': lambda x: self.optimization.dv(x, self.p).toarray(),
                 }]
             else:
                 # Setup constraints for trust-constr
-                constraints = NonlinearConstraint(
-                    fun=lambda x: self.optimization.u(x, self.p).toarray().flatten(),
-                    lb=self.optimization.lbu.toarray().flatten(),
-                    ub=self.optimization.ubu.toarray().flatten(),
-                    # jac=lambda x: self.optimization.du(x, self.p).toarray(),
-                    # hess=lambda x: self.optimization.ddu(x, self.p).toarray(),
-                )
+                # Note, if constraints are linear in x then use
+                # LinearConstraint, otherwise use NonlinearConstraint
+
+                if self.constraints_are_linear:
+                    x = cs.SX.sym('x', self.optimization.nx)
+                    u = self.optimization.u(x, self.p)
+                    A = csr_matrix(cs.DM(cs.jacobian(u, x)).toarray())
+                    c = self.optimization.u(cs.DM.zeros(self.optimization.nx), self.p).toarray().flatten()
+                    lb = -c
+                    ub = self.optimization.big_number*cs.np.ones(self.optimization.nu)
+                    constraints = LinearConstraint(A=A, lb=lb, ub=ub)
+                else:
+                    constraints = NonlinearConstraint(
+                        fun=lambda x: self.optimization.u(x, self.p).toarray().flatten(),
+                        lb=self.optimization.lbu.toarray().flatten(),
+                        ub=self.optimization.ubu.toarray().flatten(),
+                        jac=lambda x: self.optimization.du(x, self.p).toarray(),
+                    )
 
             self.minimize_input['constraints'] = constraints
 
