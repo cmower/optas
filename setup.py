@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='pyinvk',
-    version='1.0.1',
+    version='2.0.0',
     description='Python Inverse Kinematics.',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -19,8 +19,7 @@ setup(
     packages=['pyinvk'],
     install_requires=[
         'numpy',
-        'casadi',
-        'urdf2casadi',
         'scipy',
+        'casadi',
     ]
 )
