@@ -3,7 +3,7 @@ import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
 from pyinvk.solver import OSQPSolver, CasADiQPSolver, CVXOPTSolver
-from pyinvk.common import RosNode
+from pyinvk.ros import RosNode
 
 def setup_casadi_solver(optimization):
     return CasADiQPSolver(optimization).setup('qpoases')
