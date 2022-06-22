@@ -190,7 +190,6 @@ class CVXOPTSolver(Solver):
         assert opt_type in {UnconstrainedQP, LinearConstrainedQP}, "CVXOPT cannot solve this problem"
         self.is_constrained = opt_type == LinearConstrainedQP
         self.solver_settings = solver_settings
-
         return self
 
     def solve(self):
