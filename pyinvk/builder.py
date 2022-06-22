@@ -17,7 +17,7 @@ class OptimizationBuilder:
         dorder = max(derivs)
         assert T >= 1, "T must be strictly positive"
         assert dorder >= 0, "dorder must be non-negative"
-        assert T > dorder, f"T must be greater than {dorder=}"
+        assert T > dorder, f"T must be greater than {dorder}"
 
         # Set class attributes
         self.derivs = derivs
