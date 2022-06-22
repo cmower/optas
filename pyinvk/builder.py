@@ -1,44 +1,49 @@
 import casadi as cs
-from .optimization import Optimization
 from .sx_container import SXContainer
+from .optimization import UnconstrainedQP,\
+    LinearConstrainedQP, \
+    NonlinearConstrainedQP, \
+    UnconstrainedOptimization, \
+    LinearConstrainedOptimization, \
+    NonlinearConstrainedOptimization
 
 class OptimizationBuilder:
 
     """Class that builds an optimization problem"""
 
-    def __init__(self, robots, T=1, dorder=0):
+    def __init__(self, robots, T=1, derivs=[0]):
 
         # Input check
+        dorder = max(derivs)
         assert T >= 1, "T must be strictly positive"
         assert dorder >= 0, "dorder must be non-negative"
         assert T > dorder, f"T must be greater than {dorder=}"
 
         # Set class attributes
+        self.derivs = derivs
         self.dorder = dorder
         self.robots = robots
 
         # Setup decision variables
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
-            for deriv in range(dorder+1):
+            for deriv in derivs:
                 n = self.statename(robot_name, deriv)
-                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-d)
+                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-deriv)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self.parameters = SXContainer()
         self.cost_terms = SXContainer()
+        self.lin_constraints = SXContainer()
         self.ineq_constraints = SXContainer()
         self.eq_constraints = SXContainer()
-
-        # Create optimization object
-        self.optimization = Optimization()
 
     @staticmethod
     def statename(robot_name, deriv):
         return robot_name + '/' + 'd'*deriv + 'q'
 
     def get_state(self, robot_name, t, deriv=0):
-        assert 0 <= deriv <= self.dorder, f"{deriv=}, deriv must be in [0, {self.dorder}]"
+        assert deriv in self.derivs, f"{deriv=}, deriv must be in {self.derivs}"
         states = self.decision_variables[self.statename(robot_name, deriv)]
         return states[:, t]
 
@@ -56,55 +61,98 @@ class OptimizationBuilder:
         self.parameters[name] = p
         return p
 
-    def add_ineq_constraint(self, name, c, lbc=None, ubc=None):
+    def add_lin_constraint(self, name, lbc, c, ubc):
+        x = self.decision_variables.vec()
+        lb = c - lbc
+        ub = ubc - c
+        assert cs.is_linear(lb, x) and cs.is_linear(ub, x), "constraint not linear"
+        self.lin_constraints[name+'_lb'] = lb
+        self.lin_constraints[name+'_ub'] = ub
 
-        c_ = cs.vec(c)
-        constraint = c_
+    def add_ineq_constraint(self, name, lbc, c, ubc):
+        x = self.decision_variables.vec()
+        lb = c - lbc
+        ub = ubc - c
+        if cs.is_linear(lb, x) and cs.is_linear(ub, x):
+            print(f"[WARN] given constraint '{name}' is linear in x, adding as linear contraint")
+            self.add_lin_constraint(name, lbc, c, ubc)
+            return
+        self.ineq_constraints[name+'_lb'] = lb
+        self.ineq_constraints[name+'_ub'] = ub
 
-        if lbc is not None:
-            constraint -= cs.vec(lbc)
-
-        if ubc is not None:
-            constraint = cs.vertcat(constraint, cs.vec(ubc) - c_)
-
-        self.ineq_constraints[name] = constraint
-
-    def add_eq_constraint(self, name, c, eq=None):
-        constraint = cs.vec(c)
-        if eq is not None:
-            constraint -= cs.vec(eq)
-        self.eq_constraints[name] = constraint
+    def add_eq_constraint(self, name, c, eqc):
+        x = self.decision_variables.vec()
+        eq = c - eqc
+        if cs.is_linear(eq, x):
+            print(f"[WARN] given constraint '{name}' is linear in x, adding as linear contraint")
+            self.add_lin_constraint(name, eqc, c, eqc)
+            return
+        self.eq_constraints[name] = eq
 
     def build(self):
 
+        # Get decision variables and parameters as SX column vectors
         x = self.decision_variables.vec()
         p = self.parameters.vec()
 
+        # Helpful method
+        def functionize(name, fun):
+
+            # Setup function input
+            fun_input = [x, p]
+
+            # Function
+            Fun = cs.Function(name, fun_input, [fun])
+
+            # Jacobian
+            jac = cs.jacobian(fun, x)
+            Jac = cs.Function('d'+name, fun_input, [jac])
+
+            # Hessian
+            hess = cs.jacobian(jac, x)
+            Hess = cs.Function('dd'+name, fun_input, [hess])
+
+            return Fun, Jac, Hess
+
+        # Get forward functions
         f = cs.sum1(self.cost_terms.vec())
-        df = cs.jacobian(f, x)
-        ddf = cs.jacobian(df, x)
-        self.optimization.f = cs.Function('f', [x, p], [f])
-        self.optimization.df = cs.Function('df', [x, p], [df])
-        self.optimization.ddf = cs.Function('ddf', [x, p], [ddf])
+        k = self.lin_constraints.vec()
+        g = self.eq_constraints.vec()
+        h = self.ineq_constraints.vec()
 
-        g = self.ineq_constraints.vec()
-        dg = cs.jacobian(g, x)
-        ddg = cs.jacobian(dg, x)
-        self.optimization.g = cs.Function('g', [x, p], [g])
-        self.optimization.dg = cs.Function('dg', [x, p], [dg])
-        self.optimization.ddg = cs.Function('ddg', [x, p], [ddg])
+        # Setup optimization
+        nlin = self.lin_constraints.numel()  # no. linear constraints
+        nnlin = self.eq_constraints.numel() + self.ineq_constraints.numel()  # no. nonlin constraints
+        if cs.is_quadratic(f, x):
+            # True -> use QP formulation
+            if nnlin > 0:
+                opt = NonlinearConstrainedQP()
+            elif nlin > 0:
+                opt = LinearConstrainedQP()
+            else:
+                opt = UnconstrainedQP()
+        else:
+            # False -> use (nonlinear) Optimization formulation
+            if nnlin > 0:
+                opt = NonlinearConstrainedOptimization()
+            elif nlin > 0:
+                opt = LinearConstrainedOptimization()
+            else:
+                opt = UnconstrainedOptimization()
 
-        h = self.eq_constraints.vec()
-        dh = cs.jacobian(h, x)
-        ddh = cs.jacobian(dh, x)
-        self.optimization.h = cs.Function('h', [x, p], [h])
-        self.optimization.dh = cs.Function('dh', [x, p], [dh])
-        self.optimization.ddh = cs.Function('ddh', [x, p], [ddh])
+        # Setup constraints
+        if nnlin > 0:
+            opt.k, opt.dk, opt.ddk = functionize('k', k)
+            opt.g, opt.dg, opt.ddg = functionize('g', g)
+            opt.h, opt.dh, opt.ddh = functionize('h', h)
+        elif nlin > 0:
+            opt.k, opt.dk, opt.ddk = functionize('k', k)
 
-        self.optimization.decision_variables = self.decision_variables
-        self.optimization.parameters = self.parameters
-        self.optimization.cost_terms = self.cost_terms
-        self.optimization.ineq_constraints = self.ineq_constraints
-        self.optimization.eq_constraints = self.eq_constraints
 
-        return self.optimization
+        # Setup cost function and other variables
+        opt.f, opt.df, opt.ddf = functionize('f', f)
+        opt.decision_variables = self.decision_variables
+        opt.parameters = self.parameters
+        opt.cost_terms = self.cost_terms
+
+        return opt
