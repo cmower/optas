@@ -1,4 +1,5 @@
 import osqp
+import cvxopt
 import numpy as np
 import casadi as cs
 from abc import ABC, abstractmethod
@@ -175,6 +176,32 @@ class OSQPSolver(Solver):
         solution = self._stats.x
 
         return self.optimization.decision_variables.vec2dict(solution)
+
+    def stats(self):
+        return self._stats
+
+################################################################
+# CVXOPT QP solver (https://cvxopt.org/)
+
+class CVXOPTSolver(Solver):
+
+    def setup(self, solver_settings={}):
+        opt_type = type(self.optimization)
+        assert opt_type in {UnconstrainedQP, LinearConstrainedQP}, "CVXOPT cannot solve this problem"
+        self.is_constrained = opt_type == LinearConstrainedQP
+        self.solver_settings = solver_settings
+
+        return self
+
+    def solve(self):
+        solver_input = self.solver_settings.copy()
+        P = cvxopt.matrix(2.0*self.optimization.P(self.p).toarray())
+        q = cvxopt.matrix(self.optimization.q(self.p).toarray().flatten())
+        if self.is_constrained:
+            solver_input['G'] = cvxopt.matrix(-self.optimization.M(self.p).toarray())
+            solver_input['h'] = cvxopt.matrix(-self.optimization.lbr(self.p).toarray().flatten())
+        self._stats = cvxopt.solvers.qp(P, q, **solver_input)
+        return self.optimization.decision_variables.vec2dict(self._stats['x'])
 
     def stats(self):
         return self._stats

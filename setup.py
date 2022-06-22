@@ -22,5 +22,6 @@ setup(
         'scipy',
         'casadi',
         'osqp',
+        'cvxopt',
     ]
 )

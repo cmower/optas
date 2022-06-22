@@ -2,7 +2,7 @@ import time
 import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
-from pyinvk.solver import OSQPSolver, CasADiQPSolver
+from pyinvk.solver import OSQPSolver, CasADiQPSolver, CVXOPTSolver
 from pyinvk.common import RosNode
 
 def setup_casadi_solver(optimization):
@@ -10,6 +10,9 @@ def setup_casadi_solver(optimization):
 
 def setup_osqp_solver(optimization):
     return OSQPSolver(optimization).setup()
+
+def setup_cvxqp_solver(optimization):
+    return CVXOPTSolver(optimization).setup()
 
 def main():
 
@@ -37,7 +40,8 @@ def main():
     optimization = builder.build()
 
     # solver = setup_casadi_solver(optimization)
-    solver = setup_osqp_solver(optimization)
+    # solver = setup_osqp_solver(optimization)
+    solver = setup_cvxqp_solver(optimization)
 
     # Setup ROS
     node = RosNode(robots, 'pyinvk_ex_lin_constrained_qp_node')

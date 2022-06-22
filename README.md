@@ -13,6 +13,7 @@ Depending on the problem class you can interface with a number of solvers:
 - Solvers that interface with CasADi `qpsol`/`nlpsol` (e.g. IPOPT, SNOPT, qpOASES, KINTRO)
 - Scipy routines via the [`scipy.optimize.minimize`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) method.
 - [OSQP solver](https://osqp.org/)
+- [CVXOPT](https://cvxopt.org/index.html)
 
 New interfaces can be added by implementing a class that inherits from `Solver` in [`solvers.py`](https://github.com/cmower/pyinvk/blob/master/pyinvk/solver.py).
 
