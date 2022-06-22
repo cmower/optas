@@ -163,7 +163,7 @@ class OSQPSolver(Solver):
             setup_input['l'] = self.optimization.lbr(self.p).toarray().flatten()
             setup_input['u'] = np.inf*np.ones(self.optimization.nr)
             setup_input['A'] = csr_matrix(self.optimization.M(self.p).toarray())
-        self.m = .osqp.OSQP()
+        self.m = osqp.OSQP()
         self.m.setup(**setup_input)
 
         # Warm start optimization
