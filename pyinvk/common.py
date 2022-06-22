@@ -13,7 +13,7 @@ except ImportError:
 class RosNode:
 
     def __init__(self, robots, node_name, anonymous=False):
-        assert ROS_AVAILABLE, f"{name} requires ROS"
+        assert ROS_AVAILABLE, f"{node_name} requires ROS"
         rospy.init_node(node_name, anonymous=anonymous)
         self.tf = TfInterface()
         self.robots = robots
