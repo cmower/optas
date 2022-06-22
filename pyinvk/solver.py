@@ -174,7 +174,6 @@ class OSQPSolver(Solver):
         self._stats = self.m.solve()
         solution = self._stats.x
 
-        self.first_solve = False
         return self.optimization.decision_variables.vec2dict(solution)
 
     def stats(self):
