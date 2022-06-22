@@ -20,8 +20,8 @@ class OptimizationBuilder:
         # Setup decision variables
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
-            for d in range(dorder+1):
-                n = OptimizationBuilder.statename(robot_name, d)
+            for deriv in range(dorder+1):
+                n = self.statename(robot_name, deriv)
                 self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-d)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
@@ -34,12 +34,12 @@ class OptimizationBuilder:
         self.optimization = Optimization()
 
     @staticmethod
-    def statename(robot_name, d):
-        return robot_name + '/' + 'd'*d + 'q'
+    def statename(robot_name, deriv):
+        return robot_name + '/' + 'd'*deriv + 'q'
 
-    def get_state(self, robot_name, t, d=0):
-        assert 0 <= d <= self.dorder, f"{d=}, d is outside the acceptable range [0, {self.dorder}]"
-        states = self.decision_variables[OptimizationBuilder.statename(robot_name, d)]
+    def get_state(self, robot_name, t, deriv=0):
+        assert 0 <= deriv <= self.dorder, f"{deriv=}, deriv must be in [0, {self.dorder}]"
+        states = self.decision_variables[self.statename(robot_name, deriv)]
         return states[:, t]
 
     def add_decision_variables(self, name, m=1, n=1):
