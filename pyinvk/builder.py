@@ -145,9 +145,8 @@ class OptimizationBuilder:
             opt.k, opt.dk, opt.ddk = functionize('k', k)
             opt.g, opt.dg, opt.ddg = functionize('g', g)
             opt.h, opt.dh, opt.ddh = functionize('h', h)
-        elif nlin > 0:
+        if nlin > 0:
             opt.k, opt.dk, opt.ddk = functionize('k', k)
-
 
         # Setup cost function and other variables
         opt.f, opt.df, opt.ddf = functionize('f', f)

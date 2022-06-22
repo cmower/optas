@@ -55,6 +55,7 @@ class _LinearConstraints:
     def __init__(self):
         self.k = None
         self.dk = None
+        self.ddk = None
         self.lin_constraints = None
 
     @property
@@ -264,6 +265,27 @@ class LinearConstrainedOptimization(
     def __init__(self):
         UnconstrainedOptimization.__init__(self)
         _LinearConstraints.__init__(self)
+
+    def u(self, x, p):
+        return self.k(x, p)
+
+    def du(self, x, p):
+        return self.dk(x, p)
+
+    def ddu(self, x, p):
+        return self.ddk(x, p)
+
+    @property
+    def nu(self):
+        return self.k.numel_out()
+
+    @property
+    def lbu(self):
+        return cs.DM.zeros(self.nu)
+
+    @property
+    def ubu(self):
+        return big_number*cs.DM(self.nu)
 
 class NonlinearConstrainedOptimization(
         LinearConstrainedOptimization,
