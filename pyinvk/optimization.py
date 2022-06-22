@@ -288,12 +288,14 @@ class LinearConstrainedOptimization(
         return big_number*cs.DM(self.nu)
 
 class NonlinearConstrainedOptimization(
-        LinearConstrainedOptimization,
+        UnconstrainedOptimization,
+        _LinearConstraints,
         _NonlinearEqualityConstraints,
         _NonlinearInequalityConstraints,
         _NonlinearConstraints):
 
     def __init__(self):
-        LinearConstrainedOptimization.__init__(self)
+        UnconstrainedOptimization.__init__(self)
+        _LinearConstraints.__init__(self)
         _NonlinearEqualityConstraints.__init__(self)
         _NonlinearInequalityConstraints.__init__(self)
