@@ -224,7 +224,9 @@ class ScipyMinimizeSolver(Solver):
     def setup(self, method='SLSQP', tol=None, options=None):
 
         # Input check
-        if (self.optimization.nu > 0) and (method not in ScipyMinimizeSolver.methods_handle_constraints):
+        opt_type = type(self.optimization)
+        self.is_constrained = opt_type not in {UnconstrainedQP, UnconstrainedOptimization}
+        if self.is_constrained and (method not in ScipyMinimizeSolver.methods_handle_constraints):
             raise ValueError(f"optimization problem has constraints, the method '{method}' is not suitable")
 
         # Setup class attributes
@@ -257,6 +259,8 @@ class ScipyMinimizeSolver(Solver):
             p = cs.SX.sym('p', self.optimization.np)
             u = self.optimization.u(x, p)
             self.constraints_are_linear = cs.is_linear(u, x)
+
+        return self
 
     def solve(self):
 

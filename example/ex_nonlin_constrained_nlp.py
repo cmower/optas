@@ -2,7 +2,7 @@ import time
 import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
-from pyinvk.solver import CasADiNLPSolver
+from pyinvk.solver import CasADiNLPSolver, ScipyMinimizeSolver
 from pyinvk.ros import RosNode
 
 def main():
@@ -33,7 +33,8 @@ def main():
     )    
     optimization = builder.build()
 
-    solver = CasADiNLPSolver(optimization).setup('ipopt')
+    # solver = CasADiNLPSolver(optimization).setup('ipopt')
+    solver = ScipyMinimizeSolver(optimization).setup()
     
     # Setup ROS
     node = RosNode(robots, 'pyinvk_ex_lin_constrained_nlp_node')

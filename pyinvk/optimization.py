@@ -181,27 +181,42 @@ class _NonlinearConstraints:
     def ubu(self):
         return cs.vertcat(self.ubk, self.ubg, self.ubh)
 
-    # TODO: include k in the following v method
-    # def v(self, x, p):
-    #     return cs.vertcat(self.g(x, p), self.h(x, p), -self.h(x, p))
 
-    # def dv(self, x, p):
-    #     return cs.vertcat(self.dg(x, p), self.dh(x, p), -self.dh(x, p))
+    def v(self, x, p):
+        return cs.vertcat(
+            self.k(x, p),
+            self.g(x, p),
+            -self.g(x, p),
+            self.h(x, p),
+        )
 
-    # def ddv(self, x, p):
-    #     return cs.vertcat(self.ddg(x, p), self.ddh(x, p), -self.ddh(x, p))
+    def dv(self, x, p):
+        return cs.vertcat(
+            self.dk(x, p),
+            self.dg(x, p),
+            -self.dg(x, p),            
+            self.dh(x, p),
+        )
 
-    # @property
-    # def nv(self):
-    #     return self.ng + 2*self.nh
+    def ddv(self, x, p):
+        return cs.vertcat(
+            self.ddk(x, p),
+            self.ddg(x, p),
+            -self.ddg(x, p),
+            self.ddh(x, p),
+        )
 
-    # @property
-    # def lbv(self):
-    #     return cs.DM.zeros(self.nv)
+    @property
+    def nv(self):
+        return self.nk + 2*self.ng + self.nh
 
-    # @property
-    # def ubv(self):
-    #     return cs.vertcat(self.ubg, cs.DM.zeros(2*self.nh))
+    @property
+    def lbv(self):
+        return cs.DM.zeros(self.nv)
+
+    @property
+    def ubv(self):
+        return cs.vertcat(self.ubk, cs.DM.zeros(2*self.ng), self.ubh)
 
 ############################################################################
 # Optimization classes
