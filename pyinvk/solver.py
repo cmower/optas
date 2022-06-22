@@ -1,3 +1,4 @@
+import osqp
 import numpy as np
 import casadi as cs
 from abc import ABC, abstractmethod
@@ -146,16 +147,6 @@ class OSQPSolver(Solver):
 
         opt_type = type(self.optimization)
         assert opt_type in {UnconstrainedQP, LinearConstrainedQP}, "OSQP cannot solve this type of problem, see https://osqp.org/docs/solver/index.html"
-
-        osqp_installed = True
-        try:
-            import osqp
-        except ImportError:
-            osqp_installed = False
-
-        assert osqp_installed, "could not import osqp, is it installed? Use $ pip install osqp"
-
-        self.osqp = osqp
         self.use_warm_start = use_warm_start
         self.is_constrained = opt_type == LinearConstrainedQP
 
@@ -165,14 +156,14 @@ class OSQPSolver(Solver):
 
         # Setup problem
         setup_input = {
-            'P': csr_matrix(self.optimization.P(self.p).toarray()),
+            'P': csr_matrix(2.0*self.optimization.P(self.p).toarray()),
             'q': self.optimization.q(self.p).toarray().flatten(),
         }
         if self.is_constrained:
             setup_input['l'] = self.optimization.lbr(self.p).toarray().flatten()
             setup_input['u'] = np.inf*np.ones(self.optimization.nr)
             setup_input['A'] = csr_matrix(self.optimization.M(self.p).toarray())
-        self.m = self.osqp.OSQP()
+        self.m = .osqp.OSQP()
         self.m.setup(**setup_input)
 
         # Warm start optimization

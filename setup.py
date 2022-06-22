@@ -21,5 +21,6 @@ setup(
         'numpy',
         'scipy',
         'casadi',
+        'osqp',
     ]
 )
