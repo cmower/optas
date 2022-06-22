@@ -155,6 +155,53 @@ class _NonlinearInequalityConstraints:
     def ubh(self):
         return big_number*cs.DM.ones(self.nh)
 
+class _NonlinearConstraints:
+
+    """Additional methods u, v for (in)equality nonlinear constraints."""
+
+    def u(self, x, p):
+        return cs.vertcat(self.k(x, p), self.g(x, p), self.h(x, p))
+
+    def du(self, x, p):
+        return cs.vertcat(self.dk(x, p), self.dg(x, p), self.dh(x, p))
+
+    def ddu(self, x, p):
+        return cs.vertcat(self.ddk(x, p), self.ddg(x, p), self.ddh(x, p))
+
+    @property
+    def nu(self):
+        return self.nk + self.ng + self.nh
+
+    @property
+    def lbu(self):
+        return cs.vertcat(self.lbk, self.lbg, self.lbh)
+
+    @property
+    def ubu(self):
+        return cs.vertcat(self.ubk, self.ubg, self.ubh)
+
+    # TODO: include k in the following v method
+    # def v(self, x, p):
+    #     return cs.vertcat(self.g(x, p), self.h(x, p), -self.h(x, p))
+
+    # def dv(self, x, p):
+    #     return cs.vertcat(self.dg(x, p), self.dh(x, p), -self.dh(x, p))
+
+    # def ddv(self, x, p):
+    #     return cs.vertcat(self.ddg(x, p), self.ddh(x, p), -self.ddh(x, p))
+
+    # @property
+    # def nv(self):
+    #     return self.ng + 2*self.nh
+
+    # @property
+    # def lbv(self):
+    #     return cs.DM.zeros(self.nv)
+
+    # @property
+    # def ubv(self):
+    #     return cs.vertcat(self.ubg, cs.DM.zeros(2*self.nh))
+
 ############################################################################
 # Optimization classes
 
@@ -198,7 +245,8 @@ class NonlinearConstrainedQP(
         UnconstrainedQP,
         _LinearConstraints,
         _NonlinearEqualityConstraints,
-        _NonlinearInequalityConstraints):
+        _NonlinearInequalityConstraints,
+        _NonlinearConstraints):
 
     def __init__(self):
         UnconstrainedQP.__init__(self)
@@ -220,53 +268,10 @@ class LinearConstrainedOptimization(
 class NonlinearConstrainedOptimization(
         LinearConstrainedOptimization,
         _NonlinearEqualityConstraints,
-        _NonlinearInequalityConstraints):
+        _NonlinearInequalityConstraints,
+        _NonlinearConstraints):
 
     def __init__(self):
         LinearConstrainedOptimization.__init__(self)
         _NonlinearEqualityConstraints.__init__(self)
         _NonlinearInequalityConstraints.__init__(self)
-
-    # Additional methods
-
-    def u(self, x, p):
-        return cs.vertcat(self.k(x, p), self.g(x, p), self.h(x, p))
-
-    def du(self, x, p):
-        return cs.vertcat(self.dk(x, p), self.dg(x, p), self.dh(x, p))
-
-    def ddu(self, x, p):
-        return cs.vertcat(self.ddk(x, p), self.ddg(x, p), self.ddh(x, p))
-
-    @property
-    def nu(self):
-        return self.nk + self.ng + self.nh
-
-    @property
-    def lbu(self):
-        return cs.vertcat(self.lbk, self.lbg, self.lbh)
-
-    @property
-    def ubu(self):
-        return cs.vertcat(self.ubk, self.ubg, self.ubh)
-
-    def v(self, x, p):
-        return cs.vertcat(self.g(x, p), self.h(x, p), -self.h(x, p))
-
-    def dv(self, x, p):
-        return cs.vertcat(self.dg(x, p), self.dh(x, p), -self.dh(x, p))
-
-    def ddv(self, x, p):
-        return cs.vertcat(self.ddg(x, p), self.ddh(x, p), -self.ddh(x, p))
-
-    @property
-    def nv(self):
-        return self.ng + 2*self.nh
-
-    @property
-    def lbv(self):
-        return cs.DM.zeros(self.nv)
-
-    @property
-    def ubv(self):
-        return cs.vertcat(self.ubg, cs.DM.zeros(2*self.nh))
