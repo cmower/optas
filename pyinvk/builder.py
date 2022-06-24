@@ -11,25 +11,25 @@ class OptimizationBuilder:
 
     """Class that builds an optimization problem"""
 
-    def __init__(self, robots, T=1, derivs=[0]):
+    def __init__(self, robots, T=1, qderivs=[0]):
 
         # Input check
-        dorder = max(derivs)
+        dorder = max(qderivs)
         assert T >= 1, "T must be strictly positive"
         assert dorder >= 0, "dorder must be non-negative"
         assert T > dorder, f"T must be greater than {dorder}"
 
         # Set class attributes
-        self.derivs = derivs
+        self.qderivs = qderivs
         self.dorder = dorder
         self.robots = robots
 
         # Setup decision variables
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
-            for deriv in derivs:
-                n = self.statename(robot_name, deriv)
-                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-deriv)
+            for qderiv in qderivs:
+                n = self.statename(robot_name, qderiv)
+                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self.parameters = SXContainer()
@@ -39,12 +39,12 @@ class OptimizationBuilder:
         self.eq_constraints = SXContainer()
 
     @staticmethod
-    def statename(robot_name, deriv):
-        return robot_name + '/' + 'd'*deriv + 'q'
+    def statename(robot_name, qderiv):
+        return robot_name + '/' + 'd'*qderiv + 'q'
 
-    def get_state(self, robot_name, t, deriv=0):
-        assert deriv in self.derivs, f"{deriv=}, deriv must be in {self.derivs}"
-        states = self.decision_variables[self.statename(robot_name, deriv)]
+    def get_state(self, robot_name, t, qderiv=0):
+        assert qderiv in self.qderivs, f"{qderiv=}, qderiv must be in {self.qderivs}"
+        states = self.decision_variables[self.statename(robot_name, qderiv)]
         return states[:, t]
 
     def add_decision_variables(self, name, m=1, n=1):
