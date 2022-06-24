@@ -14,6 +14,7 @@ class OptimizationBuilder:
     def __init__(self, robots, T=1, qderivs=[0]):
 
         # Input check
+        assert min(qderivs) >= 0, "All values in qderivs should be positive or zero"
         dorder = max(qderivs)
         assert T >= 1, "T must be strictly positive"
         assert dorder >= 0, "dorder must be non-negative"
