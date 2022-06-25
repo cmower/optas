@@ -1,4 +1,6 @@
 import casadi as cs
+import numpy as np
+from typing import Union
 
 big_number = 1.0e11  # replacement for inf
 
@@ -20,7 +22,7 @@ class _QuadraticCost:
 
     """
 
-    def P(self, p):
+    def P(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The P(p) array in a quadratic cost term where p are parameters."""
 
         # Create x SX variables
@@ -30,7 +32,7 @@ class _QuadraticCost:
         ddf = self.ddf(x, p)  # ddf(x) = 2P for all x
         return 0.5*cs.DM(ddf)
 
-    def q(self, p):
+    def q(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The q(p) array in a quadratic cost term where p are parameters."""
 
         # Create x SX variables
@@ -76,7 +78,7 @@ class _LinearConstraints:
         """Upper bound for the linear constraints (i.e. an array with large numbers used instead of infinity)."""
         return big_number*cs.DM.ones(self.nk)
 
-    def M(self, p):
+    def M(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The M(p) array in the linear constraints where p are parameters."""
 
         # Create x SX variables
@@ -86,7 +88,7 @@ class _LinearConstraints:
         dk = self.dk(x, p)  # dk(p) = M
         return cs.DM(dk)
 
-    def c(self, p):
+    def c(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The c(p) array in the linear constraints where p are parameters."""
 
         # Create zeros x
@@ -101,19 +103,19 @@ class _LinearConstraints:
         """The number of linear constraints for r(x, p)."""
         return self.nk
 
-    def r(self, x, p):
+    def r(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The constraint vector r(x, p)."""
         return self.M(p) @ cs.vec(x)
 
-    def dr(self, x, p):
+    def dr(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The first deriviative for the constraint vector r(x, p) with respect to x."""
         return self.M(p)
 
-    def lbr(self, p):
+    def lbr(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """Lower bound for the constraint vector r(x, p), i.e. it is defined as -c(p)."""
         return -self.c(p)
 
-    def ubr(self, p):
+    def ubr(self, p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """Upper bound for the constraint vector r(x, p), i.e. it is an array with large numbers used instead of infinity."""
         return self.ubk
 
@@ -180,15 +182,15 @@ class _NonlinearConstraints:
 
     """Additional methods u, v for (in)equality nonlinear constraints."""
 
-    def u(self, x, p):
+    def u(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """Constraint array where u=[k', g', h']'."""
         return cs.vertcat(self.k(x, p), self.g(x, p), self.h(x, p))
 
-    def du(self, x, p):
+    def du(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The first derivative of u with respect to x."""
         return cs.vertcat(self.dk(x, p), self.dg(x, p), self.dh(x, p))
 
-    def ddu(self, x, p):
+    def ddu(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The second derivative of u with respect to x."""
         return cs.vertcat(self.ddk(x, p), self.ddg(x, p), self.ddh(x, p))
 
@@ -208,7 +210,7 @@ class _NonlinearConstraints:
         return cs.vertcat(self.ubk, self.ubg, self.ubh)
 
 
-    def v(self, x, p):
+    def v(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """Constraint array where v=[k', g', -g', h']' >= 0."""
         return cs.vertcat(
             self.k(x, p),
@@ -217,7 +219,7 @@ class _NonlinearConstraints:
             self.h(x, p),
         )
 
-    def dv(self, x, p):
+    def dv(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The first derivative of the constraints v with respect to x."""
         return cs.vertcat(
             self.dk(x, p),
@@ -226,7 +228,7 @@ class _NonlinearConstraints:
             self.dh(x, p),
         )
 
-    def ddv(self, x, p):
+    def ddv(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The second derivative of the constraints v with respect to x."""
         return cs.vertcat(
             self.ddk(x, p),
@@ -384,15 +386,15 @@ class LinearConstrainedOptimization(
         UnconstrainedOptimization.__init__(self)
         _LinearConstraints.__init__(self)
 
-    def u(self, x, p):
+    def u(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """Constraint array equivalent to k."""
         return self.k(x, p)
 
-    def du(self, x, p):
+    def du(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The first derivative of the constraint array u with respect to x."""
         return self.dk(x, p)
 
-    def ddu(self, x, p):
+    def ddu(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
         """The second derivative of the constraint array u with respect to x."""        
         return self.ddk(x, p)
 
