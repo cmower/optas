@@ -316,8 +316,7 @@ class LinearConstrainedQP(
     """
 
     def __init__(self):
-
-    """Constructor for the LinearConstrainedQP problem."""
+        """Constructor for the LinearConstrainedQP problem."""
         UnconstrainedQP.__init__(self)
         _LinearConstraints.__init__(self)
 
