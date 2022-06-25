@@ -2,6 +2,7 @@ import osqp
 import cvxopt
 import numpy as np
 import casadi as cs
+from typing import Union, Dict, List
 from abc import ABC, abstractmethod
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
 from scipy.sparse import csr_matrix
@@ -12,43 +13,89 @@ from .optimization import UnconstrainedQP,\
     LinearConstrainedOptimization, \
     NonlinearConstrainedOptimization
 
+ArrayLike = Union[cs.casadi.DM, np.ndarray, List]
+
 ################################################################
 # Solver base class
 
 class Solver(ABC):
 
-    """Base solver class"""
+    """Base solver interface class"""
 
     def __init__(self, optimization):
+        """Constructor for the base Solver class.
+
+        Parameters
+        ----------
+
+        optimization : Union[UnconstrainedQP,
+                             LinearConstrainedQP,
+                             NonlinearConstrainedQP,
+                             UnconstrainedOptimization,
+                             LinearConstrainedOptimization,
+                             NonlinearConstrainedOptimization]
+
+            The optimization problem created by calling the build
+            method of the OptimizationBuilder class.
+
+        """
         self.optimization = optimization
         self.x0 = cs.DM.zeros(optimization.nx)
         self.p = cs.DM.zeros(optimization.np)
 
     @abstractmethod
     def setup(self, *args, **kwargs):
-        """Setup solver, must return self"""
+        """Setup solver, note this method must return self"""
         pass
 
-    def reset_initial_seed(self, x0):
+    def reset_initial_seed(self, x0: Union[Dict[str, ArrayLike], ArrayLike]):
+        """Reset initial seed for the optimization problem.
+
+        Parameters
+        ----------
+
+        x0 : Union[Dict[str, ArrayLike], ArrayLike]
+            Specifies the initial seed. When x0 is an array, it is
+            used directly (and assumed to be the correct length). When
+            it is a dictionary containing arrays, then it should have
+            the same keys as the decision variable SXContainer in the
+            optimization problem - if any keys are unspecified then
+            the default values for the initial seed is zero.
+
+        """
         if isinstance(x0, dict):
             self.x0 = self.optimization.decision_variables.dict2vec(x0)
         else:
             self.x0 = cs.vec(cs.DM(x0))
 
-    def reset_parameters(self, p):
+    def reset_parameters(self, p: Union[Dict[str, ArrayLike], ArrayLike]) -> None:
+        """Reset the parameters for the optimization problem.
+
+        Parameters
+        ----------
+
+        p : Union[Dict[str, ArrayLike], ArrayLike]
+            Specifies the parameters. When p is an array, it is used
+            directly (and assumed to be the correct length). When it
+            is a dictionary containing arrays, then it should have the
+            same keys as the parameters SXContainer in the
+            optimization problem - if any keys are unspecified then
+            the default values for the initial seed is zero.
+
+        """
         if isinstance(p, dict):
             self.p = self.optimization.parameters.dict2vec(p)
         else:
             self.p = cs.vec(cs.DM(p))
 
     @abstractmethod
-    def solve(self):
-        """Solve the optimization problem"""
+    def solve(self) -> Dict[str, cs.casadi.DM]:
+        """Solve the optimization problem."""
         pass
 
     @abstractmethod
     def stats(self):
-        """Return stats from solver"""
+        """Return stats from solver."""
         pass
 
 ################################################################
@@ -56,17 +103,19 @@ class Solver(ABC):
 
 class CasADiSolver(Solver):
 
-    """
+    """This is a base class for CasADi solver interfaces."""
 
-    This is a base class for CasADi solvers. The following
-    attributes are expected to be set in the setup method:
-    - is_constrained
-    - _solver
-    - _lbg/_ubg (when is_constrained is True)
+    #
+    # Implementation note:
+    #
+    # The following attributes are expected to be set in the setup
+    # method:
+    # - is_constrained
+    # - _solver
+    # - _lbg/_ubg (when is_constrained is True)
+    #
 
-    """
-
-    def solve(self):
+    def solve(self) -> Dict[str, cs.casadi.DM]:
         solver_input = {
             'x0': self.x0,
             'p': self.p,
@@ -82,9 +131,29 @@ class CasADiSolver(Solver):
 
 class CasADiQPSolver(CasADiSolver):
 
-    """CasADi QP solver"""
+    """CasADi QP solver interface."""
 
-    def setup(self, solver_name, solver_options={}):
+    def setup(self, solver_name: str, solver_options: Dict={}) -> CasADiQPSolver:
+        """Setup casadi qp solver (casadi.qpsol).
+
+        Parameters
+        ----------
+
+        solver_name : str
+            The solver that you want to use to solve the optimization
+            problem.
+
+        solver_options : Dict
+            Options that are passed to nlpsol when the solver is
+            instantiated.
+
+        Returns
+        -------
+
+        solver : CasadiQPSolver
+            The instance of the solve (i.e. self).
+
+        """
 
         err_msg = "CasadiQPSolver cannot solve this problem\n\nSee https://web.casadi.org/docs/#quadratic-programming"
         opt_type = type(self.optimization)
@@ -112,10 +181,29 @@ class CasADiQPSolver(CasADiSolver):
 
 class CasADiNLPSolver(CasADiSolver):
 
-    """Casadi NLP solver"""
+    """Casadi NLP solver interface."""
 
-    def setup(self, solver_name, solver_options={}):
-        """Setup casadi nlp solver"""
+    def setup(self, solver_name: str, solver_options: Dict={}) -> CasADiNLPSolver:
+        """Setup casadi nlp solver (casadi.nlpsol).
+
+        Parameters
+        ----------
+
+        solver_name : str
+            The solver that you want to use to solve the optimization
+            problem.
+
+        solver_options : Dict
+            Options that are passed to nlpsol when the solver is
+            instantiated.
+
+        Returns
+        -------
+
+        solver : CasadiNLPSolver
+            The instance of the solve (i.e. self).
+
+        """
 
         x = self.optimization.decision_variables.vec()
         p = self.optimization.parameters.vec()
@@ -144,16 +232,35 @@ class CasADiNLPSolver(CasADiSolver):
 
 class OSQPSolver(Solver):
 
-    def setup(self, use_warm_start=True, settings={}):
+    """OSQP solver interface."""
 
+    def setup(self, use_warm_start: bool=True, settings: Dict={}) -> OSQPSolver:
+        """Setup solver.
+
+        Parameters
+        ----------
+
+        use_warm_start : bool (default is True)
+            When true, the initial seed x0 is used as a warm start.
+
+        settings : Dict
+            Settings that are passed to OSQP.
+
+        Returns
+        -------
+
+        solver : OSQPSolver
+            The instance of the solve (i.e. self).
+
+        """
         opt_type = type(self.optimization)
         assert opt_type in {UnconstrainedQP, LinearConstrainedQP}, "OSQP cannot solve this type of problem, see https://osqp.org/docs/solver/index.html"
         self.use_warm_start = use_warm_start
         self.is_constrained = opt_type == LinearConstrainedQP
-
+        self.settings = settings  # TODO: this is currently not used.
         return self
 
-    def solve(self):
+    def solve(self) -> Dict[str, cs.casadi.DM]:
 
         # Setup problem
         setup_input = {
@@ -185,7 +292,24 @@ class OSQPSolver(Solver):
 
 class CVXOPTSolver(Solver):
 
-    def setup(self, solver_settings={}):
+    """CVXOPT solver interface."""
+
+    def setup(self, solver_settings: Dict={}) -> CVXOPTSolver:
+        """Setup the cvxopt solver interface.
+
+        Parameters
+        ----------
+
+        solver_settings : Dict
+            Settings passed to the CVXOPT solver.
+
+        Returns
+        -------
+
+        solver : CVXOPTSolver
+            The instance of the solve (i.e. self).
+
+        """
         opt_type = type(self.optimization)
         assert opt_type in {UnconstrainedQP, LinearConstrainedQP}, "CVXOPT cannot solve this problem"
         self.is_constrained = opt_type == LinearConstrainedQP
@@ -210,7 +334,7 @@ class CVXOPTSolver(Solver):
 
 class ScipyMinimizeSolver(Solver):
 
-    """Scipy optimize.minimize solver"""
+    """Scipy solver (scipy.optimize.minimize) interface."""
 
     methods_req_jac = {'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B', 'TNC',
                        'SLSQP', 'dogleg', 'trust-ncg', 'trust-krylov',
@@ -221,7 +345,31 @@ class ScipyMinimizeSolver(Solver):
 
     methods_handle_constraints = {'COBYLA', 'SLSQP', 'trust-constr'}
 
-    def setup(self, method='SLSQP', tol=None, options=None):
+    def setup(self, method='SLSQP', tol=None, options=None) -> ScipyMinimizeSolver:
+        """Setup the Scipy solver.
+
+        Parameters
+        ----------
+
+        method : str
+            Type of solver.
+
+        tol : Optional[float] (default is None)
+            Tolerance for termination. When tol is specified, the
+            selected minimization algorithm sets some relevant
+            solver-specific tolerance(s) equal to tol. For detailed
+            control, use solver-specific options.
+
+        options : Optional[Dict]
+            A dictionary of solver options.
+
+        Returns
+        -------
+
+        solver : ScipyMinimizeSolver
+            The instance of the solve (i.e. self).
+
+        """
 
         # Input check
         opt_type = type(self.optimization)
