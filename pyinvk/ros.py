@@ -316,7 +316,7 @@ class RosNode:
             robot_name: str,
             position: Union[cs.casadi.DM, List, np.ndarray],
             velocity: Optional[Union[cs.casadi.DM, List, np.ndarray]]=None,
-            effort: Optional[Union[cs.casadi.DM, List, np.ndarray]]=None):
+            effort: Optional[Union[cs.casadi.DM, List, np.ndarray]]=None) -> None:
         """Publishes a joint state message to a robot in the ROS-PyBullet Interface.
 
         Parameters
@@ -345,7 +345,7 @@ class RosNode:
         topic = f'rpbi/{robot_name}/joint_states/target'
         self.pubs[topic].publish(msg)
 
-    def spin(self):
+    def spin(self) -> None:
         """Simply keeps python from exiting until this node is stopped."""
         rospy.loginfo('Started spinnning...')
         rospy.spin()
