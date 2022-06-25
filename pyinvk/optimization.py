@@ -312,7 +312,7 @@ class LinearConstrainedQP(
     quadratic cost function - note, P/M and q/c are derived from the
     given cost function and constraints (you don't have to explicitly
     state P/q/M/c).
-    
+
     """
 
     def __init__(self):
@@ -328,15 +328,15 @@ class NonlinearConstrainedQP(
         _NonlinearInequalityConstraints,
         _NonlinearConstraints):
 
-    """Nonlinear constrained Quadratic Program. 
+    """Nonlinear constrained Quadratic Program.
 
             min cost(x, p) where cost(x) = x'.P(p).x + x'.q
              x
 
-                subject to 
+                subject to
 
                     k(x, p) = M(p).x + c(p) >= 0,
-                    g(x) == 0, and 
+                    g(x) == 0, and
                     h(x) >= 0
 
     The problem is constrained by nonlinear constraints and has a
@@ -357,7 +357,7 @@ class UnconstrainedOptimization(_Optimization):
     """Unconstrained optimization problem.
 
             min cost(x, p)
-             x        
+             x
 
     The problem is unconstrained and the cost function is nonlinear in
     x.
@@ -368,7 +368,7 @@ class UnconstrainedOptimization(_Optimization):
 class LinearConstrainedOptimization(
         UnconstrainedOptimization,
         _LinearConstraints):
-    """Linear constrained optimization problem.                
+    """Linear constrained optimization problem.
 
 
         min cost(x, p)
@@ -382,7 +382,7 @@ class LinearConstrainedOptimization(
     """
 
     def __init__(self):
-        """Constructor for the LinearConstrainedOptimization problem."""        
+        """Constructor for the LinearConstrainedOptimization problem."""
         UnconstrainedOptimization.__init__(self)
         _LinearConstraints.__init__(self)
 
@@ -395,7 +395,7 @@ class LinearConstrainedOptimization(
         return self.dk(x, p)
 
     def ddu(self, x: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray], p: Union[cs.casadi.SX, cs.casadi.DM, np.ndarray]):
-        """The second derivative of the constraint array u with respect to x."""        
+        """The second derivative of the constraint array u with respect to x."""
         return self.ddk(x, p)
 
     @property
@@ -424,10 +424,10 @@ class NonlinearConstrainedOptimization(
         min cost(x, p)
          x
 
-            subject to 
+            subject to
 
                 k(x, p) = M(p).x + c(p) >= 0,
-                g(x) == 0, and 
+                g(x) == 0, and
                 h(x) >= 0
 
     The problem is constrained by nonlinear constraints and has a
@@ -436,7 +436,7 @@ class NonlinearConstrainedOptimization(
     """
 
     def __init__(self):
-        """Constructor for the NonlinearConstrainedOptimization problem."""                
+        """Constructor for the NonlinearConstrainedOptimization problem."""
         UnconstrainedOptimization.__init__(self)
         _LinearConstraints.__init__(self)
         _NonlinearEqualityConstraints.__init__(self)
