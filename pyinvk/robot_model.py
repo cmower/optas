@@ -1,4 +1,5 @@
 import casadi as cs
+from typing import Dict
 from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 from .tf import transformation_matrix_fixed, \
     transformation_matrix_prismatic, \
@@ -13,6 +14,30 @@ class RobotModel:
     """Robot model class"""
 
     def __init__(self, urdf_filename, base_link_name='baselink', base_xyz=[0.0, 0.0, 0.0], base_rpy=[0.0, 0.0, 0.0], base_joint_name='basejoint'):
+        """Constructor for the RobotModel class.
+
+        Parameters
+        ----------
+
+        urdf_filename : str
+            Filename for the URDF file.
+
+        base_link_name : str (default is 'baselink')
+            Name for the base link of the URDF. This allows you to
+            position several robots with respect to a common frame.
+
+        base_xyz : list[float] (default is [0., 0., 0.])
+            The xyz position of the base link (must be a list of three elements).
+
+        base_rpy : list[float] (default is [0., 0., 0.])
+            The rpy orientation of the base link (must be a list of
+            three elements). The orientation is defined by the
+            roll-pitch-yaw Euler angles.
+
+        base_joint_name : str (default is 'basejoint')
+            The name for the base joint.
+
+        """ 
 
         # Load robot from urdf
         self.robot = URDF.from_xml_file(urdf_filename)
@@ -46,6 +71,7 @@ class RobotModel:
         return [jnt.limit.upper for jnt in self.robot.joints if jnt.type != 'fixed']
 
     def _get_joint_chain(self, parent, child):
+        """Private method for returning the joint chain."""
         return [
             self.robot.joint_map[name]
             for name in self.robot.get_chain(parent, child)
@@ -54,6 +80,7 @@ class RobotModel:
 
     @staticmethod
     def _get_joint_origin(joint):
+        """Private/static method for returning the joint origin."""
         if joint.origin is not None:
             xyz = cs.DM(joint.origin.xyz)
             rpy = cs.DM(joint.origin.rpy)
@@ -64,13 +91,44 @@ class RobotModel:
 
     @staticmethod
     def _get_joint_axis(joint):
+        """Private/state method for returning the joint axis."""
         if joint.axis is not None:
             axis = cs.DM(joint.axis)
         else:
             axis = cs.DM([1.0, 0.0, 0.0])
         return axis
 
-    def fk(self, parent, child):
+    def fk(self, parent: str, child: str) -> Dict[str, cs.casadi.Function]:
+        """Forward kinematics.
+
+        Parameters
+        ----------
+
+        parent : str
+            The parent link name.
+
+        child : str
+            The child link name.
+
+        Returns
+        -------
+
+        fk : Dict[str, casadi.casadi.Function] 
+
+        The foward kinematics containing the following functions. Each
+        function is defined with respect to the joint configuration q
+        with ndof elements.
+        - 'T': 4-by-4 array defining the transformation frame between
+          the parent and child links.
+        - 'pos': position of the child link.
+        - 'pos_jac': the jacobian array of the position.
+        - 'eul': Euler angles defined the orientation between the
+          parent and child links.
+        - 'eul_jac': Jacobian of the Euler angles.
+        - 'quat': Quaternion defining the orientation between the
+          parent and child link.
+        
+        """
 
         # Initialize variables
         q = cs.SX.sym('q', self.ndof)
