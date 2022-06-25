@@ -1,6 +1,12 @@
 import casadi as cs
+import numpy as np
+from typing import Union, List
 
-def quaternion_product(quata, quatb):
+ArrayLike = Union[cs.casadi.SX, cs.casadi.DM, np.ndarray, List]
+CasADiArray = Union[cs.casadi.SX, cs.casadi.DM]
+
+def quaternion_product(quata: ArrayLike, quatb: ArrayLike) -> CasADiArray:
+    """Compute the quaternion product quata.quatb."""
     quata_ = cs.vec(quata)
     quatb_ = cs.vec(quatb)
     x0, y0, z0, w0 = quata_[0], quata_[1], quata_[2], quata_[3]
@@ -12,7 +18,8 @@ def quaternion_product(quata, quatb):
         w0*w1 - x0*x1 - y0*y1 - z0*z1
     )
 
-def quaternion_fixed(rpy):
+def quaternion_fixed(rpy: ArrayLike) -> CasADiArray:
+    """Quaternion for a fixed joint."""
 
     rpy_ = cs.vec(rpy)
 
@@ -38,7 +45,8 @@ def quaternion_fixed(rpy):
 
     return cs.vertcat(x, y, z, w)/n
 
-def quaternion_revolute(xyz, rpy, axis, qi):
+def quaternion_revolute(xyz: ArrayLike, rpy: ArrayLike, axis: ArrayLike, qi: ArrayLike) -> CasADiArray:
+    """Quaternion for a revolute joint."""
 
     axis_ = cs.vec(axis)
 
@@ -73,7 +81,10 @@ def quaternion_revolute(xyz, rpy, axis, qi):
 
     return quaternion_product(q_or, q_j)
 
-def euler_from_transformation_matrix(T):
+def euler_from_transformation_matrix(T: ArrayLike) -> CasADiArray:
+    """Get the Euler angles from a transformation matrix."""
+    if isinstance(T, list):
+        T = cs.DM(T)
     R = T[:3, :3]
     eps = float(cs.np.finfo(float).eps * 4.0)
     i, j, k = 0, 1, 2
@@ -92,7 +103,8 @@ def euler_from_transformation_matrix(T):
         ),
     )
 
-def rotation_matrix_fixed(rpy):
+def rotation_matrix_fixed(rpy: ArrayLike) -> CasADiArray:
+    """Rotation matrix for a fixed joint."""
 
     rpy_ = cs.vec(rpy)
 
@@ -115,20 +127,23 @@ def rotation_matrix_fixed(rpy):
         cs.horzcat(  -sp,             cp*sr,             cp*cr),
     )
 
-def transformation_matrix_fixed(xyz, rpy):
+def transformation_matrix_fixed(xyz: ArrayLike, rpy: ArrayLike) -> CasADiArray:
+    """Transformation matrix for a fixed joint."""
     return cs.vertcat(
         cs.horzcat(rotation_matrix_fixed(rpy), cs.vec(xyz)),
         cs.DM([[0.0, 0.0, 0.0, 1.0]]),
     )
 
-def transformation_matrix_prismatic(xyz, rpy, axis, qi):
+def transformation_matrix_prismatic(xyz: ArrayLike, rpy: ArrayLike, axis: ArrayLike, qi: ArrayLike) -> CasADiArray:
+    """Transformation matrix for a prismatic joint."""
     R = rotation_matrix_fixed(rpy)
     return cs.vertcat(
         cs.horzcat(R, cs.vec(xyz) + qi*R @ cs.vec(axis)),
         cs.DM([[0.0, 0.0, 0.0, 1.0]]),
     )
 
-def transformation_matrix_revolute(xyz, rpy, axis, qi):
+def transformation_matrix_revolute(xyz: ArrayLike, rpy: ArrayLike, axis: ArrayLike, qi: ArrayLike) -> CasADiArray:
+    """Transformation matrix for a revolute joint."""
 
     # Setup
     xyz_ = cs.vec(xyz)
