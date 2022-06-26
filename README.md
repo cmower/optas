@@ -1,5 +1,9 @@
 # pyinvk
 
+<p align="center">
+  <img src="doc/logo.png" width="50">
+</p>
+
 ![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
 
 `pyinvk` is a library that allows you to setup an inverse kinematic problem for arbitrary time-horizon and optional constraints.
