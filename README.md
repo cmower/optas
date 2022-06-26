@@ -1,8 +1,8 @@
-# pyinvk
-
 <p align="center">
-  <img src="doc/logo.png" width="50">
+  <img src="doc/logo.png" width="50" align="right">
 </p>
+
+# pyinvk
 
 ![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
 
