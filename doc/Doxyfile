@@ -44,7 +44,7 @@ PROJECT_NUMBER         = 2.0
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "A library for inverse kinematics, motion planning, and model predictive control."
+PROJECT_BRIEF          = "A library for optimization-based inverse kinematics, motion planning, and model predictive control."
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
