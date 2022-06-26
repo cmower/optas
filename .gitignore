@@ -130,3 +130,7 @@ dmypy.json
 
 # Emacs backups
 *~
+
+# Documentation
+doc/html/
+doc/latex/
