@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/logo.png" width="50" align="right">
+  <img src="doc/logo.png" width="60" align="right">
 </p>
 
 # PyInvK
