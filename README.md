@@ -36,3 +36,8 @@ pip install pyinvk
 1. `$ git clone git@github.com:cmower/pyinvk.git`
 2. `$ cd pyinvk`
 3. `$ pip install .`
+
+# Build documentation
+
+1. `cd doc/`
+2. `doxygen`
