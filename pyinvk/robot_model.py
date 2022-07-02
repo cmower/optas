@@ -37,7 +37,7 @@ class RobotModel:
         base_joint_name : str (default is 'basejoint')
             The name for the base joint.
 
-        """ 
+        """
 
         # Load robot from urdf
         self.robot = URDF.from_xml_file(urdf_filename)
@@ -113,7 +113,7 @@ class RobotModel:
         Returns
         -------
 
-        fk : Dict[str, casadi.casadi.Function] 
+        fk : Dict[str, casadi.casadi.Function]
 
         The foward kinematics containing the following functions. Each
         function is defined with respect to the joint configuration q
@@ -127,7 +127,7 @@ class RobotModel:
         - 'eul_jac': Jacobian of the Euler angles.
         - 'quat': Quaternion defining the orientation between the
           parent and child link.
-        
+
         """
 
         # Initialize variables
