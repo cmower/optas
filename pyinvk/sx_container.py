@@ -1,7 +1,7 @@
 import collections
 import casadi as cs
 import numpy as np
-from typing import Union
+from typing import Union, List
 
 SX = cs.casadi.SX
 DM = cs.casadi.DM
@@ -9,6 +9,8 @@ DM = cs.casadi.DM
 class SXContainer(collections.OrderedDict):
 
     """Container for SX variables"""
+
+    is_discrete = {} # Dict[str, bool]: labels for each item in dict, true means variables are discrete
 
     def __add__(self, other):
         """Add two SXContainer's"""
@@ -18,6 +20,7 @@ class SXContainer(collections.OrderedDict):
             out[label] = value
         for label, value in other.items():
             out[label] = value
+        out.is_discrete = {**self.is_discrete, **other.is_discrete}
         return out
 
     def __setitem__(self, label: str, value: SX) -> None:
@@ -25,6 +28,23 @@ class SXContainer(collections.OrderedDict):
         assert isinstance(value, (SX, float)), f"value must be of type casadi.casadi.SX/float, not {type(value)}"
         if label in self: raise KeyError(f"'{label}' already exists")
         super().__setitem__(label, cs.SX(value))
+        self.is_discrete[label] = False  # assume non-discrete, otherwise variable_is_discrete(..) should be called
+
+    def variable_is_discrete(self, label: str) -> None:
+        assert label in self, f"'{label}' was not found"
+        self.is_discrete[label] = True
+
+    def has_discrete_variables(self) -> bool:
+        """True if any of the variables in container are discrete, False otherwise."""
+        return any(self.is_discrete.values())
+
+    def discrete(self) -> List[bool]:
+        """Returns a list containing discrete classification of each variable."""
+        out = []
+        for label, value in self.items():
+            m, n = values.shape
+            out += [self.is_discrete[label]]*(m*n)
+        return out
 
     def vec(self) -> SX:
         """Vectorize SXContainer"""
