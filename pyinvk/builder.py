@@ -3,12 +3,12 @@ import numpy as np
 from typing import Dict, List, Optional, Union
 from .robot_model import RobotModel
 from .sx_container import SXContainer
-from .optimization import UnconstrainedQP,\
-    LinearConstrainedQP, \
-    NonlinearConstrainedQP, \
-    UnconstrainedOptimization, \
-    LinearConstrainedOptimization, \
-    NonlinearConstrainedOptimization
+from .optimization import QuadraticCostUnconstrained,\
+    QuadraticCostLinearConstraints,\
+    QuadraticCostNonlinearConstraints,\
+    NonlinearCostUnconstrained,\
+    NonlinearCostLinearConstraints,\
+    NonlinearCostNonlinearConstraints
 
 class OptimizationBuilder:
 
@@ -69,7 +69,8 @@ class OptimizationBuilder:
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self.parameters = SXContainer()
         self.cost_terms = SXContainer()
-        self.lin_constraints = SXContainer()
+        self.lin_eq_constraints = SXContainer()
+        self.lin_ineq_constraints = SXContainer()
         self.ineq_constraints = SXContainer()
         self.eq_constraints = SXContainer()
 
@@ -209,49 +210,6 @@ class OptimizationBuilder:
         self.parameters[name] = p
         return p
 
-    def add_lin_constraint(
-            self,
-            name: str,
-            lbc: Union[cs.casadi.SX, cs.casadi.DM],
-            c: cs.casadi.SX,
-            ubc: Union[cs.casadi.SX, cs.casadi.DM]) -> None:
-        """Add linear constraint.
-
-        Adds a constraint that is assumed to be linear in x (the
-        decision variables). When the constraint is not linear, an
-        AssertionError is thrown. Note, the constraint is defined as
-
-            lbc <= c <= ubc.
-
-        This is included in the linear constraint variable container
-        as two constraints, i.e.
-
-            c - lbc >= 0, and
-            ubc - c >= 0.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the linear constraint.
-
-        lbc : Union[cs.casadi.SX, cs.casadi.DM]
-            Lower bound for constraint.
-
-        c : Union[cs.casadi.SX, cs.casadi.DM]
-            The constraint array.
-
-        ubc : Union[cs.casadi.SX, cs.casadi.DM]
-            Upper bound for the constraint.
-
-        """
-        x = self.decision_variables.vec()
-        lb = c - lbc
-        ub = ubc - c
-        assert cs.is_linear(lb, x) and cs.is_linear(ub, x), "constraint not linear"
-        self.lin_constraints[name+'_lb'] = lb
-        self.lin_constraints[name+'_ub'] = ub
-
     def add_ineq_constraint(
             self,
             name: str,
@@ -295,11 +253,11 @@ class OptimizationBuilder:
         lb = c - lbc
         ub = ubc - c
         if cs.is_linear(lb, x) and cs.is_linear(ub, x):
-            print(f"[WARN] given constraint '{name}' is linear in x, adding as linear contraint")
-            self.add_lin_constraint(name, lbc, c, ubc)
-            return
-        self.ineq_constraints[name+'_lb'] = lb
-        self.ineq_constraints[name+'_ub'] = ub
+            self.lin_ineq_constraints[name+'_lb'] = lb
+            self.lin_ineq_constraints[name+'_ub'] = ub
+        else:
+            self.ineq_constraints[name+'_lb'] = lb
+            self.ineq_constraints[name+'_ub'] = ub
 
     def add_eq_constraint(
             self,
@@ -330,25 +288,30 @@ class OptimizationBuilder:
             array with the same shape as lhsc.
 
         """
+        x = self.decision_variables.vec()
         if rhsc is None:
             rhsc = cs.DM.zeros(*lhsc.shape)
-        x = self.decision_variables.vec()
         eq = lhsc - rhsc
         if cs.is_linear(eq, x):
-            print(f"[WARN] given constraint '{name}' is linear in x, adding as linear contraint")
-            self.add_lin_constraint(name, lhsc, rhsc, lhsc) # (lhs=rhs) is equiv to (lhs <= rhs and rhs <= lhs)
-            return
-        self.eq_constraints[name] = eq
+            self.lin_eq_constraints[name] = eq
+        else:
+            self.eq_constraints[name] = eq
 
-    def build(self) -> Union[UnconstrainedQP,\
-                             LinearConstrainedQP, \
-                             NonlinearConstrainedQP, \
-                             UnconstrainedOptimization, \
-                             LinearConstrainedOptimization, \
-                             NonlinearConstrainedOptimization]:
+    def is_cost_function_quadratic(self):
+
+        # Get decision variables and parameters as SX column vectors
+        x = self.decision_variables.vec()
+        p = self.parameters.vec()
+
+        # Get forward functions
+        f = cs.sum1(self.cost_terms.vec())
+
+        return cs.is_quadratic(f, x)
+
+    def build(self):
         """Build the optimization problem.
 
-        For the given 
+        For the given
 
         - decision variables (x),
         - parameters (p),
@@ -358,7 +321,7 @@ class OptimizationBuilder:
         the approrpriate optimization problem is built. The type of
         the optimization problem is chosen depending on the cost
         function and constraints. The available problem types are as
-        follows. Note, 
+        follows. Note,
 
         - dash "'" means transpose and full-stop "." means the dot
           product, or matrix-matrix/matrix-vector multiplication,
@@ -370,11 +333,11 @@ class OptimizationBuilder:
         - the problem type determines the solvers that are available
           to solve the problem.
 
-        UnconstrainedQP: 
-        
+        UnconstrainedQP:
+
                 min cost(x, p) where cost(x, p) = x'.P(p).x + x'.q(p)
                  x
-        
+
             The problem is unconstrained, and has quadratic cost
             function - note, P and q are derived from the given cost
             function (you don't have to explicitly state P/q).
@@ -396,10 +359,10 @@ class OptimizationBuilder:
                 min cost(x, p) where cost(x) = x'.P(p).x + x'.q
                  x
 
-                subject to 
+                subject to
 
                     k(x, p) = M(p).x + c(p) >= 0,
-                    g(x) == 0, and 
+                    g(x) == 0, and
                     h(x) >= 0
 
             The problem is constrained by nonlinear constraints and
@@ -410,7 +373,7 @@ class OptimizationBuilder:
         UnconstrainedOptimization:
 
                 min cost(x, p)
-                 x        
+                 x
 
             The problem is unconstrained and the cost function is
             nonlinear in x.
@@ -430,10 +393,10 @@ class OptimizationBuilder:
                 min cost(x, p)
                  x
 
-                subject to 
+                subject to
 
                     k(x, p) = M(p).x + c(p) >= 0,
-                    g(x) == 0, and 
+                    g(x) == 0, and
                     h(x) >= 0
 
             The problem is constrained by nonlinear constraints and
@@ -442,7 +405,7 @@ class OptimizationBuilder:
         Returns
         -------
 
-        opt_problem : Union[UnconstrainedQP, 
+        opt_problem : Union[UnconstrainedQP,
                             LinearConstrainedQP,
                             NonlinearConstrainedQP,
                             UnconstrainedOptimization,
@@ -455,67 +418,61 @@ class OptimizationBuilder:
 
         """
 
-        # Get decision variables and parameters as SX column vectors
-        x = self.decision_variables.vec()
-        p = self.parameters.vec()
-
-        # Helpful method
-        def functionize(name, fun):
-
-            # Setup function input
-            fun_input = [x, p]
-
-            # Function
-            Fun = cs.Function(name, fun_input, [fun])
-
-            # Jacobian
-            jac = cs.jacobian(fun, x)
-            Jac = cs.Function('d'+name, fun_input, [jac])
-
-            # Hessian
-            hess = cs.jacobian(jac, x)
-            Hess = cs.Function('dd'+name, fun_input, [hess])
-
-            return Fun, Jac, Hess
-
-        # Get forward functions
-        f = cs.sum1(self.cost_terms.vec())
-        k = self.lin_constraints.vec()
-        g = self.eq_constraints.vec()
-        h = self.ineq_constraints.vec()
-
         # Setup optimization
-        nlin = self.lin_constraints.numel()  # no. linear constraints
-        nnlin = self.eq_constraints.numel() + self.ineq_constraints.numel()  # no. nonlin constraints
-        if cs.is_quadratic(f, x):
+        nlin = self.lin_ineq_constraints.numel()+self.lin_eq_constraints.numel()
+        nnlin = self.ineq_constraints.numel()+self.eq_constraints.numel()
+
+        if self.is_cost_function_quadratic():
             # True -> use QP formulation
             if nnlin > 0:
-                opt = NonlinearConstrainedQP()
+                opt = QuadraticCostNonlinearConstraints(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                    self.lin_eq_constraints,
+                    self.lin_ineq_constraints,
+                    self.eq_constraints,
+                    self.ineq_constraints,
+                )
             elif nlin > 0:
-                opt = LinearConstrainedQP()
+                opt = QuadraticCostLinearConstraints(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                    self.lin_eq_constraints,
+                    self.lin_ineq_constraints,
+                )
             else:
-                opt = UnconstrainedQP()
+                opt = QuadraticCostUnconstrained(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                )
         else:
             # False -> use (nonlinear) Optimization formulation
             if nnlin > 0:
-                opt = NonlinearConstrainedOptimization()
+                opt = NonlinearCostNonlinearConstraints(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                    self.lin_eq_constraints,
+                    self.lin_ineq_constraints,
+                    self.eq_constraints,
+                    self.ineq_constraints,
+                )
             elif nlin > 0:
-                opt = LinearConstrainedOptimization()
+                opt = NonlinearCostLinearConstraints(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                    self.lin_eq_constraints,
+                    self.lin_ineq_constraints,
+                )
             else:
-                opt = UnconstrainedOptimization()
-
-        # Setup constraints
-        if nnlin > 0:
-            opt.k, opt.dk, opt.ddk = functionize('k', k)
-            opt.g, opt.dg, opt.ddg = functionize('g', g)
-            opt.h, opt.dh, opt.ddh = functionize('h', h)
-        if nlin > 0:
-            opt.k, opt.dk, opt.ddk = functionize('k', k)
-
-        # Setup cost function and other variables
-        opt.f, opt.df, opt.ddf = functionize('f', f)
-        opt.decision_variables = self.decision_variables
-        opt.parameters = self.parameters
-        opt.cost_terms = self.cost_terms
+                opt = NonlinearCostUnconstrained(
+                    self.decision_variables,
+                    self.parameters,
+                    self.cost_terms,
+                )
 
         return opt
