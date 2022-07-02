@@ -1,6 +1,6 @@
 import casadi as cs
 import numpy as np
-from typing import Dict, List, Union, Callable
+from typing import Dict, List, Union, Callable, Optional, Callable
 from .robot_model import RobotModel
 try:
     import rospy
@@ -113,7 +113,7 @@ class RosNode:
         """Private method for ensuring the robot_name exists in the given robots models."""
         assert robot_name in self.robots, f"did not recognize robot with name '{robot_name}'"
 
-    def setup_rpbi_joint_state_subscriber(self, robot_name: str, callback: Optional[Callback]=None) -> None:
+    def setup_rpbi_joint_state_subscriber(self, robot_name: str, callback: Optional[Callable]=None) -> None:
         """Starts a subscriber for the joint states for a given robot.
 
         The callback simply logs the recieved messages in the msgs
