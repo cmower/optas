@@ -2,7 +2,7 @@ import sys
 import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
-from pyinvk.solver import CasADiNLPSolver, ScipyMinimizeSolver
+from pyinvk.solver import CasADiSolver, ScipyMinimizeSolver
 from pyinvk.ros import RosNode
 
 """
@@ -30,7 +30,6 @@ def main():
     robots = {'kuka_lwr_0': robot0, 'kuka_lwr_1': robot1}
     builder = OptimizationBuilder(robots)
 
-
     qnext0 = builder.get_state('kuka_lwr_0', 0)
     fk0 = robot0.fk('baselink', 'lwr_arm_7_link')
     pos0 = fk0['pos']
@@ -54,7 +53,7 @@ def main():
     # Setup solver
     use_scipy = False
     if not use_scipy:
-        solver = CasADiNLPSolver(optimization)
+        solver = CasADiSolver(optimization)
         solver.setup('ipopt')
     else:
         solver = ScipyMinimizeSolver(optimization)

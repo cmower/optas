@@ -2,7 +2,7 @@ import time
 import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
-from pyinvk.solver import CasADiNLPSolver, ScipyMinimizeSolver
+from pyinvk.solver import CasADiSolver, ScipyMinimizeSolver
 from pyinvk.ros import RosNode
 
 def main():
@@ -12,14 +12,14 @@ def main():
     robot = RobotModel(urdf_filename)
 
     robots = {'kuka_lwr': robot}  # multiple robots can be defined, see ex2.py
-    builder = OptimizationBuilder(robots, T=1, derivs=[0])
+    builder = OptimizationBuilder(robots, T=1, qderivs=[0])
     qnext = builder.get_state('kuka_lwr', 0)
     fk = robot.fk('baselink', 'lwr_arm_7_link')
     pos = fk['pos']
     pos_goal = builder.add_parameter('pos_goal', 3)
     builder.add_cost_term('goal', cs.sumsqr(pos(qnext) - pos_goal))
 
-    builder.add_lin_constraint(
+    builder.add_ineq_constraint(
         'pos_lim',
         robot.lower_actuated_joint_limits,
         qnext,
@@ -33,7 +33,7 @@ def main():
     )    
     optimization = builder.build()
 
-    # solver = CasADiNLPSolver(optimization).setup('ipopt')
+    # solver = CasADiSolver(optimization).setup('ipopt')
     solver = ScipyMinimizeSolver(optimization).setup()
     
     # Setup ROS

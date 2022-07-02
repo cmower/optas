@@ -2,7 +2,7 @@ import time
 import casadi as cs
 from pyinvk.robot_model import RobotModel
 from pyinvk.builder import OptimizationBuilder
-from pyinvk.solver import CasADiNLPSolver
+from pyinvk.solver import CasADiSolver
 from pyinvk.ros import RosNode
 
 def main():
@@ -12,7 +12,7 @@ def main():
     robot = RobotModel(urdf_filename)
 
     robots = {'kuka_lwr': robot}  # multiple robots can be defined, see ex2.py
-    builder = OptimizationBuilder(robots, T=2, derivs=[1])
+    builder = OptimizationBuilder(robots, T=2, qderivs=[1])
     dt = 0.1
     qcurr = builder.add_parameter('qcurr', robot.ndof)
     fk = robot.fk('baselink', 'lwr_arm_7_link')
@@ -20,11 +20,11 @@ def main():
     pos_jac = fk['pos_jac']
     vel_goal = builder.add_parameter('vel_goal', 3)
     J = pos_jac(qcurr)
-    dq = builder.get_state('kuka_lwr', 0, deriv=1)
+    dq = builder.get_state('kuka_lwr', 0, qderiv=1)
     builder.add_cost_term('goal', cs.sumsqr(J@dq - vel_goal))
     builder.add_cost_term('min_vel', cs.sumsqr(dq))
     qnext = qcurr + dt*dq
-    builder.add_lin_constraint(
+    builder.add_ineq_constraint(
         'pos_lim',
         robot.lower_actuated_joint_limits,
         qnext,
@@ -38,7 +38,7 @@ def main():
     )
     optimization = builder.build()
 
-    solver = CasADiNLPSolver(optimization).setup('sqpmethod')
+    solver = CasADiSolver(optimization).setup('sqpmethod')
 
     # Setup ROS
     node = RosNode(robots, 'pyinvk_ex_lin_constrained_qp_node')
