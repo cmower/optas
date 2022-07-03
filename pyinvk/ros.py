@@ -196,11 +196,12 @@ class RosNode:
         robot_model = self.robots[robot_name]
         topic = f'rpbi/{robot_name}/joint_states'
         joint_state = self.msgs.get(topic)
-        msg = resolve_joint_order(
-            joint_state,
-            robot_model.actuated_joint_names
-        )
-        return cs.DM(msg.position)
+        if joint_state:
+            msg = resolve_joint_order(
+                joint_state,
+                robot_model.actuated_joint_names
+            )
+            return cs.DM(msg.position)
 
     def wait_for_joint_state(self, robot_name: str, timeout: Optional[float]=None) -> cs.casadi.DM:
         """Receive one message from JointState topic for a given robot in the ROS-PyBullet Interface.
