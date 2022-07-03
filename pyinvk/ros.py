@@ -138,7 +138,7 @@ class RosNode:
 
         """
         self._assert_robot(robot_name)
-        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method rquires the ROS-PyBullet Interface"
+        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method requires the ROS-PyBullet Interface"
         topic = f'rpbi/{robot_name}/joint_states'
         self.start_subscriber(topic, JointState, callback=callback)
 
@@ -192,7 +192,7 @@ class RosNode:
 
         """
         self._assert_robot(robot_name)
-        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method rquires the ROS-PyBullet Interface"
+        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method requires the ROS-PyBullet Interface"
         robot_model = self.robots[robot_name]
         topic = f'rpbi/{robot_name}/joint_states'
         joint_state = self.msgs.get(topic)
@@ -220,7 +220,7 @@ class RosNode:
 
         """
         self._assert_robot(robot_name)
-        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method rquires the ROS-PyBullet Interface"
+        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method requires the ROS-PyBullet Interface"
         topic = f'rpbi/{robot_name}/joint_states'
         robot_model = self.robots[robot_name]
         msg = resolve_joint_order(
@@ -256,7 +256,7 @@ class RosNode:
 
         """
         self._assert_robot(robot_name)
-        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method rquires the ROS-PyBullet Interface"
+        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method requires the ROS-PyBullet Interface"
         topic = f'rpbi/{robot_name}/joint_states/target'
         pub = rospy.Publisher(topic, JointState, queue_size=queue_size)
         self.pubs[topic] = pub
@@ -341,7 +341,7 @@ class RosNode:
             when non-None.
         """
         self._assert_robot(robot_name)
-        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method rquires the ROS-PyBullet Interface"
+        assert ROS_PYBULLET_INTERFACE_AVAILABLE, "this method requires the ROS-PyBullet Interface"
         msg = self.pack_joint_state_msg(robot_name, position, velocity=velocity, effort=effort)
         topic = f'rpbi/{robot_name}/joint_states/target'
         self.pubs[topic].publish(msg)
