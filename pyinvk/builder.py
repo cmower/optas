@@ -74,6 +74,29 @@ class OptimizationBuilder:
         self.ineq_constraints = SXContainer()
         self.eq_constraints = SXContainer()
 
+    def print_desc(self):
+
+        def print_(name, d):
+            n = d.numel()
+            print(name.capitalize()+f' ({n}):')
+            for label, value in d.items():
+                print(f"  {label} {value.shape}")
+
+        if self.decision_variables.numel() > 0:
+            print_("decision variables", self.decision_variables)
+        if self.parameters.numel() > 0:
+            print_("parameters", self.parameters)
+        if self.cost_terms.numel() > 0:
+            print_("cost terms", self.cost_terms)
+        if self.lin_eq_constraints.numel() > 0:
+            print_("linear equality constraints", self.lin_eq_constraints)
+        if self.lin_ineq_constraints.numel() > 0:
+            print_("linear inequality constraints", self.lin_ineq_constraints)
+        if self.eq_constraints.numel() > 0:
+            print_("equality constraints", self.eq_constraints)
+        if self.ineq_constraints.numel() > 0:
+            print_("inequality constraints", self.ineq_constraints)
+
     @staticmethod
     def statename(robot_name: str, qderiv: int) -> str:
         """Returns the state name for a given time derivative of q.
@@ -100,6 +123,10 @@ class OptimizationBuilder:
 
         """
         return robot_name + '/' + 'd'*qderiv + 'q'
+
+    def _is_linear(self, y):
+        x = self.decision_variables.vec()
+        return cs.is_linear(y, x)
 
     def get_state(
             self,
@@ -296,6 +323,49 @@ class OptimizationBuilder:
             self.lin_eq_constraints[name] = eq
         else:
             self.eq_constraints[name] = eq
+
+    def add_dynamic_integr_constraints(self, robot_name, qderiv, dt):
+        assert qderiv > 0, "qderiv must be greater than 0"
+
+        qd = self.get_states(robot_name, qderiv)
+        q = self.get_states(robot_name, qderiv-1)
+        n = qd.shape[1]
+        if self.derivs_align:
+            n -= 1
+            qd = qd[:, :-1]
+
+        dt = cs.vec(dt)
+        if dt.shape[0] == 1:
+            dt = dt*cs.DM.ones(n)
+        else:
+            assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
+        dt = cs.vec(dt).T
+
+        ndof = self.robots[robot_name].ndof
+        qd_sym = cs.SX.sym('qd', ndof)
+        q0_sym = cs.SX.sym('q1', ndof)
+        q1_sym = cs.SX.sym('q1', ndof)
+        dt_sym = cs.SX.sym('dt')
+
+        integr = cs.Function(
+            'integr',
+            [q0_sym, q1_sym, qd_sym, dt_sym],
+            [q0_sym + dt_sym*qd_sym - q1_sym]
+        ).map(n)
+
+        self.add_eq_constraint(
+            f'__dynamic_integr_{robot_name}_{qderiv}__',
+            integr(q[:,:-1], q[:,1:], qd, dt),
+        )
+
+    def add_joint_position_limit_constraints(self, robot_name):
+        assert robot_name in self.robots, f"did not recognize robot '{robot_name}'"
+        robot = self.robots[robot_name]
+        qlo = robot.lower_actuated_joint_limits
+        qup = robot.upper_actuated_joint_limits
+        q = self.get_states(robot_name)
+        self.add_ineq_constraint(f'{robot_name}_joint_limit_lower', qlo, q)
+        self.add_ineq_constraint(f'{robot_name}_joint_limit_upper', q, qup)
 
     def is_cost_function_quadratic(self):
 
