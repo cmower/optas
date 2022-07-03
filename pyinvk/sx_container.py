@@ -71,7 +71,7 @@ class SXContainer(collections.OrderedDict):
         out_vec = cs.DM()
         for label, value in self.items():
             v = d.get(label, cs.DM.zeros(*value.shape))
-            out_vec = cs.vertcat(out_vec, v)
+            out_vec = cs.vertcat(out_vec, cs.vec(v))
         return out_vec
 
     def zero(self) -> dict:
