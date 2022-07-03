@@ -5,20 +5,6 @@ from pyinvk.builder import OptimizationBuilder
 from pyinvk.solver import CasADiSolver, ScipyMinimizeSolver
 from pyinvk.ros import RosNode
 
-"""
-
-In this example, we demonstrate the libraries ability to interface
-with ROS and the ROS-PyBullet Interface - these are requirements to
-run this example. Furthermore, the example demonstrates how to
-setup/solve problems with more than one robot.
-
-Before running this example, in another terminal execute the
-following.
-
-$ roslaunch rpbi_examples run_dual_kukas.launch
-
-"""
-
 def main():
 
     print("Starting pyinvk example 2")
