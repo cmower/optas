@@ -167,11 +167,21 @@ class RobotModel:
         eul = euler_from_transformation_matrix(T)
         pos = T[:3, 3]
 
+        # Get jacobians
+        pos_jac = cs.jacobian(pos, q)
+        eul_jac = cs.jacobian(eul, q)
+        quat_jac = cs.jacobian(quat, q)
+
         return {
             'T': cs.Function('T', [q], [T]),
             'pos': cs.Function('pos', [q], [pos]),
-            'pos_jac': cs.Function('pos_jac', [q], [cs.jacobian(pos, q)]),
+            'pos_jac': cs.Function('pos_jac', [q], [pos_jac]),
             'eul': cs.Function('eul', [q], [eul]),
-            'eul_jac': cs.Function('eul_jac', [q], [cs.jacobian(eul, q)]),
+            'eul_jac': cs.Function('eul_jac', [q], [eul_jac]),
             'quat': cs.Function('quat', [q], [quat]),
+            'quat_jac': cs.Function('quat_jac', [q], [quat_jac]),
+            'pos_quat': cs.Function('pos_quat', [q], [cs.vertcat(pos, quat)]),
+            'pos_eul': cs.Function('pos_eul', [q], [cs.vertcat(pos, eul)]),
+            'pos_quat_jac': cs.Function('pos_quat_jac', [q], [cs.vertcat(pos_jac, quat_jac)]),
+            'pos_eul_jac': cs.Function('pos_eul_jac', [q], [cs.vertcat(pos_jac, eul_jac)]),
         }
