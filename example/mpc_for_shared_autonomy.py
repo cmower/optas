@@ -58,7 +58,7 @@ def main():
     # Setup PyInvK
     urdf_filename = 'kuka_lwr.urdf'
     robot = RobotModel(urdf_filename)
-    T = 2 # num time steps
+    T = 10 # num time steps
     dt = 0.1  # time step
     hz = int(1.0/dt)
     solver_method = 'ipopt'
@@ -105,14 +105,14 @@ def main():
     Q = builder.add_parameter('Q', 7+robot.ndof)
     builder.add_cost_term('min_y', cs.trace(y.T@cs.diag(Q)@y))
 
-    # >> pos << 
+    # >> pos <<
     # pos = fk['pos'].map(T)
     # pose_human = builder.add_parameter('pose_human', 3, T)  # prediction
     # pose_robot = pos(builder.get_states('kuka_lwr'))
     # xdiff = pose_robot - pose_human
     # y = cs.vertcat(xdiff, builder.get_states('kuka_lwr', 1))
     # Q = builder.add_parameter('Q', 3+robot.ndof)
-    # builder.add_cost_term('min_y', cs.trace(y.T@cs.diag(Q)@y))    
+    # builder.add_cost_term('min_y', cs.trace(y.T@cs.diag(Q)@y))
 
     # Minimize controls
     R = builder.add_parameter('R', robot.ndof)
@@ -145,9 +145,9 @@ def main():
     }
 
     parameters = {
-        'qcurr': None,
-        'omega_min': 0.01,
-        'pose_human': None,
+        'qcurr': None,      # updated in loop
+        'pose_human': None, # updated in loop
+        'omega_min': 10.e-9,
         'Q': [10.0]*3 + [1.]*4 + [0.001]*robot.ndof,
         'R': [0.001]*robot.ndof,
     }
@@ -162,6 +162,7 @@ def main():
         states = solver.solve()
         node.publish_target_joint_state_msg('kuka_lwr', states['kuka_lwr/q'][:,1])
         rate.sleep()
+
 
 if __name__ == '__main__':
     main()
