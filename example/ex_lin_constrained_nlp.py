@@ -12,8 +12,8 @@ def main():
     robot = RobotModel(urdf_filename)
 
     robots = {'kuka_lwr': robot}  # multiple robots can be defined, see ex2.py
-    builder = OptimizationBuilder(robots, T=1, qderivs=[0])
-    qnext = builder.get_state('kuka_lwr', 0)
+    builder = OptimizationBuilder(robots=robots, T=1, qderivs=[0])
+    qnext = builder.get_qstate('kuka_lwr', 0)
     fk = robot.fk('baselink', 'lwr_arm_7_link')
     pos = fk['pos']
     pos_goal = builder.add_parameter('pos_goal', 3)

@@ -14,9 +14,9 @@ def main():
     robot0 = RobotModel(urdf_filename, base_xyz=[0, 1, 0])
     robot1 = RobotModel(urdf_filename)
     robots = {'kuka_lwr_0': robot0, 'kuka_lwr_1': robot1}
-    builder = OptimizationBuilder(robots)
+    builder = OptimizationBuilder(robots=robots)
 
-    qnext0 = builder.get_state('kuka_lwr_0', 0)
+    qnext0 = builder.get_qstate('kuka_lwr_0', 0)
     fk0 = robot0.fk('baselink', 'lwr_arm_7_link')
     pos0 = fk0['pos']
     pos0_goal = builder.add_parameter('pos0_goal', 3)
@@ -26,7 +26,7 @@ def main():
     builder.add_ineq_constraint('joint_position_limits0_lo', lbc0, qnext0)
     builder.add_ineq_constraint('joint_position_limits0_hi', qnext0, ubc0)
 
-    qnext1 = builder.get_state('kuka_lwr_1', 0)
+    qnext1 = builder.get_qstate('kuka_lwr_1', 0)
     fk1 = robot1.fk('baselink', 'lwr_arm_7_link')
     pos1 = fk1['pos']
     pos1_goal = builder.add_parameter('pos1_goal', 3)

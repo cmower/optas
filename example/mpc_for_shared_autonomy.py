@@ -65,15 +65,15 @@ def main():
 
     # Create mpc
     robots = {'kuka_lwr': robot}  # multiple robots can be defined, see ex2.py
-    builder = OptimizationBuilder(robots, T=T, qderivs=[0, 1, 2], derivs_align=True)
+    builder = OptimizationBuilder(robots=robots, T=T, qderivs=[0, 1, 2], derivs_align=True)
 
     # Dynamic constraints
-    builder.add_dynamic_integr_constraints('kuka_lwr', 2, dt)  # integr: qdd -> qd
-    builder.add_dynamic_integr_constraints('kuka_lwr', 1, dt)  # integr: qd -> q
+    builder.add_dynamic_q_integr_constraints('kuka_lwr', 2, dt)  # integr: qdd -> qd
+    builder.add_dynamic_q_integr_constraints('kuka_lwr', 1, dt)  # integr: qd -> q
 
     # Initial configuration
     qcurr = builder.add_parameter('qcurr', robot.ndof)
-    q0 = builder.get_state('kuka_lwr', 0)
+    q0 = builder.get_qstate('kuka_lwr', 0)
     builder.add_eq_constraint('initial_config', q0, qcurr)
 
     # Joint limits
@@ -88,7 +88,7 @@ def main():
     wmin = builder.add_parameter('omega_min')
     w = cs.SX.zeros(T)
     for t in range(T):
-        q = builder.get_state('kuka_lwr', t)
+        q = builder.get_qstate('kuka_lwr', t)
         # J = cs.vertcat(pos_jac(q), eul_jac(q))
         J = pos_jac(q)
         w[t] = cs.sqrt(cs.det(J@J.T))
@@ -99,29 +99,29 @@ def main():
     # >> pos/quat <<
     pos_quat = fk['pos_quat'].map(T)
     pose_human = builder.add_parameter('pose_human', 7, T)  # prediction
-    pose_robot = pos_quat(builder.get_states('kuka_lwr'))
+    pose_robot = pos_quat(builder.get_qstates('kuka_lwr'))
     xdiff = pose_robot - pose_human
-    y = cs.vertcat(xdiff, builder.get_states('kuka_lwr', 1))
+    y = cs.vertcat(xdiff, builder.get_qstates('kuka_lwr', 1))
     Q = builder.add_parameter('Q', 7+robot.ndof)
     builder.add_cost_term('min_y', cs.trace(y.T@cs.diag(Q)@y))
 
     # >> pos <<
     # pos = fk['pos'].map(T)
     # pose_human = builder.add_parameter('pose_human', 3, T)  # prediction
-    # pose_robot = pos(builder.get_states('kuka_lwr'))
+    # pose_robot = pos(builder.get_qstates('kuka_lwr'))
     # xdiff = pose_robot - pose_human
-    # y = cs.vertcat(xdiff, builder.get_states('kuka_lwr', 1))
+    # y = cs.vertcat(xdiff, builder.get_qstates('kuka_lwr', 1))
     # Q = builder.add_parameter('Q', 3+robot.ndof)
     # builder.add_cost_term('min_y', cs.trace(y.T@cs.diag(Q)@y))
 
     # Minimize controls
     R = builder.add_parameter('R', robot.ndof)
-    u = builder.get_states('kuka_lwr', 2)
+    u = builder.get_qstates('kuka_lwr', 2)
     builder.add_cost_term('min_u', cs.trace(u.T@cs.diag(R)@u))
 
     # Obstacle avoidance
     pos = fk['pos'].map(T)
-    zpos = pos(builder.get_states('kuka_lwr'))[2,:]
+    zpos = pos(builder.get_qstates('kuka_lwr'))[2,:]
     builder.add_ineq_constraint('floor', zpos)
 
     # Build optimization

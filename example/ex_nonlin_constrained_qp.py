@@ -12,7 +12,7 @@ def main():
     robot = RobotModel(urdf_filename)
 
     robots = {'kuka_lwr': robot}  # multiple robots can be defined, see ex2.py
-    builder = OptimizationBuilder(robots, T=2, qderivs=[1])
+    builder = OptimizationBuilder(robots=robots, T=2, qderivs=[1])
     dt = 0.1
     qcurr = builder.add_parameter('qcurr', robot.ndof)
     fk = robot.fk('baselink', 'lwr_arm_7_link')
@@ -20,7 +20,7 @@ def main():
     pos_jac = fk['pos_jac']
     vel_goal = builder.add_parameter('vel_goal', 3)
     J = pos_jac(qcurr)
-    dq = builder.get_state('kuka_lwr', 0, qderiv=1)
+    dq = builder.get_qstate('kuka_lwr', 0, qderiv=1)
     builder.add_cost_term('goal', cs.sumsqr(J@dq - vel_goal))
     builder.add_cost_term('min_vel', cs.sumsqr(dq))
     qnext = qcurr + dt*dq
