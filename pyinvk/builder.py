@@ -18,7 +18,8 @@ class OptimizationBuilder:
             self,
             robots: Dict[str, RobotModel],
             T: Optional[int]=1,
-            qderivs: Optional[List[int]]=[0]
+            qderivs: Optional[List[int]]=[0],
+            derivs_align: Optional[bool]=False,
     ):
         """Constructor for the OptimizationBuilder class.
 
@@ -49,22 +50,25 @@ class OptimizationBuilder:
 
         # Input check
         assert min(qderivs) >= 0, "All values in qderivs should be positive or zero"
-        dorder = max(qderivs)
+        maxderiv = max(qderivs)
         assert T >= 1, "T must be strictly positive"
-        assert dorder >= 0, "dorder must be non-negative"
-        assert T > dorder, f"T must be greater than {dorder}"
+        assert maxderiv >= 0, "maximum qderiv must be non-negative"
+
+        if not derivs_align:
+            assert T > maxderiv, f"{T=} must be greater than {maxderiv}"
 
         # Set class attributes
         self.qderivs = qderivs
-        self.dorder = dorder
+        self.maxderiv = maxderiv
         self.robots = robots
+        self.derivs_align = derivs_align
 
         # Setup decision variables
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
             for qderiv in qderivs:
                 n = self.statename(robot_name, qderiv)
-                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv)
+                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv if not derivs_align else T)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self.parameters = SXContainer()
@@ -156,9 +160,11 @@ class OptimizationBuilder:
             for a given time-step.
 
         """
+        return self.get_states(robot_name, qderiv)[:, t]
+
+    def get_states(self, robot_name: str, qderiv: Optional[int]=0):
         assert qderiv in self.qderivs, f"{qderiv=}, qderiv must be in {self.qderivs}"
-        states = self.decision_variables[self.statename(robot_name, qderiv)]
-        return states[:, t]
+        return self.decision_variables[self.statename(robot_name, qderiv)]
 
     def add_decision_variables(
             self,
@@ -240,9 +246,8 @@ class OptimizationBuilder:
     def add_ineq_constraint(
             self,
             name: str,
-            lbc: Union[cs.casadi.SX, cs.casadi.DM],
-            c: cs.casadi.SX,
-            ubc: Union[cs.casadi.SX, cs.casadi.DM]) -> None:
+            c1: Union[cs.casadi.SX, cs.casadi.DM],
+            c2: Optional[cs.casadi.SX]=None,) -> None:
         """Adds an inequality constraint to the optimization problem.
 
         Note, the constraint is defined as
@@ -276,21 +281,26 @@ class OptimizationBuilder:
             Upper bound for the constraint.
 
         """
-        x = self.decision_variables.vec()
-        lb = c - lbc
-        ub = ubc - c
-        if cs.is_linear(lb, x) and cs.is_linear(ub, x):
-            self.lin_ineq_constraints[name+'_lb'] = lb
-            self.lin_ineq_constraints[name+'_ub'] = ub
+
+        if c2 is None:
+            # c1 >= 0
+            LBC = cs.DM.zeros(*c1.shape)
+            UBC = c1
         else:
-            self.ineq_constraints[name+'_lb'] = lb
-            self.ineq_constraints[name+'_ub'] = ub
+            LBC = c1
+            UBC = c2
+
+        diff = UBC - LBC  # LBC <= UBC   =>   diff = UBC - LBC >= 0
+        if self._is_linear(diff):
+            self.lin_ineq_constraints[name] = diff
+        else:
+            self.ineq_constraints[name] = diff
 
     def add_eq_constraint(
             self,
             name: str,
-            lhsc: Union[cs.casadi.SX, cs.casadi.DM],
-            rhsc: Optional[Union[cs.casadi.SX, cs.casadi.DM]]=None) -> None:
+            c1: Union[cs.casadi.SX, cs.casadi.DM],
+            c2: Optional[Union[cs.casadi.SX, cs.casadi.DM]]=None) -> None:
         """Adds an equality constraint to the optimization problem.
 
         Note, the constraint is defined as lhsc == rhsc.
@@ -315,11 +325,16 @@ class OptimizationBuilder:
             array with the same shape as lhsc.
 
         """
-        x = self.decision_variables.vec()
-        if rhsc is None:
-            rhsc = cs.DM.zeros(*lhsc.shape)
-        eq = lhsc - rhsc
-        if cs.is_linear(eq, x):
+
+        if c2 is None:
+            LHS = c1
+            RHS = cs.DM.zeros(*c1.shape)
+        else:
+            LHS = c1
+            RHS = c2
+
+        eq = LHS - RHS
+        if self._is_linear(eq):
             self.lin_eq_constraints[name] = eq
         else:
             self.eq_constraints[name] = eq
