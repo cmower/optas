@@ -20,22 +20,34 @@ def main():
     builder.add_cost_term('goal', cs.sumsqr(pos(qnext) - pos_goal))
 
     builder.add_ineq_constraint(
-        'pos_lim',
+        'pos_lim_lo',
         robot.lower_actuated_joint_limits,
+        qnext,
+    )
+
+    builder.add_ineq_constraint(
+        'pos_lim_hi',
         qnext,
         robot.upper_actuated_joint_limits,
     )
+
+
     builder.add_ineq_constraint(
-        'eff_lim',
+        'eff_lim_lo',
         cs.DM([-10, -0.1, 0.]),
         pos(qnext),
+    )
+
+    builder.add_ineq_constraint(
+        'eff_lim_hi',
+        pos(qnext),
         cs.DM([10, 0.1, 0.6]),
-    )    
+    )
     optimization = builder.build()
 
     # solver = CasADiSolver(optimization).setup('ipopt')
     solver = ScipyMinimizeSolver(optimization).setup()
-    
+
     # Setup ROS
     node = RosNode(robots, 'pyinvk_ex_lin_constrained_nlp_node')
     qcurr = node.wait_for_joint_state('kuka_lwr')
@@ -59,7 +71,7 @@ def main():
     dt = 0.5
     node.move_robot_to_joint_state('kuka_lwr', qnext, dt)
 
-    print(f"{type(optimization)=}")        
+    print(f"{type(optimization)=}")
 
     print("Goodbye")
 

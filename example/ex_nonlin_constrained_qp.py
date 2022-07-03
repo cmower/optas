@@ -25,14 +25,23 @@ def main():
     builder.add_cost_term('min_vel', cs.sumsqr(dq))
     qnext = qcurr + dt*dq
     builder.add_ineq_constraint(
-        'pos_lim',
+        'pos_lim_lo',
         robot.lower_actuated_joint_limits,
+        qnext,
+    )
+
+    builder.add_ineq_constraint(
+        'pos_lim_hi',
         qnext,
         robot.upper_actuated_joint_limits,
     )
     builder.add_ineq_constraint(
-        'eff_lim',
+        'eff_lim_lo',
         cs.DM([-10, -0.2, 0.]),
+        pos(qnext),
+    )
+    builder.add_ineq_constraint(
+        'eff_lim_hi',
         pos(qnext),
         cs.DM([10, 0.2, 0.6]),
     )

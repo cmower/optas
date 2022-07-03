@@ -32,11 +32,17 @@ def main():
     builder.add_cost_term('goal', cs.sumsqr(J@dq - vel_goal))
     builder.add_cost_term('min_vel', cs.sumsqr(dq))
     builder.add_ineq_constraint(
-        'pos_lim',
+        'pos_lim_lo',
         robot.lower_actuated_joint_limits,
+        qcurr + dt*dq,
+    )
+
+    builder.add_ineq_constraint(
+        'pos_lim_hi',
         qcurr + dt*dq,
         robot.upper_actuated_joint_limits,
     )
+
     optimization = builder.build()
 
     # solver = setup_casadi_solver(optimization)

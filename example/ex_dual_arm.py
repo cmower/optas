@@ -37,7 +37,8 @@ def main():
     builder.add_cost_term('eff_pos_goal0', cs.sumsqr(pos0(qnext0) - pos0_goal))
     lbc0 = robot0.lower_actuated_joint_limits
     ubc0 = robot0.upper_actuated_joint_limits
-    builder.add_ineq_constraint('joint_position_limits0', c=qnext0, lbc=lbc0, ubc=ubc0)
+    builder.add_ineq_constraint('joint_position_limits0_lo', lbc0, qnext0)
+    builder.add_ineq_constraint('joint_position_limits0_hi', qnext0, ubc0)
 
     qnext1 = builder.get_state('kuka_lwr_1', 0)
     fk1 = robot1.fk('baselink', 'lwr_arm_7_link')
@@ -46,7 +47,8 @@ def main():
     builder.add_cost_term('eff_pos_goal1', cs.sumsqr(pos1(qnext1) - pos1_goal))
     lbc1 = robot1.lower_actuated_joint_limits
     ubc1 = robot1.upper_actuated_joint_limits
-    builder.add_ineq_constraint('joint_position_limits1', c=qnext1, lbc=lbc1, ubc=ubc1)
+    builder.add_ineq_constraint('joint_position_limits1_lo', lbc1, qnext1)
+    builder.add_ineq_constraint('joint_position_limits1_hi', qnext1, ubc1)
 
     optimization = builder.build()
 
