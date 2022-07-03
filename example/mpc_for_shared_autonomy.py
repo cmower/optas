@@ -138,12 +138,15 @@ def main():
     node.setup_rpbi_joint_state_subscriber('kuka_lwr')
     node.setup_rpbi_joint_state_target_publisher('kuka_lwr')
 
+    # Get current joint configuration
     qcurr = node.wait_for_joint_state('kuka_lwr')
 
+    # Setup states dictionary
     states = {
         'kuka_lwr/q': cs.diag(qcurr) @ cs.DM.ones(7, T),
     }
 
+    # Setup parameter dictionary
     parameters = {
         'qcurr': None,      # updated in loop
         'pose_human': None, # updated in loop
@@ -152,17 +155,25 @@ def main():
         'R': [0.001]*robot.ndof,
     }
 
+    # Main loop
     rospy.sleep(1.0)
     rate = rospy.Rate(hz)
     while not rospy.is_shutdown():
+
+        # Setup parameters
         parameters['qcurr'] = node.get_joint_state_from_msg('kuka_lwr')
         parameters['pose_human'] = human_interface.get_human_pose()
+
+        # Reset solver
         solver.reset_initial_seed(states)
         solver.reset_parameters(parameters)
+
+        # Solve problem
         states = solver.solve()
+
+        # Publish target and sleep
         node.publish_target_joint_state_msg('kuka_lwr', states['kuka_lwr/q'][:,1])
         rate.sleep()
-
 
 if __name__ == '__main__':
     main()
