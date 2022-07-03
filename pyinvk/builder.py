@@ -16,59 +16,82 @@ class OptimizationBuilder:
 
     def __init__(
             self,
-            robots: Dict[str, RobotModel],
             T: Optional[int]=1,
+            robots: Optional[Dict[str, RobotModel]]={},
             qderivs: Optional[List[int]]=[0],
+            ylabels: Optional[List[str]]=[],
+            ydims: Optional[Union[int,List[int]]]=None,
+            yderivs: Optional[List[int]]=None,
             derivs_align: Optional[bool]=False,
+            optimize_time: Optional[bool]=False,
     ):
-        """Constructor for the OptimizationBuilder class.
-
-        Parameters
-        ----------
-
-        robots : dict[str:pyinvk.robot_model.RobotModel]
-            A dictionary containing the robot models in the
-            scene. Each model should be indexed by a unique name for
-            the robot. If you are interfacing with the ROS-PyBullet
-            Interface then the robot name should be set to the same
-            name as is given in the interface configuration file.
-
-        T : int (default is 1)
-            Number of time-steps in the trajectory to be treated as
-            decicision variables. The value of T should be strictly
-            positive and satisfy the inequality T > max(qderivs).
-
-        qderivs : list[int] (default is [0])
-            A list containing the derivative orders that should be
-            included in the decision variables. For example, [0, 1]
-            will include the joint configuration trajectory (i.e. a
-            vector q with T time-steps), and the joint velocities
-            (i.e. a vector qd with T-1 time-steps). All values in
-            qderivs should be positive or zero.
-
-        """
 
         # Input check
-        assert min(qderivs) >= 0, "All values in qderivs should be positive or zero"
-        maxderiv = max(qderivs)
-        assert T >= 1, "T must be strictly positive"
-        assert maxderiv >= 0, "maximum qderiv must be non-negative"
+        if optimize_time:
+            assert T>=2, "T must be greater than 1"
+        else:
+            assert T >= 1, "T must be strictly positive"
+        if robots:
+            assert qderivs, "when robots are given, you must supply qderivs"
+        maxqderiv = None
+        if len(qderivs):
+            assert min(qderivs) >= 0, "all values in qderivs should be non-negative"
+            maxqderiv = max(qderivs)
+            assert maxqderiv >= 0, "maximum qderiv must be non-negative"
+        if ylabels:
+            assert yderivs, "when ylabels is given, you must supply yderivs"
+        maxyderiv = None
+        if yderivs:
+            assert min(yderivs) >= 0, "all values in yderivs should be non-negative"
+            maxyderiv = max(yderivs)
+            assert maxyderiv >= 0, "maximum yderiv must be non-negative"
 
-        if not derivs_align:
+        if not derivs_align and (maxqderiv or maxyderiv):
+
+            derivs = []
+            if isinstance(maxqderiv, int):
+                derivs.append(maxqderiv)
+            if isinstance(maxyderiv, int):
+                derivs.append(maxyderiv)
+
+            maxderiv = max(derivs)
             assert T > maxderiv, f"{T=} must be greater than {maxderiv}"
 
+        if isinstance(ydims, int):
+            assert ydims > 0, f"{ydims=} must strictly positive"
+            ydims = [ydims]*len(ylabels)
+        elif isinstance(ydims, int):
+            assert len(ydims) == len(ylabels), f"incorrect length for ydims, expected {len(ylabels)} got {len(ydims)}"
+        elif ydims is None:
+            pass
+        else:
+            raise TypeError(f"did not recognize {type(ydims)=}")
+
         # Set class attributes
-        self.qderivs = qderivs
-        self.maxderiv = maxderiv
+        self.T = T
         self.robots = robots
+        self.qderivs = qderivs
+        self.ylabels = ylabels
+        self.ydims = ydims
+        self.yderivs = yderivs
         self.derivs_align = derivs_align
+        self.optimize_time = optimize_time
 
         # Setup decision variables
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
             for qderiv in qderivs:
-                n = self.statename(robot_name, qderiv)
+                n = self.qstatename(robot_name, qderiv)
                 self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv if not derivs_align else T)
+
+        if ylabels:
+            for label, ndim in zip(ylabels, ydims):
+                for yderiv in yderivs:
+                    n = self.ystatename(label, yderiv)
+                    self.decision_variables[n] = cs.SX.sym(n, ndim, T-yderiv if not derivs_align else T)
+
+        if optimize_time:
+            self.decision_variables['dt'] = cs.SX.sym('dt', T-1)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self.parameters = SXContainer()
@@ -106,7 +129,7 @@ class OptimizationBuilder:
             print_("inequality constraints", self.ineq_constraints)
 
     @staticmethod
-    def statename(robot_name: str, qderiv: int) -> str:
+    def qstatename(robot_name: str, qderiv: int) -> str:
         """Returns the state name for a given time derivative of q.
 
         The state name is used to index the decision variables.
@@ -132,11 +155,15 @@ class OptimizationBuilder:
         """
         return robot_name + '/' + 'd'*qderiv + 'q'
 
+    @staticmethod
+    def ystatename(label: str, yderiv: int) -> str:
+        return 'd'*yderiv + label
+
     def _is_linear(self, y):
         x = self.decision_variables.vec()
         return cs.is_linear(y, x)
 
-    def get_state(
+    def get_qstate(
             self,
             robot_name: str,
             t: int,
@@ -164,11 +191,18 @@ class OptimizationBuilder:
             for a given time-step.
 
         """
-        return self.get_states(robot_name, qderiv)[:, t]
+        return self.get_qstates(robot_name, qderiv)[:, t]
 
-    def get_states(self, robot_name: str, qderiv: Optional[int]=0):
+    def get_qstates(self, robot_name: str, qderiv: Optional[int]=0):
         assert qderiv in self.qderivs, f"{qderiv=}, qderiv must be in {self.qderivs}"
-        return self.decision_variables[self.statename(robot_name, qderiv)]
+        return self.decision_variables[self.qstatename(robot_name, qderiv)]
+
+    def get_ystate(self, label: str, t: int, yderiv: int):
+        self.get_ystates(label, yderiv)[:, t]
+
+    def get_ystates(self, label: str, yderiv: int):
+        assert yderiv in self.yderivs, f"{yderiv=}, yderiv myst be in {self.yderivs}"
+        return self.decision_variables[self.ystatename(label, yderiv)]
 
     def add_decision_variables(
             self,
@@ -343,46 +377,96 @@ class OptimizationBuilder:
         else:
             self.eq_constraints[name] = eq
 
-    def add_dynamic_integr_constraints(self, robot_name, qderiv, dt):
+    def _create_integration_function(self, ndim, n):
+        xd = cs.SX.sym('xd', ndim)
+        x0 = cs.SX.sym('x0', ndim)
+        x1 = cs.SX.sym('x1', ndim)
+        dt = cs.SX.sym('dt')
+        integr = cs.Function('integr', [x0, x1, xd, dt], [x0 + dt*xd - x1])
+        return integr.map(n)
+
+    def add_dynamic_q_integr_constraints(self, robot_name, qderiv, dt=None):
         assert qderiv > 0, "qderiv must be greater than 0"
 
-        qd = self.get_states(robot_name, qderiv)
-        q = self.get_states(robot_name, qderiv-1)
+        qd = self.get_qstates(robot_name, qderiv)
+        q = self.get_qstates(robot_name, qderiv-1)
         n = qd.shape[1]
         if self.derivs_align:
             n -= 1
             qd = qd[:, :-1]
 
-        dt = cs.vec(dt)
-        if dt.shape[0] == 1:
-            dt = dt*cs.DM.ones(n)
+
+        if self.optimize_time:
+            assert dt is None, "optimize_time was given as true and also dt is given"
+            dt = self.decision_variables['dt'][:n]
         else:
-            assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
-        dt = cs.vec(dt).T
+            assert dt is not None, "dt is required when optimize_time is False"
 
-        ndof = self.robots[robot_name].ndof
-        qd_sym = cs.SX.sym('qd', ndof)
-        q0_sym = cs.SX.sym('q1', ndof)
-        q1_sym = cs.SX.sym('q1', ndof)
-        dt_sym = cs.SX.sym('dt')
+            dt = cs.vec(dt)
+            if dt.shape[0] == 1:
+                dt = dt*cs.DM.ones(n)
+            else:
+                assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
+            dt = cs.vec(dt).T
 
-        integr = cs.Function(
-            'integr',
-            [q0_sym, q1_sym, qd_sym, dt_sym],
-            [q0_sym + dt_sym*qd_sym - q1_sym]
-        ).map(n)
-
+        integr = self._create_integration_function(self.robots[robot_name].ndof, n)
         self.add_eq_constraint(
-            f'__dynamic_integr_{robot_name}_{qderiv}__',
+            f'__dynamic_q_integr_{robot_name}_{qderiv}__',
             integr(q[:,:-1], q[:,1:], qd, dt),
         )
+
+    def add_dynamic_y_integr_constraints(self, label, yderiv, dt=None):
+        assert yderiv > 0, "yderiv must be greater than 0"
+
+        yd = self.get_ystates(label, yderiv)
+        y = self.get_ystates(label, yderiv-1)
+        n = yd.shape[1]
+        if self.derivs_align:
+            n -= 1
+            yd = yd[:, :-1]
+
+        if self.optimize_time:
+            assert dt is None, "optimize_time was given as true and also dt is given"
+            dt = self.decision_variables['dt'][:n]
+        else:
+            assert dt is not None, "dt is required when optimize_time is False"
+
+            dt = cs.vec(dt)
+            if dt.shape[0] == 1:
+                dt = dt*cs.DM.ones(n)
+            else:
+                assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
+            dt = cs.vec(dt).T
+
+        integr = self._create_integration_function(self.ydims[self.ylabels.index(label)], n)
+        self.add_eq_constraint(
+            f'__dynamic_y_integr_{label}_{yderiv}__',
+            integr(y[:,:-1], y[:,1:], yd, dt),
+        )
+
+    def add_fk_constraint(self, robot_name, label, parent, child):
+        y = self.get_ystates(label, 0)
+        q = self.get_qstates(robot_name)
+
+        forward_kinematics = self.robots[robot_name].fk(parent, child)
+        ydim = y.shape[0]
+        if ydim == 3:
+            fk = forward_kinematics['pos'].map(self.T)
+        elif ydim == 6:
+            fk = forward_kinematics['pos_eul'].map(self.T)
+        elif ydim == 7:
+            fk = forward_kinematics['pos_quat'].map(self.T)
+        else:
+            raise ValueError(f"dimension for y is not recognized, got {ydim} expected either 3, 6, or 7")
+
+        self.add_eq_constraint(f'__fk_constraint_{robot_name}_{label}_{parent}_{child}__', fk(q), y)
 
     def add_joint_position_limit_constraints(self, robot_name):
         assert robot_name in self.robots, f"did not recognize robot '{robot_name}'"
         robot = self.robots[robot_name]
         qlo = robot.lower_actuated_joint_limits
         qup = robot.upper_actuated_joint_limits
-        q = self.get_states(robot_name)
+        q = self.get_qstates(robot_name)
         self.add_ineq_constraint(f'{robot_name}_joint_limit_lower', qlo, q)
         self.add_ineq_constraint(f'{robot_name}_joint_limit_upper', q, qup)
 
