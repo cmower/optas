@@ -86,6 +86,10 @@ class OptimizationBuilder:
             for label, value in d.items():
                 print(f"  {label} {value.shape}")
 
+        if self.is_cost_function_quadratic():
+            print("Cost function is quadratic.")
+        else:
+            print("Cost function is nonlinear.")
         if self.decision_variables.numel() > 0:
             print_("decision variables", self.decision_variables)
         if self.parameters.numel() > 0:
