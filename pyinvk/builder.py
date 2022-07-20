@@ -81,13 +81,13 @@ class OptimizationBuilder:
         self.decision_variables = SXContainer()
         for robot_name, robot in robots.items():
             for qderiv in qderivs:
-                n = self.qstatename(robot_name, qderiv)
+                n = self.joint_state_name(robot_name, qderiv)
                 self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv if not derivs_align else T)
 
         if ylabels:
             for label, ndim in zip(ylabels, ydims):
                 for yderiv in yderivs:
-                    n = self.ystatename(label, yderiv)
+                    n = self.task_state_name(label, yderiv)
                     self.decision_variables[n] = cs.SX.sym(n, ndim, T-yderiv if not derivs_align else T)
 
         if optimize_time:
@@ -129,7 +129,7 @@ class OptimizationBuilder:
             print_("inequality constraints", self.ineq_constraints)
 
     @staticmethod
-    def qstatename(robot_name: str, qderiv: int) -> str:
+    def joint_state_name(robot_name: str, qderiv: int) -> str:
         """Returns the state name for a given time derivative of q.
 
         The state name is used to index the decision variables.
@@ -156,14 +156,14 @@ class OptimizationBuilder:
         return robot_name + '/' + 'd'*qderiv + 'q'
 
     @staticmethod
-    def ystatename(label: str, yderiv: int) -> str:
+    def task_state_name(label: str, yderiv: int) -> str:
         return 'd'*yderiv + label
 
     def _is_linear(self, y):
         x = self.decision_variables.vec()
         return cs.is_linear(y, x)
 
-    def get_qstate(
+    def get_joint_state(
             self,
             robot_name: str,
             t: int,
@@ -191,18 +191,18 @@ class OptimizationBuilder:
             for a given time-step.
 
         """
-        return self.get_qstates(robot_name, qderiv)[:, t]
+        return self.get_joint_states(robot_name, qderiv)[:, t]
 
-    def get_qstates(self, robot_name: str, qderiv: Optional[int]=0):
+    def get_joint_states(self, robot_name: str, qderiv: Optional[int]=0):
         assert qderiv in self.qderivs, f"{qderiv=}, qderiv must be in {self.qderivs}"
-        return self.decision_variables[self.qstatename(robot_name, qderiv)]
+        return self.decision_variables[self.joint_state_name(robot_name, qderiv)]
 
-    def get_ystate(self, label: str, t: int, yderiv: int):
-        self.get_ystates(label, yderiv)[:, t]
+    def get_task_state(self, label: str, t: int, yderiv: int):
+        self.get_task_states(label, yderiv)[:, t]
 
-    def get_ystates(self, label: str, yderiv: int):
+    def get_task_states(self, label: str, yderiv: int):
         assert yderiv in self.yderivs, f"{yderiv=}, yderiv myst be in {self.yderivs}"
-        return self.decision_variables[self.ystatename(label, yderiv)]
+        return self.decision_variables[self.task_state_name(label, yderiv)]
 
     def add_decision_variables(
             self,
@@ -413,11 +413,11 @@ class OptimizationBuilder:
         integr = cs.Function('integr', [x0, x1, xd, dt], [x0 + dt*xd - x1])
         return integr.map(n)
 
-    def add_dynamic_q_integr_constraints(self, robot_name, qderiv, dt=None):
+    def add_dynamic_joint_integr_constraints(self, robot_name, qderiv, dt=None):
         assert qderiv > 0, "qderiv must be greater than 0"
 
-        qd = self.get_qstates(robot_name, qderiv)
-        q = self.get_qstates(robot_name, qderiv-1)
+        qd = self.get_joint_states(robot_name, qderiv)
+        q = self.get_joint_states(robot_name, qderiv-1)
         n = qd.shape[1]
         if self.derivs_align:
             n -= 1
@@ -439,15 +439,15 @@ class OptimizationBuilder:
 
         integr = self._create_integration_function(self.robots[robot_name].ndof, n)
         self.add_eq_constraint(
-            f'__dynamic_q_integr_{robot_name}_{qderiv}__',
+            f'__dynamic_joint_integr_{robot_name}_{qderiv}__',
             integr(q[:,:-1], q[:,1:], qd, dt),
         )
 
-    def add_dynamic_y_integr_constraints(self, label, yderiv, dt=None):
+    def add_dynamic_task_integr_constraints(self, label, yderiv, dt=None):
         assert yderiv > 0, "yderiv must be greater than 0"
 
-        yd = self.get_ystates(label, yderiv)
-        y = self.get_ystates(label, yderiv-1)
+        yd = self.get_task_states(label, yderiv)
+        y = self.get_task_states(label, yderiv-1)
         n = yd.shape[1]
         if self.derivs_align:
             n -= 1
@@ -468,13 +468,13 @@ class OptimizationBuilder:
 
         integr = self._create_integration_function(self.ydims[self.ylabels.index(label)], n)
         self.add_eq_constraint(
-            f'__dynamic_y_integr_{label}_{yderiv}__',
+            f'__dynamic_task_integr_{label}_{yderiv}__',
             integr(y[:,:-1], y[:,1:], yd, dt),
         )
 
     def add_fk_constraint(self, robot_name, label, parent, child):
-        y = self.get_ystates(label, 0)
-        q = self.get_qstates(robot_name)
+        y = self.get_task_states(label, 0)
+        q = self.get_joint_states(robot_name)
 
         forward_kinematics = self.robots[robot_name].fk(parent, child)
         ydim = y.shape[0]
@@ -494,7 +494,7 @@ class OptimizationBuilder:
         robot = self.robots[robot_name]
         qlo = robot.lower_actuated_joint_limits
         qup = robot.upper_actuated_joint_limits
-        q = self.get_qstates(robot_name)
+        q = self.get_joint_states(robot_name)
         self.add_ineq_constraint(f'{robot_name}_joint_limit_lower', qlo, q)
         self.add_ineq_constraint(f'{robot_name}_joint_limit_upper', q, qup)
 
