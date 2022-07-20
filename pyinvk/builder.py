@@ -253,6 +253,34 @@ class OptimizationBuilder:
         assert cost_term.shape == (1, 1), "cost terms must be scalars"
         self.cost_terms[name] = cost_term
 
+    def add_nominal_configuration_cost_term(self, robot_name, qnominal, w=1.0):
+
+        ndof = self.robots[robot_name].ndof
+        qnominal = cs.SX(qnominal)
+        assert qnominal.shape[0] == ndof, f"qnominal incorrect length, expected {ndof} got {qnominal.shape[0]}"
+
+        # Handle weight
+        w = cs.DM(w)
+        nw = w.shape[0]
+        if nw == 1:
+            W = w*cs.SX.eye(ndof)
+        else:
+            assert nw == ndof, f"w incorrect length, expected {ndof}, got {nw}"
+            W = cs.diag(w)
+
+        # Create nominal function
+        q_ = cs.SX.sym('q', ndof)  # joint state
+        qn_ = cs.SX.sym('qn', ndof)  # nominal joint state
+        qdiff_ = q_ - qn_
+        cost = cs.Function('nominal_cost', [q_, qn_], [qdiff_.T @ W @ qdiff_]).map(self.T)
+
+        # Handler
+        Q = self.get_joint_states(robot_name, qderiv=0)
+        QN = cs.diag(qnominal) @ cs.DM.ones(ndof, self.T)
+
+        self.add_cost_term('__nominal_configuration_cost__', cs.sum2(cost(Q, QN)))
+
+
     def add_parameter(self, name: str, m: Optional[int]=1, n : Optional[int]=1) -> cs.casadi.SX:
         """Add a parameter to the optimization problem.
 
