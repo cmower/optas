@@ -21,6 +21,7 @@ setup(
         'numpy',
         'scipy',
         'casadi',
+        'urdf-parser-py',
         'osqp',
         'cvxopt',
     ]
