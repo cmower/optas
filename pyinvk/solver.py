@@ -4,6 +4,7 @@ import numpy as np
 import casadi as cs
 from typing import Union, Dict, List
 from abc import ABC, abstractmethod
+from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
 from scipy.sparse import csc_matrix
 from .optimization import QuadraticCostUnconstrained,\
@@ -115,6 +116,13 @@ class Solver(ABC):
     def stats(self):
         """Return stats from solver."""
         pass
+
+    @staticmethod
+    def interpolate(self, traj: cs.casadi.DM, T: float, **interp_args):
+        assert isinstance(traj, cs.casadi.DM), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
+        t = np.linspace(0, T, traj.shape[1])
+        return interp1d(t, traj.toarray(), **interp_args)
+
 
 ################################################################
 # CasADi solvers (https://web.casadi.org/)
