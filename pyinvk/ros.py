@@ -350,3 +350,38 @@ class RosNode:
         """Simply keeps python from exiting until this node is stopped."""
         rospy.loginfo('Started spinnning...')
         rospy.spin()
+
+class ROSRobot:
+
+    def __init__(self, urdf_filename, parent, child, joint_states_topic='joint_states'):
+        assert ROS_AVAILABLE, f"ROSRobot requires ROS"
+        self._robot_model = RobotModel(urdf_filename)
+        self._joint_names = self._robot_model.actuated_joint_names
+        self._fk = self._robot_model.fk(parent, child)
+        self._msg = None
+
+        rospy.Subscriber(joint_states_topic, JointState, self._callback)
+
+    def _callback(self, msg):
+        self._msg = resolve_joint_order(msg, self._joint_names)
+
+    def recieved_joint_state(self):
+        return self._msg is not None
+
+    def get_joint_position(self):
+        if self.recieved_joint_state():
+            return cs.DM(self._msg.position)
+
+    def get_joint_velocity(self):
+        if self.recieved_joint_state():
+            return cs.DM(self._msg.velocity)
+
+    def get_joint_effort(self):
+        if self.recieved_joint_state():
+            return cs.DM(self._msg.effort)
+
+    def get(self, label):
+        q = self.get_joint_position()
+        if q is None: return
+        fun = self._fk[label]
+        return fun(q)
