@@ -4,10 +4,12 @@ from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 from .tf import transformation_matrix_fixed, \
     transformation_matrix_prismatic, \
     transformation_matrix_revolute, \
-    euler_from_transformation_matrix, \
     quaternion_product, \
     quaternion_fixed, \
     quaternion_revolute
+from .transformations import euler_from_matrix, euler_matrix
+from .spatialmath import rt2tr
+
 
 class RobotModel:
 
@@ -96,7 +98,8 @@ class RobotModel:
             axis = cs.DM(joint.axis)
         else:
             axis = cs.DM([1.0, 0.0, 0.0])
-        return axis
+        norm = cs.norm_fro(axis)
+        return axis/norm
 
     def fk(self, parent: str, child: str) -> Dict[str, cs.casadi.Function]:
         """Forward kinematics.
@@ -141,7 +144,10 @@ class RobotModel:
             # Handle fixed joints
             if joint.type == 'fixed':
                 xyz, rpy = RobotModel._get_joint_origin(joint)
-                T = T @ transformation_matrix_fixed(xyz, rpy)
+
+                E = rt2tr(euler_matrix(rpy[0], rpy[1], rpy[2]), xyz)
+
+                T = T @ E
                 quat = quaternion_product(quat, quaternion_fixed(rpy))
                 continue
 
@@ -159,12 +165,32 @@ class RobotModel:
             elif joint.type in {'revolute', 'continuous'}:
                 xyz, rpy = RobotModel._get_joint_origin(joint)
                 axis = RobotModel._get_joint_axis(joint)
-                axis /= cs.norm_fro(axis)  # ensure axis is normalized
                 T = T @ transformation_matrix_revolute(xyz, rpy, axis, qi)
                 quat = quaternion_product(quat, quaternion_revolute(xyz, rpy, axis, qi))
 
-        # Get Euler angles and position
-        eul = euler_from_transformation_matrix(T)
+        # Get Euler angles
+        qw, qx, qy, qz = quat[3], quat[0], quat[1], quat[2]
+
+        sinr_cosp = 2.*(qw * qx + qy * qz)
+        cosr_cosp = 1. - 2. * (qx * qx + qy * qy)
+        roll = cs.atan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2. * (qw * qy - qz * qx)
+
+        pitch = cs.if_else(
+            cs.fabs(sinp) >= 1.,
+            cs.np.pi/2.,
+            cs.asin(sinp),
+        )
+
+        siny_cosp = 2. * (qw * qz + qx * qy)
+        cosy_cosp = 1. - 2. * (qy * qy + qz * qz)
+
+        yaw = cs.atan2(siny_cosp, cosy_cosp)
+
+        eul = cs.vertcat(roll, pitch, yaw)
+
+        # Get position
         pos = T[:3, 3]
 
         # Get jacobians
