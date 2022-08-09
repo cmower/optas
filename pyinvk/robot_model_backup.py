@@ -177,11 +177,12 @@ class RobotModel:
 
         sinp = 2. * (qw * qy - qz * qx)
 
-        pitch = cs.if_else(
-            cs.fabs(sinp) >= 1.,
-            cs.np.pi/2.,
-            cs.asin(sinp),
-        )
+        pitch = cs.asin(sinp)
+        # pitch = cs.if_else(
+        #     cs.fabs(sinp) >= 1.,
+        #     cs.np.pi/2.,
+        #     cs.asin(sinp),
+        # )
 
         siny_cosp = 2. * (qw * qz + qx * qy)
         cosy_cosp = 1. - 2. * (qy * qy + qz * qz)
