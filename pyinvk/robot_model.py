@@ -42,13 +42,13 @@ class RobotModel:
         # Load robot from urdf
         self.robot = URDF.from_xml_file(urdf_filename)
 
-        # Ensure base names are not already defined
-        assert base_link_name not in self.robot.link_map, f"given base link name '{base_link_name}' already exists"
-        assert base_joint_name not in self.robot.joint_map, f"given base joint name '{base_joint_name}' already exists"
+        # # Ensure base names are not already defined
+        # assert base_link_name not in self.robot.link_map, f"given base link name '{base_link_name}' already exists"
+        # assert base_joint_name not in self.robot.joint_map, f"given base joint name '{base_joint_name}' already exists"
 
-        # Add base
-        self.robot.add_link(Link(name=base_link_name))
-        self.robot.add_joint(Joint(name=base_joint_name, parent=base_link_name, child=self.robot.links[0].name, joint_type='fixed', origin=Pose(xyz=base_xyz, rpy=base_rpy)))
+        # # Add base
+        # self.robot.add_link(Link(name=base_link_name))
+        # self.robot.add_joint(Joint(name=base_joint_name, parent=base_link_name, child=self.robot.links[0].name, joint_type='fixed', origin=Pose(xyz=base_xyz, rpy=base_rpy)))
 
     @property
     def ndof(self):
