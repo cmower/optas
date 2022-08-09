@@ -1,0 +1,3 @@
+
+class JointModelGroup:
+    pass
