@@ -172,21 +172,21 @@ import warnings
 import math
 
 import numpy
-import casadi as cs
+import casadi
 
 # Documentation in HTML format can be generated with Epydoc
 __docformat__ = "restructuredtext en"
 
-_CASADI_ARRAY_TYPE = (cs.DM, cs.SX)
+_CASADI_ARRAY_TYPE = (casadi.DM, casadi.SX)
 
 def _as_casadi_vector3(a):
-    return cs.vec(a)[:3]
+    return casadi.vec(a)[:3]
 
 def _as_casadi_vector4(a):
-    return cs.vec(a)[:4]
+    return casadi.vec(a)[:4]
 
 def _as_casadi_array(a):
-    return a if isinstance(a, _CASADI_ARRAY_TYPE) else cs.DM(a)
+    return a if isinstance(a, _CASADI_ARRAY_TYPE) else casadi.DM(a)
 
 class _CasadiMatrix:
 
@@ -203,10 +203,10 @@ class _CasadiMatrix:
         self._data[i][j] = value
 
     def as_casadi_array(self):
-        rows = [cs.horzcat(*row) for row in self._data]
-        return cs.vertcat(*rows)
+        rows = [casadi.horzcat(*row) for row in self._data]
+        return casadi.vertcat(*rows)
 
-def identity_matrix(atype=cs.DM):
+def identity_matrix(atype=casadi.DM):
     """Return 4x4 identity/unit matrix.
 
     >>> I = identity_matrix()
@@ -223,9 +223,9 @@ def identity_matrix(atype=cs.DM):
 
 
 def _translation_matrix(rotation, direction):
-    return cs.vertcat(
-        cs.horzcat(rotation, direction),
-        cs.DM([0.0, 0.0, 0.0, 1.0]),
+    return casadi.vertcat(
+        casadi.horzcat(rotation, direction),
+        casadi.DM([0.0, 0.0, 0.0, 1.0]),
     )
 
 
@@ -238,7 +238,7 @@ def translation_matrix(direction):
 
     """
     d = _as_casadi_vector3(direction)
-    return _translation_matrix(cs.DM.eye(3), d)
+    return _translation_matrix(casadi.DM.eye(3), d)
 
 
 def translation_from_matrix(matrix):
@@ -278,7 +278,7 @@ def reflection_matrix(point, normal, ensure_unit=True):
     if ensure_unit:
         normal = unit_vector(normal)
     t = (2.0*point.T@normal) * normal
-    R = cs.DM.eye(3) - 2.0*(normal @ normal.T)
+    R = casadi.DM.eye(3) - 2.0*(normal @ normal.T)
 
     return _translation_matrix(R, t)
 
@@ -334,23 +334,23 @@ def rotation_matrix(angle, direction, point=None, ensure_unit=True):
     True
 
     """
-    sina = cs.sin(angle)
-    cosa = cs.cos(angle)
+    sina = casadi.sin(angle)
+    cosa = casadi.cos(angle)
     direction = _as_casadi_vector3(direction)
     if ensure_unit:
         direction = unit_vector(direction)
 
     # rotation matrix around unit vector
-    R = cs.vertcat(cs.horzcat(cosa, 0.0,  0.0),
-                   cs.horzcat(0.0,  cosa, 0.0),
-                   cs.horzcat(0.0,  0.0,  cosa))
+    R = casadi.vertcat(casadi.horzcat(cosa, 0.0,  0.0),
+                   casadi.horzcat(0.0,  cosa, 0.0),
+                   casadi.horzcat(0.0,  0.0,  cosa))
     R += direction@direction.T * (1.0 - cosa)
     direction *= sina
-    R += cs.vertcat(cs.horzcat( 0.0,         -direction[2],  direction[1]),
-                    cs.horzcat( direction[2], 0.0,          -direction[0]),
-                    cs.horzcat(-direction[1], direction[0],  0.0))
+    R += casadi.vertcat(casadi.horzcat( 0.0,         -direction[2],  direction[1]),
+                    casadi.horzcat( direction[2], 0.0,          -direction[0]),
+                    casadi.horzcat(-direction[1], direction[0],  0.0))
 
-    t = cs.DM.zeros(3)
+    t = casadi.DM.zeros(3)
     if point is not None:
         # rotation not around origin
         point = _as_casadi_vector3(point)
@@ -419,11 +419,11 @@ def scale_matrix(factor, origin=None, direction=None, ensure_unit=True):
     if direction is None:
         # uniform scaling
 
-        M = cs.vertcat(
-            cs.horzcat(factor, 0.0,    0.0,    0.0),
-            cs.horzcat(0.0,    factor, 0.0,    0.0),
-            cs.horzcat(0.0,    0.0,    factor, 0.0),
-            cs.horzcat(0.0,    0.0,    0.0,    1.0))
+        M = casadi.vertcat(
+            casadi.horzcat(factor, 0.0,    0.0,    0.0),
+            casadi.horzcat(0.0,    factor, 0.0,    0.0),
+            casadi.horzcat(0.0,    0.0,    factor, 0.0),
+            casadi.horzcat(0.0,    0.0,    0.0,    1.0))
         if origin is not None:
             origin = _as_casadi_vector3(origin)
             M[:3, 3] = origin
@@ -435,9 +435,9 @@ def scale_matrix(factor, origin=None, direction=None, ensure_unit=True):
             direction = unit_vector(direction)
         factor = 1.0 - factor
 
-        R = cs.DM.eye(3) - factor * direction @ direction.T
+        R = casadi.DM.eye(3) - factor * direction @ direction.T
 
-        t = cs.DM.zeros(3)
+        t = casadi.DM.zeros(3)
         if origin is not None:
             origin = _as_casadi_vector3(origin)
             t = (factor * origin.T @ direction) * direction
@@ -1053,14 +1053,14 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     if parity:
         ai, aj, ak = -ai, -aj, -ak
 
-    si, sj, sk = cs.sin(ai), cs.sin(aj), cs.sin(ak)
-    ci, cj, ck = cs.cos(ai), cs.cos(aj), cs.cos(ak)
+    si, sj, sk = casadi.sin(ai), casadi.sin(aj), casadi.sin(ak)
+    ci, cj, ck = casadi.cos(ai), casadi.cos(aj), casadi.cos(ak)
     cc, cs = ci*ck, ci*sk
     sc, ss = si*ck, si*sk
 
 
 
-    M = _CasadiMatrix(4)
+    M = _CasadiMatrix(3)
     M.set_diag(1.0)
 
     if repetition:
@@ -1117,22 +1117,22 @@ def euler_from_matrix(matrix, axes='sxyz'):
 
     # M = numpy.array(matrix, dtype=numpy.float64, copy=False)[:3, :3]
 
-    M = _as_casadi_array(M)
+    M = _as_casadi_array(matrix)
 
     if repetition:
-        sy = cs.sqrt(M[i, j]*M[i, j] + M[i, k]*M[i, k])
+        sy = casadi.sqrt(M[i, j]*M[i, j] + M[i, k]*M[i, k])
 
-        ax_true = cs.atan2( M[i, j],  M[i, k])
-        ay_true = cs.atan2( sy,       M[i, i])
-        az_true = cs.atan2( M[j, i], -M[k, i])
-        a_xyz_true = cs.vertcat(ax_true, ay_true, az_true)
+        ax_true = casadi.atan2( M[i, j],  M[i, k])
+        ay_true = casadi.atan2( sy,       M[i, i])
+        az_true = casadi.atan2( M[j, i], -M[k, i])
+        a_xyz_true = casadi.vertcat(ax_true, ay_true, az_true)
 
-        ax_false = cs.atan2(-M[j, k],  M[j, j])
-        ay_false = cs.atan2( sy,       M[i, i])
+        ax_false = casadi.atan2(-M[j, k],  M[j, j])
+        ay_false = casadi.atan2( sy,       M[i, i])
         az_false = 0.0
-        a_xyz_false = cs.vertcat(ax_false, ay_false, az_false)
+        a_xyz_false = casadi.vertcat(ax_false, ay_false, az_false)
 
-        a_xyz = cs.if_else(sy > _EPS, a_xyz_true, a_xyz_false)
+        a_xyz = casadi.if_else(sy > _EPS, a_xyz_true, a_xyz_false)
 
         ax = a_xyz[0]
         ay = a_xyz[1]
@@ -1141,17 +1141,17 @@ def euler_from_matrix(matrix, axes='sxyz'):
     else:
         cy = math.sqrt(M[i, i]*M[i, i] + M[j, i]*M[j, i])
 
-        ax_true = cs.atan2( M[k, j],  M[k, k])
-        ay_true = cs.atan2(-M[k, i],  cy)
-        az_true = cs.atan2( M[j, i],  M[i, i])
-        a_xyz_true = cs.vertcat(ax_true, ay_true, az_true)
+        ax_true = casadi.atan2( M[k, j],  M[k, k])
+        ay_true = casadi.atan2(-M[k, i],  cy)
+        az_true = casadi.atan2( M[j, i],  M[i, i])
+        a_xyz_true = casadi.vertcat(ax_true, ay_true, az_true)
 
-        ax_false = cs.atan2(-M[j, k],  M[j, j])
-        ay_false = cs.atan2(-M[k, i],  cy)
+        ax_false = casadi.atan2(-M[j, k],  M[j, j])
+        ay_false = casadi.atan2(-M[k, i],  cy)
         az_false = 0.0
-        a_xyz_false = cs.vertcat(ax_false, ay_false, az_false)
+        a_xyz_false = casadi.vertcat(ax_false, ay_false, az_false)
 
-        a_xyz = cs.if_else(cy > _EPS, a_xyz_true, a_xyz_false)
+        a_xyz = casadi.if_else(cy > _EPS, a_xyz_true, a_xyz_false)
 
         ax = a_xyz[0]
         ay = a_xyz[1]
@@ -1204,12 +1204,12 @@ def quaternion_from_euler(ai, aj, ak, axes='sxyz'):
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
-    ci = cs.cos(ai)
-    si = cs.sin(ai)
-    cj = cs.cos(aj)
-    sj = cs.sin(aj)
-    ck = cs.cos(ak)
-    sk = cs.sin(ak)
+    ci = casadi.cos(ai)
+    si = casadi.sin(ai)
+    cj = casadi.cos(aj)
+    sj = casadi.sin(aj)
+    ck = casadi.cos(ak)
+    sk = casadi.sin(ak)
     cc = ci*ck
     cs = ci*sk
     sc = si*ck
@@ -1231,7 +1231,7 @@ def quaternion_from_euler(ai, aj, ak, axes='sxyz'):
     if parity:
         quaternion[j] *= -1
 
-    return cs.vertcat(*quaternion)
+    return casadi.vertcat(*quaternion)
 
 
 def quaternion_about_axis(angle, axis):
@@ -1243,13 +1243,13 @@ def quaternion_about_axis(angle, axis):
 
     """
     axis = _as_casadi_vector3(axis)
-    quaternion = cs.vertcat(axis, 0.0)
+    quaternion = casadi.vertcat(axis, 0.0)
     qlen = vector_norm(quaternion)
-    scale_true = cs.sin(angle/2.0) / qlen
+    scale_true = casadi.sin(angle/2.0) / qlen
     scale_false = 1.0
-    scale = cs.if_else(qlen > _EPS, scale_true, scale_false)
+    scale = casadi.if_else(qlen > _EPS, scale_true, scale_false)
     quaternion *= scale
-    quaternion[3] = cs.cos(angle/2.0)
+    quaternion[3] = casadi.cos(angle/2.0)
     return quaternion
 
 
@@ -1263,19 +1263,19 @@ def quaternion_matrix(quaternion):
     """
     q = _as_casadi_vector4(quaternion)
     nq = q.T @ q
-    out_true = cs.DM.eye(4)
+    out_true = casadi.DM.eye(4)
 
-    q *= cs.sqrt(2.0 / nq)
+    q *= casadi.sqrt(2.0 / nq)
     q = q @ q.T
 
-    out_false = cs.vertcat(
-        cs.horzcat(1.0-q[1, 1]-q[2, 2],     q[0, 1]-q[2, 3],     q[0, 2]+q[1, 3], 0.0),
-        cs.horzcat(    q[0, 1]+q[2, 3], 1.0-q[0, 0]-q[2, 2],     q[1, 2]-q[0, 3], 0.0),
-        cs.horzcat(    q[0, 2]-q[1, 3],     q[1, 2]+q[0, 3], 1.0-q[0, 0]-q[1, 1], 0.0),
-        cs.horzcat(                0.0,                 0.0,                 0.0, 1.0),
+    out_false = casadi.vertcat(
+        casadi.horzcat(1.0-q[1, 1]-q[2, 2],     q[0, 1]-q[2, 3],     q[0, 2]+q[1, 3], 0.0),
+        casadi.horzcat(    q[0, 1]+q[2, 3], 1.0-q[0, 0]-q[2, 2],     q[1, 2]-q[0, 3], 0.0),
+        casadi.horzcat(    q[0, 2]-q[1, 3],     q[1, 2]+q[0, 3], 1.0-q[0, 0]-q[1, 1], 0.0),
+        casadi.horzcat(                0.0,                 0.0,                 0.0, 1.0),
     )
 
-    return cs.if_else(nq < _EPS, out_true, out_false)
+    return casadi.if_else(nq < _EPS, out_true, out_false)
 
 
 def quaternion_from_matrix(matrix):
@@ -1288,7 +1288,7 @@ def quaternion_from_matrix(matrix):
 
     """
     M = _as_casadi_array(M)[:4, :4]
-    t = cs.trace(M)
+    t = casadi.trace(M)
 
     cond = t > M[3, 3]
 
@@ -1301,7 +1301,7 @@ def quaternion_from_matrix(matrix):
 
     i, j, k = 0, 1, 2
     c1 = M[1, 1] > M[0, 0]
-    c2 = cs.if_else(c1, M[2, 2] > M[1, 1], M[2, 2] > M[0, 0])
+    c2 = casadi.if_else(c1, M[2, 2] > M[1, 1], M[2, 2] > M[0, 0])
 
 
     # t = M[i, i] - (M[j, j] + M[k, k]) + M[3, 3]
@@ -1318,10 +1318,10 @@ def quaternion_from_matrix(matrix):
     # i, j, k = 2, 0, 1
     t_c1_true_c2_true = M[2, 2] - (M[0, 0] + M[1, 1]) + M[3, 3]
 
-    t = cs.if_else(
+    t = casadi.if_else(
         c1,
-        cs.if_else(c2, t_c1_true_c2_true, t_c1_true_c2_false),
-        cs.if_else(c2, t_c1_false_c2_true, t_c1_false_c2_false),
+        casadi.if_else(c2, t_c1_true_c2_true, t_c1_true_c2_false),
+        casadi.if_else(c2, t_c1_false_c2_true, t_c1_false_c2_false),
     )
 
     i, j, k = 0, 1, 2
@@ -1352,13 +1352,13 @@ def quaternion_from_matrix(matrix):
     q_c1_true_c2_true[k] = M[k, i] + M[i, k]
     q_c1_true_c2_true[3] = M[k, j] - M[j, k]
 
-    q = cs.if_else(
+    q = casadi.if_else(
         c1,
-        cs.if_else(c2, cs.vertcat(*q_c1_true_c2_true), cs.vertcat(*q_c1_true_c2_false)),
-        cs.if_else(c2, cs.vertcat(*q_c1_false_c2_true), cs.vertcat(*q_c1_false_c2_false)),
+        casadi.if_else(c2, casadi.vertcat(*q_c1_true_c2_true), casadi.vertcat(*q_c1_true_c2_false)),
+        casadi.if_else(c2, casadi.vertcat(*q_c1_false_c2_true), casadi.vertcat(*q_c1_false_c2_false)),
     )
 
-    q *= 0.5 / cs.sqrt(t * M[3, 3])
+    q *= 0.5 / casadi.sqrt(t * M[3, 3])
     return q
 
 
@@ -1384,7 +1384,7 @@ def quaternion_multiply(quaternion1, quaternion0):
     z1 = quaternion1[2]
     w1 = quaternion1[3]
 
-    return cs.vertcat(
+    return casadi.vertcat(
          x1*w0 + y1*z0 - z1*y0 + w1*x0,
         -x1*z0 + y1*w0 + z1*x0 + w1*y0,
          x1*y0 - y1*x0 + z1*w0 + w1*z0,
@@ -1402,7 +1402,7 @@ def quaternion_conjugate(quaternion):
 
     """
     quaternion = _as_casadi_vector4(quaternion)
-    return cs.vertcat(-quaternion[0], -quaternion[1], -quaternion[2], quaternion[3])
+    return casadi.vertcat(-quaternion[0], -quaternion[1], -quaternion[2], quaternion[3])
 
 
 def quaternion_inverse(quaternion):
@@ -1712,14 +1712,14 @@ def vector_norm(data, axis=None):
     data = _as_casadi_array(data)
 
     if data.shape[0] == 1 or data.shape[1] == 1:
-        return cs.norm_fro(data)
+        return casadi.norm_fro(data)
 
     if axis == 0:
-        d = [cs.norm_fro(data[i,:]) for i in range(data.shape[0])]
-        return cs.vertcat(*d)
+        d = [casadi.norm_fro(data[i,:]) for i in range(data.shape[0])]
+        return casadi.vertcat(*d)
     elif axis == 1:
-        d = [cs.norm_fro(data[:,i]) for i in range(data.shape[1])]
-        return cs.horzcat(*d)
+        d = [casadi.norm_fro(data[:,i]) for i in range(data.shape[1])]
+        return casadi.horzcat(*d)
     else:
         raise ValueError(f"axis out of range, got {axis}, expected 0 or 1")
 
@@ -1753,15 +1753,15 @@ def unit_vector(data, axis=None):
 
     data = _as_casadi_array(data)
     if data.shape[0] == 1 or data.shape[1] == 1:
-        norm = cs.norm_fro(data)
+        norm = casadi.norm_fro(data)
         return data/norm
 
     if axis == 0:
-        d = [data[i,:]/cs.norm_fro(data[i,:]) for i in range(data.shape[0])]
-        return cs.vertcat(*d)
+        d = [data[i,:]/casadi.norm_fro(data[i,:]) for i in range(data.shape[0])]
+        return casadi.vertcat(*d)
     elif axis == 1:
-        d = [data[:,i]/cs.norm_fro(data[:,i]) for i in range(data.shape[1])]
-        return cs.horzcat(*d)
+        d = [data[:,i]/casadi.norm_fro(data[:,i]) for i in range(data.shape[1])]
+        return casadi.horzcat(*d)
     else:
         raise ValueError(f"axis out of range, got {axis}, expected 0 or 1")
 
@@ -1794,7 +1794,7 @@ def inverse_matrix(matrix):
 
     """
     matrix_ = _as_casadi_array(matrix)
-    return cs.inv(matrix_)
+    return casadi.inv(matrix_)
 
 
 # def concatenate_matrices(*matrices):
