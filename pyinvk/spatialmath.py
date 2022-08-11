@@ -53,7 +53,7 @@ def I4():
 def angvec2r(theta, v):
     """Convert angle and vector orientation to a rotation matrix"""
     sk = skew(unit(v))
-    R = I3() + sin(theta)*sk + (1-cos(theta))*sk@sk # Rodrigue's equation
+    R = I3() + sin(theta)*sk + (1.-cos(theta))*sk@sk # Rodrigue's equation
     return R
 
 @vectorize_args
