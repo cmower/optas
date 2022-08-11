@@ -165,10 +165,11 @@ def rotz(theta):
     )
 
 @vectorize_args
-def rpy2jac(r, p, y, opt='zyx'):
+def rpy2jac(rpy, opt='zyx'):
     """Jacobian from RPY angle rates to angular velocity"""
 
     order = ['zyx', 'xyz', 'yxz']
+    r, p, y = cs.vertsplit(rpy)
 
     sr, cr = sin(r), cos(r)
     sp, cp = sin(p), cos(p)
@@ -196,10 +197,11 @@ def rpy2jac(r, p, y, opt='zyx'):
         raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
 
 @vectorize_args
-def rpy2r(r, p, y, opt='zyx'):
+def rpy2r(rpy, opt='zyx'):
     """Roll-pitch-yaw angles to SO(3) rotation matrix"""
-    
+
     order = ['zyx', 'xyz', 'yxz', 'arm', 'vehicle', 'camera']
+    r, p, y = cs.vertsplit(rpy)
 
     if opt in {'xyz', 'arm'}:
         return rotx(y) @ roty(p) @ rotz(r)
@@ -211,8 +213,8 @@ def rpy2r(r, p, y, opt='zyx'):
         raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
 
 @vectorize_args
-def rpy2tr(r, p, y, opt='zyx'):
-    return r2t(rpy2r(r, p, y, opt=opt))
+def rpy2tr(rpy, opt='zyx'):
+    return r2t(rpy2r(rpy, opt=opt))
 
 @arrayify_args
 def rt2tr(R, t):
@@ -238,7 +240,7 @@ def skew(v):
         )
     else:
         raise ValueError(f"expecting a scalar or 3-vector")
-    
+
 @vectorize_args
 def skewa(v):
     """Create augmented skew-symmetric matrix"""
