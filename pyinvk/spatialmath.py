@@ -14,7 +14,7 @@ def _handle_arraylike_args(args, handle):
             args_out.append(a)
     return args_out
 
-def _arrayify_args(fun):
+def arrayify_args(fun):
     """Decorator that ensures all input arguments are casadi arrays (i.e. either DM or SX)"""
 
     def wrap(*args, **kwargs):
@@ -59,7 +59,7 @@ def delta2tr(d):
     lo = cs.DM.zeros(1, 4)
     return I4() + cs.vertcat(up, lo)
 
-@_arrayify_args
+@arrayify_args
 def e2h(e):
     """Euclidean to homogeneous"""
     ones = cs.DM.ones(1, e.shape[1])
@@ -86,7 +86,7 @@ def eul2tr(phi, theta, psi):
     """Convert Euler angles to homogeneous transform"""
     return r2t(eul2r(phi, theta, psi))
 
-@_arrayify_args
+@arrayify_args
 def h2e(h):
     """Homogeneous to Euclidean"""
     return h[:-1, :] / cs.repmat(h[-1, :], h.shape[0]-1, 1)
@@ -98,7 +98,7 @@ def oa2r(o, a):
     o = cs.cross(a, n)
     return cs.horzcat(unit(vec(n)), unit(vec(o)), unit(vec(a)))
 
-@_arrayify_args
+@arrayify_args
 def oa2tr(o, a):
     """Convert orientation and approach vectors to homogeneous transformation"""
     n = cs.cross(o, a)
@@ -108,7 +108,7 @@ def oa2tr(o, a):
         cs.DM([[0., 0., 0., 1]]),
     )
 
-@_arrayify_args
+@arrayify_args
 def r2t(R):
     """Convert rotation matrix to a homogeneous transform"""
     return cs.vertcat(
@@ -205,7 +205,7 @@ def rpy2r(r, p, y, opt='zyx'):
 def rpy2tr(r, p, y, opt='zyx'):
     return r2t(rpy2r(r, p, y, opt=opt))
 
-@_arrayify_args
+@arrayify_args
 def rt2tr(R, t):
     """Convert rotation and translation to homogeneous transform"""
     return cs.vertcat(
@@ -246,7 +246,7 @@ def skewa(v):
     else:
         raise ValueError(f"expecting a 3- or 6-vector")
 
-@_arrayify_args
+@arrayify_args
 def t2r(T):
     """Rotational submatrix"""
     return T[:3, :3]
@@ -256,7 +256,7 @@ def tr2angvec(T):
     """Convert rotation matrix to angle-vector form"""
     return trlog(t2r(T))
 
-@_arrayify_args
+@arrayify_args
 def tr2delta(T0, T1):
     """Convert SE(3) homogeneous transform to differential motion"""
     TD = cs.inv(T0) @ T1
@@ -265,7 +265,7 @@ def tr2delta(T0, T1):
         vex(t2r(TD) - I3()),
     )
 
-@_arrayify_args
+@arrayify_args
 def tr2eul(R, flip=False):
     """Convert SO(3) or SE(3) matrix to Euler angles"""
 
@@ -291,7 +291,7 @@ def tr2eul(R, flip=False):
 
     return cs.if_else(cond, eul_true, eul_false)
 
-@_arrayify_args
+@arrayify_args
 def tr2jac(T, samebody=False):
     """Jacobian for differential motion"""
     R = t2r(T)
@@ -306,22 +306,22 @@ def tr2jac(T, samebody=False):
             cs.horzcat(cs.DM.zeros(3, 3), R.T),
         )
 
-@_arrayify_args
+@arrayify_args
 def tr2rpy(T):
     """Convert SO(3) or SE(3) matrix to roll-pitch-yaw angles"""
     raise NotImplementedError()
 
-@_arrayify_args
+@arrayify_args
 def tr2rt(T):
     """Convert homogeneous transform to rotation and translation"""
     return t2r(T), transl(T)
 
-@_arrayify_args
+@arrayify_args
 def transl(T):
     """SE(3) translational homogeneous transform"""
     return T[:3, 3]
 
-@_arrayify_args
+@arrayify_args
 def transl2(T):
     """SE(2) translational homogeneous transform"""
     return T[:2, 2]
@@ -331,23 +331,23 @@ def trexp(S, theta):
     """Matrix exponential for so(3) and se(3)"""
     raise NotImplementedError()
 
-@_arrayify_args
+@arrayify_args
 def trlog(R):
     """Logarithm of SO(3) or SE(3) matrix"""
     theta = cs.acos(0.5*(cs.trace(R) - 1.))
     return theta, vex((R-R.T)/2./sin(theta))
-    
-@_arrayify_args
+
+@arrayify_args
 def trotx(theta):
     """SE(3) rotation about X axis"""
     return r2t(rotx(theta))
 
-@_arrayify_args
+@arrayify_args
 def troty(theta):
     """SE(3) rotation about Y axis"""    
     return r2t(roty(theta))
 
-@_arrayify_args
+@arrayify_args
 def trotz(theta):
     """SE(3) rotation about Z axis"""    
     return r2t(rotz(theta))
@@ -357,7 +357,7 @@ def unit(v):
     """Unitize a vector"""
     return v/cs.norm_fro(v)
 
-@_arrayify_args
+@arrayify_args
 def vex(S):
     if S.shape == [2, 2]:
         return 0.5*(S[1,0]-S[0,1])
@@ -367,7 +367,8 @@ def vex(S):
         raise ValueError('input must be a 2-by-2 or 3-by-3 matrix')
     
 
-@_arrayify_args
+
+@arrayify_args
 def vexa(S):
     """Convert augmented skew-symmetric matrix to vector"""
     if S.shape == [3, 3]:
