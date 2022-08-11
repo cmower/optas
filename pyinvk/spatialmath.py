@@ -387,3 +387,65 @@ def vexa(S):
         return cs.vertcat(trasnl2(S), vex(S[:2, :2]))
     else:
         raise ValueError("input must be a 3-by-3 or 4-by-4 matrix")
+
+class Quaternion:
+
+    def __init__(self, x, y, z, w):
+        self._q = cs.vertcat(x, y, z, w)
+
+    def split(self):
+        return cs.vertsplit(self._q)
+
+    def __mul__(self, quat):
+        assert isinstance(quat, Quaternion), "unsupported type"
+        x0, y0, z0, w0 = self.split()
+        x1, y1, z1, w1 = quat.split()
+        return Quaternion(
+            x1*w0 + y1*z0 - z1*y0 + w1*x0,
+            -x1*z0 + y1*w0 + z1*x0 + w1*y0,
+            x1*y0 - y1*x0 + z1*w0 + w1*z0,
+            -x1*x0 - y1*y0 - z1*z0 + w1*w0
+        )
+
+    @staticmethod
+    def fromrpy(rpy):
+        r, p, y = cs.vertsplit(vec(rpy))
+        cr, sr = cs.cos(0.5*r), cs.sin(0.5*r)
+        cp, sp = cs.cos(0.5*p), cs.sin(0.5*p)
+        cy, sy = cs.cos(0.5*y), cs.sin(0.5*y)
+
+        x = sr * cp * cy - cr * sp * sy
+        y = cr * sp * cy + sr * cp * sy
+        z = cr * cp * sy - sr * sp * cy
+        w = cr * cp * cy + sr * sp * sy
+
+        n = cs.sqrt(x*x + y*y + z*z + w*w)
+        return Quaternion(x/n, y/n, z/n, w/n)
+
+    @staticmethod
+    def fromangvec(theta, v):
+        w = cos(0.5*theta)
+        xyz = sin(0.5*theta)*unit(vec(v))
+        x, y, z = cs.vertsplit(xyz)
+        return Quaternion(x, y, z, w)
+
+    def getquat(self):
+        return self._q
+
+    def getrpy(self):
+        qx, qy, qz, qw = self.split()
+
+        sinr_cosp = 2.*(qw * qx + qy * qz)
+        cosr_cosp = 1. - 2. * (qx * qx + qy * qy)
+        roll = cs.atan2(sinr_cosp, cosr_cosp)
+
+        sinp = 2. * (qw * qy - qz * qx)
+
+        pitch = cs.if_else(cs.fabs(sinp) >= 1., cs.np.pi/2., cs.asin(sinp))
+
+        siny_cosp = 2. * (qw * qz + qx * qy)
+        cosy_cosp = 1. - 2. * (qy * qy + qz * qz)
+
+        yaw = cs.atan2(siny_cosp, cosy_cosp)
+
+        return cs.vertcat(roll, pitch, yaw)
