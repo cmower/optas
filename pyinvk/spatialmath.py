@@ -293,11 +293,11 @@ def tr2eul(R, flip=False):
 
     eul0_false = cs.atan2(-R[1, 2], -R[0, 2]) if flip else cs.atan2(R[1, 2], R[0, 2])
     sp, cp = sin(eul0_false), cos(eul0_false)
-    
+
     eul_false = cs.vertcat(
         eul0_false,
         cs.atan2(cp*R[0,2] + sp*R[1,2], R[2,2]),
-        cs.atan2(-sp * R[0,0] + cp * R[1,0], -sp*R[0,1] + cp*R[1,1]),        
+        cs.atan2(-sp * R[0,0] + cp * R[1,0], -sp*R[0,1] + cp*R[1,1]),
     )
 
     return cs.if_else(cond, eul_true, eul_false)
@@ -355,12 +355,12 @@ def trotx(theta):
 
 @arrayify_args
 def troty(theta):
-    """SE(3) rotation about Y axis"""    
+    """SE(3) rotation about Y axis"""
     return r2t(roty(theta))
 
 @arrayify_args
 def trotz(theta):
-    """SE(3) rotation about Z axis"""    
+    """SE(3) rotation about Z axis"""
     return r2t(rotz(theta))
 
 @vectorize_args
