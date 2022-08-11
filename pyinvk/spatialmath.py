@@ -32,6 +32,15 @@ def vectorize_args(fun):
 
     return wrap
 
+def _is_shape(M, s1, s2):
+    return M.shape[0] == s1 and M.shape[1] == s2
+
+def is_2x2(M):
+    return _is_shape(M, 2, 2)
+
+def is_3x3(M):
+    return _is_shape(M, 3, 3)
+
 def I3():
     """3-by-3 identity matrix"""
     return cs.DM.eye(3)
