@@ -370,13 +370,12 @@ def unit(v):
 
 @arrayify_args
 def vex(S):
-    if S.shape == [2, 2]:
+    if is_2x2(S):
         return 0.5*(S[1,0]-S[0,1])
-    elif S.shape == [3, 3]:
+    elif is_3x3(S):
         return 0.5*cs.vertcat(S[2,1]-S[1,2], S[0,2]-S[2,0], S[1,0]-S[0,1])
     else:
-        raise ValueError('input must be a 2-by-2 or 3-by-3 matrix')
-    
+        raise ValueError(f'input must be a 2-by-2 or 3-by-3 matrix, not {S.shape[0]}-by-{S.shape[1]}')
 
 
 @arrayify_args
