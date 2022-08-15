@@ -11,6 +11,16 @@ class RobotModel:
         self._urdf = URDF.from_xml_file(urdf_filename)
 
     @property
+    def joint_names(self):
+        """All joint names"""
+        return [jnt.name for jnt in self._urdf.joints]
+
+    @property
+    def link_names(self):
+        """All link names"""
+        return [lnk.name for lnk in self._urdf.links]
+
+    @property
     def actuated_joint_names(self):
         """Names of actuated joints"""
         return [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
