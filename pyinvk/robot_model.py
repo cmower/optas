@@ -32,6 +32,7 @@ class RobotModel:
 
     @staticmethod
     def get_joint_origin(joint):
+        """Get the origin for the joint"""
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
             xyz, rpy = cs.DM(joint.origin.xyz), cs.DM(joint.origin.rpy)
@@ -39,6 +40,7 @@ class RobotModel:
 
     @staticmethod
     def get_joint_axis(joint):
+        """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
         if joint.type in {'revolute', 'continuous'}:
             axis = unit(axis)
@@ -46,6 +48,7 @@ class RobotModel:
 
     @vectorize_args
     def get_global_link_transform(self, link_name, q):
+        """Get the link transform in the global frame for a given joint state q"""
 
         assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
@@ -76,10 +79,12 @@ class RobotModel:
         return T
 
     def get_global_link_position(self, link_name, q):
+        """Get the link position in the global frame for a given joint state q"""
         return transl(self.get_global_link_transform(link_name, q))
 
     @vectorize_args
     def get_global_link_quaternion(self, link_name, q):
+        """Get the link orientation as a quaternion in the global frame for a given joint state q"""
 
         assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
@@ -110,6 +115,12 @@ class RobotModel:
 
     @vectorize_args
     def get_geometric_jacobian(self, link_name, q):
+        """Get the geometric jacobian matrix for a given link and joint state q"""
+
+        #
+        # TODO: allow user to compute jacobian in any frame (i.e. not
+        # only the root link).
+        #
 
         e = self.get_global_link_position(link_name, q)
 
