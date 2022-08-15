@@ -1,679 +1,344 @@
 import casadi as cs
-import numpy as np
-from typing import Dict, List, Optional, Union
-from .robot_model import RobotModel
 from .sx_container import SXContainer
-from .optimization import QuadraticCostUnconstrained,\
-    QuadraticCostLinearConstraints,\
-    QuadraticCostNonlinearConstraints,\
-    NonlinearCostUnconstrained,\
-    NonlinearCostLinearConstraints,\
-    NonlinearCostNonlinearConstraints
+from .spatialmath import vectorize_args, arrayify_args
 
 class OptimizationBuilder:
 
-    """The OptimizationBuilder class is used to build an optimization problem."""
-
-    def __init__(
-            self,
-            T: Optional[int]=1,
-            robots: Optional[Dict[str, RobotModel]]={},
-            qderivs: Optional[List[int]]=[0],
-            ylabels: Optional[List[str]]=[],
-            ydims: Optional[Union[int,List[int]]]=None,
-            yderivs: Optional[List[int]]=None,
-            derivs_align: Optional[bool]=False,
-            optimize_time: Optional[bool]=False,
-    ):
+    def __init__(self, T, robots={}, tasks={}, optimize_time=False, derivs_align=False):
 
         # Input check
-        if optimize_time:
-            assert T>=2, "T must be greater than 1"
-        else:
-            assert T >= 1, "T must be strictly positive"
-        if robots:
-            assert qderivs, "when robots are given, you must supply qderivs"
-        maxqderiv = None
-        if len(qderivs):
-            assert min(qderivs) >= 0, "all values in qderivs should be non-negative"
-            maxqderiv = max(qderivs)
-            assert maxqderiv >= 0, "maximum qderiv must be non-negative"
-        if ylabels:
-            assert yderivs, "when ylabels is given, you must supply yderivs"
-        maxyderiv = None
-        if yderivs:
-            assert min(yderivs) >= 0, "all values in yderivs should be non-negative"
-            maxyderiv = max(yderivs)
-            assert maxyderiv >= 0, "maximum yderiv must be non-negative"
+        optimize_time = 1 if not optimize_time else 2
+        assert T > Tmin, f"T must be greater than {Tmin}"
+        assert all(d >= 0 for d in derivs), "derivs must be greater than or equal to zero"
+        assert all('dim' in value for tasks.values()), "each task must contain 'dim'"
 
-        if not derivs_align and (maxqderiv or maxyderiv):
-
-            derivs = []
-            if isinstance(maxqderiv, int):
-                derivs.append(maxqderiv)
-            if isinstance(maxyderiv, int):
-                derivs.append(maxyderiv)
-
-            maxderiv = max(derivs)
-            assert T > maxderiv, f"{T=} must be greater than {maxderiv}"
-
-        if isinstance(ydims, int):
-            assert ydims > 0, f"{ydims=} must strictly positive"
-            ydims = [ydims]*len(ylabels)
-        elif isinstance(ydims, int):
-            assert len(ydims) == len(ylabels), f"incorrect length for ydims, expected {len(ylabels)} got {len(ydims)}"
-        elif ydims is None:
-            pass
-        else:
-            raise TypeError(f"did not recognize {type(ydims)=}")
-
-        # Set class attributes
+        # Class attributes
         self.T = T
         self.robots = robots
-        self.qderivs = qderivs
-        self.ylabels = ylabels
-        self.ydims = ydims
-        self.yderivs = yderivs
-        self.derivs_align = derivs_align
+        self.derivs = derivs
+        self.tasks = tasks
         self.optimize_time = optimize_time
+        self.derivs_align = derivs_align
 
         # Setup decision variables
-        self.decision_variables = SXContainer()
-        for robot_name, robot in robots.items():
-            for qderiv in qderivs:
-                n = self.joint_state_name(robot_name, qderiv)
-                self.decision_variables[n] = cs.SX.sym(n, robot.ndof, T-qderiv if not derivs_align else T)
+        self._decision_variables = SXContainer()
 
-        if ylabels:
-            for label, ndim in zip(ylabels, ydims):
-                for yderiv in yderivs:
-                    n = self.task_state_name(label, yderiv)
-                    self.decision_variables[n] = cs.SX.sym(n, ndim, T-yderiv if not derivs_align else T)
+        for name, robot in robots.items():
+            for d in robot.time_derivs:
+                n = self.joint_state_name(name, d)
+                t = T-d if not derivs_align else T
+                self.add_decision_variables(n, robot.ndof, t)
+
+        for name, task in tasks.items():
+            dim = task['dim']
+            for d in self._get_task_time_derivs(task):
+                n = self.task_state_name(name, d)
+                t = T-d if not derivs_align else T
+                self.add_decision_variables(n, dim, t)
 
         if optimize_time:
-            self.decision_variables['dt'] = cs.SX.sym('dt', T-1)
+            self.add_decision_variables('dt', T-1)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
-        self.parameters = SXContainer()
-        self.cost_terms = SXContainer()
-        self.lin_eq_constraints = SXContainer()
-        self.lin_ineq_constraints = SXContainer()
-        self.ineq_constraints = SXContainer()
-        self.eq_constraints = SXContainer()
+        self._parameters = SXContainer()
+        self._cost_terms = SXContainer()
+        self._lin_eq_constraints = SXContainer()
+        self._lin_ineq_constraints = SXContainer()
+        self._ineq_constraints = SXContainer()
+        self._eq_constraints = SXContainer()
 
-    def print_desc(self):
+    #
+    # Joint/task state name generation
+    #
 
-        def print_(name, d):
-            n = d.numel()
-            print(name.capitalize()+f' ({n}):')
-            for label, value in d.items():
-                print(f"  {label} {value.shape}")
+    def joint_state_name(self, robot_name, time_deriv):
+        assert robot_name in self.robots.keys(), "robot name does not exist"
+        return robot_name + '/' + 'd'*time_deriv + 'q'
 
-        if self.is_cost_function_quadratic():
-            print("Cost function is quadratic.")
-        else:
-            print("Cost function is nonlinear.")
-        if self.decision_variables.numel() > 0:
-            print_("decision variables", self.decision_variables)
-        if self.parameters.numel() > 0:
-            print_("parameters", self.parameters)
-        if self.cost_terms.numel() > 0:
-            print_("cost terms", self.cost_terms)
-        if self.lin_eq_constraints.numel() > 0:
-            print_("linear equality constraints", self.lin_eq_constraints)
-        if self.lin_ineq_constraints.numel() > 0:
-            print_("linear inequality constraints", self.lin_ineq_constraints)
-        if self.eq_constraints.numel() > 0:
-            print_("equality constraints", self.eq_constraints)
-        if self.ineq_constraints.numel() > 0:
-            print_("inequality constraints", self.ineq_constraints)
+    def task_state_name(self, task_name, time_deriv):
+        assert task_name in self.tasks.keys(), "task name does not exist"
+        return 'd'*time_deriv + name
 
-    @staticmethod
-    def joint_state_name(robot_name: str, qderiv: int) -> str:
-        """Returns the state name for a given time derivative of q.
+    #
+    # Get joint/task states
+    #
 
-        The state name is used to index the decision variables.
+    def get_joint_state(self, robot_name, t, time_deriv=0):
+        joint_states = self.get_joint_states(robot_name, time_deriv)
+        return joint_states[:, t]
 
-        Parameters
-        ----------
+    def get_joint_states(self, robot_name, time_deriv=0):
+        assert time_deriv in self.robots[robot_name].time_derivs, f"robot called {robot_name} was not specified with time derivatives to order {time_deriv}"
+        n = self.joint_state_name(robot_name, time_deriv)
+        return self._decision_variables[n]
 
-        robot_name : str
-            Name of the robot, as given in the robots parameter in the
-            class constructor.
+    def get_task_state(self, task_name, t, time_deriv=0):
+        task_states = self.get_task_states(task_name, time_deriv)
+        return task_states[:, t]
 
-        qderiv : int
-            The derivative order.
+    def get_task_states(self, task_name, time_deriv=0):
+        task = self.tasks[task_name]
+        time_derivs = self._get_task_time_derivs(task)
+        assert time_deriv in time_derivs, f"task called {task_name} was not specified with time derivatives to order {time_deriv}"
+        n = self.task_state_name(task_name, time_deriv)
+        return self._decision_variables[n]
 
-        Returns
-        -------
-
-        state_name : str
-            A string in the format "{robot_name}/[D]q" where "[D]" is
-            qderiv-number of "d"'s, e.g. if robot_name="robot" and
-            qderiv=2, then the state name will be "robot/qdd".
-
-        """
-        return robot_name + '/' + 'd'*qderiv + 'q'
+    #
+    # Helper methods
+    #
 
     @staticmethod
-    def task_state_name(label: str, yderiv: int) -> str:
-        return 'd'*yderiv + label
+    def _get_task_time_derivs(task):
+        return task.get('time_derivs', [0])
+
+    def get_dt(self):
+        assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
+        return self._decision_variables['dt']
+
+    def _x(self):
+        return self._decision_variables.vec()
+
+    def _p(self):
+        return self._parameters.vec()
 
     def _is_linear(self, y):
-        x = self.decision_variables.vec()
-        return cs.is_linear(y, x)
+        return cs.is_linear(y, self._x())
 
-    def get_joint_state(
-            self,
-            robot_name: str,
-            t: int,
-            qderiv: Optional[int]=0) -> cs.casadi.SX:
-        """Return the configuration state for a given time deriviative of q.
+    def _cost(self):
+        return cs.sum1(self.cost_terms.vec())
 
-        Parameters
-        ----------
+    def is_cost_quadratic(self):
+        return cs.is_quadratic(self._cost(), self._x())
 
-        robot_name : str
-            Name of the robot, as given in the robots parameter in the
-            class constructor.
+    #
+    # Upate optimization problem
+    #
 
-        t : int
-            Time step in the trajectory.
-
-        qderiv : int
-            The derivative order.
-
-        Returns
-        -------
-
-        state : casadi.casadi.SX
-            The state for a given robot, at a given time derivative,
-            for a given time-step.
-
-        """
-        return self.get_joint_states(robot_name, qderiv)[:, t]
-
-    def get_joint_states(self, robot_name: str, qderiv: Optional[int]=0):
-        assert qderiv in self.qderivs, f"{qderiv=}, qderiv must be in {self.qderivs}"
-        return self.decision_variables[self.joint_state_name(robot_name, qderiv)]
-
-    def get_task_state(self, label: str, t: int, yderiv: int):
-        self.get_task_states(label, yderiv)[:, t]
-
-    def get_task_states(self, label: str, yderiv: int):
-        assert yderiv in self.yderivs, f"{yderiv=}, yderiv myst be in {self.yderivs}"
-        return self.decision_variables[self.task_state_name(label, yderiv)]
-
-    def add_decision_variables(
-            self,
-            name: str,
-            m: Optional[int]=1,
-            n: Optional[int]=1) -> cs.casadi.SX:
-        """Add a decision variable to the optimization problem.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the decision variable.
-
-        m : int (default is 1)
-            Number of rows in the decision variable array.
-
-        n : int (default is 1)
-            Number of columns in the decision variable array.
-
-        Returns
-        -------
-
-        decision_variable : casadi.casadi.SX
-            The decision variable SX array.
-        """
+    def add_decision_variables(self, name, m=1, n=1):
         x = cs.SX.sym(name, m, n)
-        self.decision_variables[name] = x
+        self._decision_variables[name] = x
         return x
 
-    def add_cost_term(self, name: str, cost_term: cs.casadi.SX) -> None:
-        """Add a cost term to the optimization problem.
-
-        When the optimization problem is built, the cost function is
-        given by a sum of cost terms.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the cost term.
-
-        cost_term : casadi.casadi.SX
-            The cost term as a SX variable. Note, this must be scalar,
-            i.e. with shape (1, 1).
-
-        """
-        assert cost_term.shape == (1, 1), "cost terms must be scalars"
-        self.cost_terms[name] = cost_term
-
-    def add_nominal_configuration_cost_term(self, robot_name, qnominal, w=1.0):
-
-        ndof = self.robots[robot_name].ndof
-        qnominal = cs.SX(qnominal)
-        assert qnominal.shape[0] == ndof, f"qnominal incorrect length, expected {ndof} got {qnominal.shape[0]}"
-
-        # Handle weight
-        w = cs.DM(w)
-        nw = w.shape[0]
-        if nw == 1:
-            W = w*cs.SX.eye(ndof)
-        else:
-            assert nw == ndof, f"w incorrect length, expected {ndof}, got {nw}"
-            W = cs.diag(w)
-
-        # Create nominal function
-        q_ = cs.SX.sym('q', ndof)  # joint state
-        qn_ = cs.SX.sym('qn', ndof)  # nominal joint state
-        qdiff_ = q_ - qn_
-        cost = cs.Function('nominal_cost', [q_, qn_], [qdiff_.T @ W @ qdiff_]).map(self.T)
-
-        # Handler
-        Q = self.get_joint_states(robot_name, qderiv=0)
-        QN = cs.diag(qnominal) @ cs.DM.ones(ndof, self.T)
-
-        self.add_cost_term('__nominal_configuration_cost__', cs.sum2(cost(Q, QN)))
-
-
-    def add_parameter(self, name: str, m: Optional[int]=1, n : Optional[int]=1) -> cs.casadi.SX:
-        """Add a parameter to the optimization problem.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the parameter. Note, this name is used when
-            referencing the parameter for the reset_parameters method
-            in the Solver class.
-
-        m : int (default is 1)
-            Number of rows in the parameter array.
-
-        n : int (default is 1)
-            Number of columns in the parameter array.
-
-        Returns
-        -------
-
-        param : casadi.casadi.SX
-            The SX parameter array.
-
-        """
+    def add_parameter(self, name, m=1, n=1):
         p = cs.SX.sym(name, m, n)
-        self.parameters[name] = p
+        self._parameters[name] = p
         return p
 
-    def add_ineq_constraint(
-            self,
-            name: str,
-            c1: Union[cs.casadi.SX, cs.casadi.DM],
-            c2: Optional[cs.casadi.SX]=None,) -> None:
-        """Adds an inequality constraint to the optimization problem.
+    @vectorize_args
+    def add_cost_term(self, name, cost_term):
+        m, n = cost_term.shape
+        assert m==1 and n==1, "cost term must be scalar"
+        self._cost_terms[name] = cost_term
 
-        Note, the constraint is defined as
+    @arrayify_args
+    def add_geq_ineq_constraint(self, name, lhs, rhs=None):
+        """lhs >= rhs"""
+        if rhs is None:
+            rhs = cs.DM.zeros(*lhs.shape)
+        self.add_leq_ineq_constraint(name, rhs, lhs):
 
-            lbc <= c <= ubc.
-
-        This is included in the linear constraint variable container
-        as two constraints, i.e.
-
-            c - lbc >= 0, and
-            ubc - c >= 0.
-
-        If the constraint is linear then it is added as a linear
-        constraint (i.e. it will be added to the lin_constraints
-        attribute, otherwise it will be logged in the ineq_constraints
-        attribute.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the constraint.
-
-        lbc : Union[cs.casadi.SX, cs.casadi.DM]
-            Lower bound for constraint.
-
-        c : Union[cs.casadi.SX, cs.casadi.DM]
-            The constraint array.
-
-        ubc : Union[cs.casadi.SX, cs.casadi.DM]
-            Upper bound for the constraint.
-
-        """
-
-        if c2 is None:
-            # c1 >= 0
-            LBC = cs.DM.zeros(*c1.shape)
-            UBC = c1
-        else:
-            LBC = c1
-            UBC = c2
-
-        diff = UBC - LBC  # LBC <= UBC   =>   diff = UBC - LBC >= 0
+    @arrayify_args
+    def add_leq_ineq_constraint(self, name, lhs, rhs=None):
+        """lhs <= rhs"""
+        if rhs is None:
+            rhs = cs.DM.zeros(*lhs.shape)
+        diff = rhs - lhs  # diff >= 0
         if self._is_linear(diff):
-            self.lin_ineq_constraints[name] = diff
+            self._lin_ineq_constraints[name] = diff
         else:
-            self.ineq_constraints[name] = diff
+            self._ineq_constraints[name] = diff
 
-    def add_eq_constraint(
-            self,
-            name: str,
-            c1: Union[cs.casadi.SX, cs.casadi.DM],
-            c2: Optional[Union[cs.casadi.SX, cs.casadi.DM]]=None) -> None:
-        """Adds an equality constraint to the optimization problem.
-
-        Note, the constraint is defined as lhsc == rhsc.
-
-        If the constraint is linear then it is added as a linear
-        constraint (i.e. it will be added to the lin_constraints
-        attribute, otherwise it will be logged in the eq_constraints
-        attribute.
-
-        Parameters
-        ----------
-
-        name : str
-            Name for the constraint.
-
-        lhsc : Union[cs.casadi.SX, cs.casadi.DM]
-            Left hand side of the equality constraint.
-
-        rhsc : Union[cs.casadi.SX, cs.casadi.DM] (default is None)
-            Right hand side of the equality constraint. This is
-            optional, if it is None then it is assumed to be the zero
-            array with the same shape as lhsc.
-
-        """
-
-        if c2 is None:
-            LHS = c1
-            RHS = cs.DM.zeros(*c1.shape)
+    @arrayify_args
+    def add_eq_constraint(self, name, lhs, rhs=None):
+        if rhs is None:
+            rhs = cs.DM.zeros(*lhs.shape)
+        diff = rhs - lhs  # diff >= 0
+        if self._is_linear(diff):
+            self._lin_eq_constraints[name] = diff
         else:
-            LHS = c1
-            RHS = c2
+            self._eq_constraints[name] = diff
 
-        eq = LHS - RHS
-        if self._is_linear(eq):
-            self.lin_eq_constraints[name] = eq
+    #
+    # Common cost terms
+    #
+
+    def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1.):
+        robot = self.robots[robot_name]
+        if qnom is None:
+            lo = robot.lower_actuated_joint_limits
+            up = robot.upper_actuated_joint_limits
+            qnom = 0.5*(lo + up)
+
+        qnom = cs.vec(qnom)
+
+        w = cs.vec(w)
+        if w.shape[0] == 1 and w.shape[1] == 1:
+            w = cs.DM.ones(robot.ndof)
         else:
-            self.eq_constraints[name] = eq
+            assert w.shape[0] == robot.ndof, f"w must be scalar or have {robot.ndof} elements"
 
-    def _create_integration_function(self, ndim, n):
-        xd = cs.SX.sym('xd', ndim)
-        x0 = cs.SX.sym('x0', ndim)
-        x1 = cs.SX.sym('x1', ndim)
+        # Create nominal function
+        W = cs.diag(w)
+        q_ = cs.SX.sym('q', robot.ndof)
+        qdiff_ = q_ - qnom
+        cost_term = cs.Function('nominal_cost', [q_], [qdiff_.T @ W @ qdiff_]).map(self.T)
+
+        # Compute cost term
+        Q = self.get_joint_states(robot_name, 0)
+        c = cost_term(Q)
+
+        # Add cost term
+        self.add_cost_term(cost_term_name, c)
+
+    #
+    # Common constraints
+    #
+
+    def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
+        """dt >= 0"""
+        assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
+        self.add_geq_ineq_constraint(constaint_name, self.get_dt())
+
+    def _integr(self, m, n):
+        xd = cs.SX.sym('xd', m)
+        x0 = cs.SX.sym('x0', m)
+        x1 = cs.SX.sym('x1', m)
         dt = cs.SX.sym('dt')
         integr = cs.Function('integr', [x0, x1, xd, dt], [x0 + dt*xd - x1])
         return integr.map(n)
 
-    def add_dynamic_joint_integr_constraints(self, robot_name, qderiv, dt=None):
-        assert qderiv > 0, "qderiv must be greater than 0"
+    def integrate_joint_state(self, robot_name, time_deriv, dt=None):
 
-        qd = self.get_joint_states(robot_name, qderiv)
-        q = self.get_joint_states(robot_name, qderiv-1)
+        if self.optimize_time and dt is not None:
+            raise ValueError("dt is given but user specified optimize_time as True")
+        if not self.optimize_time and dt is None:
+            raise ValueError("dt is not given")
+
+        robot = self.robots[robot_name]
+        qd = self.get_joint_states(robot_name, time_deriv)
+        q = self.get_joint_states(robot_name, time_deriv-1)
         n = qd.shape[1]
         if self.derivs_align:
             n -= 1
             qd = qd[:, :-1]
 
-
-        if self.optimize_time:
-            assert dt is None, "optimize_time was given as true and also dt is given"
-            dt = self.decision_variables['dt'][:n]
+        if dt is None:
+            dt = self.get_dt()[:n]
         else:
-            assert dt is not None, "dt is required when optimize_time is False"
-
             dt = cs.vec(dt)
+            assert dt.shape[0] in {1, n}, f"dt should be scalar or have {n} elements"
             if dt.shape[0] == 1:
                 dt = dt*cs.DM.ones(n)
-            else:
-                assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
-            dt = cs.vec(dt).T
+        dt = cs.vec(dt).T  # ensure 1-by-n
 
-        integr = self._create_integration_function(self.robots[robot_name].ndof, n)
-        self.add_eq_constraint(
-            f'__dynamic_joint_integr_{robot_name}_{qderiv}__',
-            integr(q[:,:-1], q[:,1:], qd, dt),
-        )
+        integr = self._integr(robot.ndof, n)
+        name = f'__integrate_joint_state_{robot_name}_{time_deriv}__'
+        self.add_eq_constraint(name, integr(q[:, :-1], q[:, 1:], qd, dt))
 
-    def add_dynamic_task_integr_constraints(self, label, yderiv, dt=None):
-        assert yderiv > 0, "yderiv must be greater than 0"
+    def integrate_task_state(self, task_name, time_deriv, dt=None):
 
-        yd = self.get_task_states(label, yderiv)
-        y = self.get_task_states(label, yderiv-1)
+        if self.optimize_time and dt is not None:
+            raise ValueError("dt is given but user specified optimize_time as True")
+        if not self.optimize_time and dt is None:
+            raise ValueError("dt is not given")
+
+        task = self.tasks[task_name]
+        assert time_deriv in _get_task_time_derivs(task), f"{time_deriv=}, does not exist"
+        yd = self.get_task_states(label, time_deriv)
+        y = self.get_task_states(label, time_deriv-1)
         n = yd.shape[1]
         if self.derivs_align:
             n -= 1
             yd = yd[:, :-1]
 
         if self.optimize_time:
-            assert dt is None, "optimize_time was given as true and also dt is given"
-            dt = self.decision_variables['dt'][:n]
+            dt = self.get_dt()[:n]
         else:
-            assert dt is not None, "dt is required when optimize_time is False"
-
             dt = cs.vec(dt)
+            assert dt.shape[0] in {1, n}, f"dt should be scalar or have {n} elements"
             if dt.shape[0] == 1:
                 dt = dt*cs.DM.ones(n)
-            else:
-                assert df.shape[0]==n, f"incorrect number of elements in dt array, expected {n} got {df.shape[0]}"
-            dt = cs.vec(dt).T
+        dt = cs.vec(dt).T  # ensure 1-by-n
 
-        integr = self._create_integration_function(self.ydims[self.ylabels.index(label)], n)
-        self.add_eq_constraint(
-            f'__dynamic_task_integr_{label}_{yderiv}__',
-            integr(y[:,:-1], y[:,1:], yd, dt),
-        )
+        integr = self._integr(task['dim'], n)
+        name = f'__integrate_task_state_{task_name}_{time_deriv}__'
+        self.add_eq_constraint(name, integr(y[:, :-1], y[:, 1:], yd, dt))
 
-    def add_fk_constraint(self, robot_name, label, parent, child):
-        y = self.get_task_states(label, 0)
-        q = self.get_joint_states(robot_name)
-
-        forward_kinematics = self.robots[robot_name].fk(parent, child)
-        ydim = y.shape[0]
-        if ydim == 3:
-            fk = forward_kinematics['pos'].map(self.T)
-        elif ydim == 6:
-            fk = forward_kinematics['pos_eul'].map(self.T)
-        elif ydim == 7:
-            fk = forward_kinematics['pos_quat'].map(self.T)
-        else:
-            raise ValueError(f"dimension for y is not recognized, got {ydim} expected either 3, 6, or 7")
-
-        self.add_eq_constraint(f'__fk_constraint_{robot_name}_{label}_{parent}_{child}__', fk(q), y)
-
-    def add_joint_position_limit_constraints(self, robot_name):
-        assert robot_name in self.robots, f"did not recognize robot '{robot_name}'"
+    def enforce_joint_position_limit_constraints(self, robot_name):
         robot = self.robots[robot_name]
         qlo = robot.lower_actuated_joint_limits
         qup = robot.upper_actuated_joint_limits
         q = self.get_joint_states(robot_name)
-        self.add_ineq_constraint(f'{robot_name}_joint_limit_lower', qlo, q)
-        self.add_ineq_constraint(f'{robot_name}_joint_limit_upper', q, qup)
+        self.add_leq_ineq_constraint(f'__{robot_name}_joint_limit_lower__', qlo, q)
+        self.add_leq_ineq_constraint(f'__{robot_name}_joint_limit_upper__', q, qup)
 
-    def is_cost_function_quadratic(self):
+    def enforce_joint_velocity_limit_constraints(self, robot_name):
+        qd = self.get_joint_states(robot_name, 1)
+        qdlim = self.robots[robot_name].velocity_actuated_joint_limits
+        self.add_leq_ineq_constraint(f'__{robot_name}_joint_velocity_limit_lower__', -qdlim, qd)
+        self.add_leq_ineq_constraint(f'__{robot_name}_joint_velocity_limit_upper__',  qd, qdlim)
 
-        # Get decision variables and parameters as SX column vectors
-        x = self.decision_variables.vec()
-        p = self.parameters.vec()
-
-        # Get forward functions
-        f = cs.sum1(self.cost_terms.vec())
-
-        return cs.is_quadratic(f, x)
+    #
+    # Main build method
+    #
 
     def build(self):
-        """Build the optimization problem.
-
-        For the given
-
-        - decision variables (x),
-        - parameters (p),
-        - cost function (cost), and
-        - constraints (k/g/h)
-
-        the approrpriate optimization problem is built. The type of
-        the optimization problem is chosen depending on the cost
-        function and constraints. The available problem types are as
-        follows. Note,
-
-        - dash "'" means transpose and full-stop "." means the dot
-          product, or matrix-matrix/matrix-vector multiplication,
-        - 0 is used to denote the zero array with an appropriate
-          dimension,
-        - equality constraints can be represented by inequality
-          constraints, i.e. lhs == rhs is equivalent to lhs <= rhs and
-          lhs >= rhs, and
-        - the problem type determines the solvers that are available
-          to solve the problem.
-
-        UnconstrainedQP:
-
-                min cost(x, p) where cost(x, p) = x'.P(p).x + x'.q(p)
-                 x
-
-            The problem is unconstrained, and has quadratic cost
-            function - note, P and q are derived from the given cost
-            function (you don't have to explicitly state P/q).
-
-        LinearConstrainedQP:
-
-                min cost(x, p) where cost(x, p) = x'.P(p).x + x'.q(p)
-                 x
-
-                subject to k(x, p) = M(p).x + c(p) >= 0
-
-            The problem is constrained by only linear constraints and
-            has a quadratic cost function - note, P/M and q/c are
-            derived from the given cost function and constraints (you
-            don't have to explicitly state P/q/M/c).
-
-        NonlinearConstrainedQP:
-
-                min cost(x, p) where cost(x) = x'.P(p).x + x'.q
-                 x
-
-                subject to
-
-                    k(x, p) = M(p).x + c(p) >= 0,
-                    g(x) == 0, and
-                    h(x) >= 0
-
-            The problem is constrained by nonlinear constraints and
-            has a quadratic cost function - note, P/M and q/c are
-            derived from the given cost function and constraints (you
-            don't have to explicitly state P/q/M/c).
-
-        UnconstrainedOptimization:
-
-                min cost(x, p)
-                 x
-
-            The problem is unconstrained and the cost function is
-            nonlinear in x.
-
-        LinearConstrainedOptimization:
-
-                min cost(x, p)
-                 x
-
-                subject to k(x, p) = M(p).x + c(p) >= 0
-
-            The problem is constrained with linear constraints and has
-            a nonlinear cost function in x.
-
-        NonlinearConstrainedOptimization:
-
-                min cost(x, p)
-                 x
-
-                subject to
-
-                    k(x, p) = M(p).x + c(p) >= 0,
-                    g(x) == 0, and
-                    h(x) >= 0
-
-            The problem is constrained by nonlinear constraints and
-            has a nonlinear cost function.
-
-        Returns
-        -------
-
-        opt_problem : Union[UnconstrainedQP,
-                            LinearConstrainedQP,
-                            NonlinearConstrainedQP,
-                            UnconstrainedOptimization,
-                            LinearConstrainedOptimization,
-                            NonlinearConstrainedOptimization]
-            The optimization problem of either one of the above
-            types. The problem type determines what costraints (and
-            their type) are available and also the structure of the
-            cost function.
-
-        """
 
         # Setup optimization
-        nlin = self.lin_ineq_constraints.numel()+self.lin_eq_constraints.numel()
-        nnlin = self.ineq_constraints.numel()+self.eq_constraints.numel()
+        nlin = self._lin_ineq_constraints.numel()+self._lin_eq_constraints.numel() # total no. linear constraints
+        nnlin = self._ineq_constraints.numel()+self._eq_constraints.numel() # total no. nonlinear constraints
 
-        if self.is_cost_function_quadratic():
+        if self.is_cost_quadratic():
             # True -> use QP formulation
             if nnlin > 0:
                 opt = QuadraticCostNonlinearConstraints(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
-                    self.lin_eq_constraints,
-                    self.lin_ineq_constraints,
-                    self.eq_constraints,
-                    self.ineq_constraints,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
+                    self._lin_eq_constraints,
+                    self._lin_ineq_constraints,
+                    self._eq_constraints,
+                    self._ineq_constraints,
                 )
             elif nlin > 0:
                 opt = QuadraticCostLinearConstraints(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
-                    self.lin_eq_constraints,
-                    self.lin_ineq_constraints,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
+                    self._lin_eq_constraints,
+                    self._lin_ineq_constraints,
                 )
             else:
                 opt = QuadraticCostUnconstrained(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
                 )
         else:
             # False -> use (nonlinear) Optimization formulation
             if nnlin > 0:
                 opt = NonlinearCostNonlinearConstraints(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
-                    self.lin_eq_constraints,
-                    self.lin_ineq_constraints,
-                    self.eq_constraints,
-                    self.ineq_constraints,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
+                    self._lin_eq_constraints,
+                    self._lin_ineq_constraints,
+                    self._eq_constraints,
+                    self._ineq_constraints,
                 )
             elif nlin > 0:
                 opt = NonlinearCostLinearConstraints(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
-                    self.lin_eq_constraints,
-                    self.lin_ineq_constraints,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
+                    self._lin_eq_constraints,
+                    self._lin_ineq_constraints,
                 )
             else:
                 opt = NonlinearCostUnconstrained(
-                    self.decision_variables,
-                    self.parameters,
-                    self.cost_terms,
+                    self._decision_variables,
+                    self._parameters,
+                    self._cost_terms,
                 )
 
         return opt
