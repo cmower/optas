@@ -77,7 +77,7 @@ class RobotModel:
         return len(self.actuated_joint_names)
 
     @staticmethod
-    def get_joint_origin(joint):
+    def _get_joint_origin(joint):
         """Get the origin for the joint"""
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
@@ -85,7 +85,7 @@ class RobotModel:
         return xyz, rpy
 
     @staticmethod
-    def get_joint_axis(joint):
+    def _get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
         if joint.type in {'revolute', 'continuous'}:
@@ -103,7 +103,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.get_joint_origin(joint)
+            xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
@@ -114,7 +114,7 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
                 T = T @ rt2tr(rpy2r(rpy), xyz)
-                T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
+                T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
 
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
@@ -139,7 +139,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.get_joint_origin(joint)
+            xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 quat = quat * Quaternion.fromrpy(rpy)
@@ -150,10 +150,11 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
                 quat = quat * Quaternion.fromrpy(rpy)
-                quat = quat * Quaternion.fromangvec(qi, self.get_joint_axis(joint))
+                quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
 
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
+
             if joint.child == link_name:
                 break
 
@@ -180,7 +181,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.get_joint_origin(joint)
+            xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 R = R @ rpy2r(rpy)
@@ -192,7 +193,7 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
 
-                axis = self.get_joint_axis(joint)
+                axis = self._get_joint_axis(joint)
 
                 R = R @ rpy2r(rpy)
                 R = R @ angvec2r(qi, axis)
