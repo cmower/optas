@@ -158,6 +158,8 @@ class RobotModel:
                 jcol = cs.vertcat(pdot, z)
                 jacobian_columns.append(jcol)
 
+            # elif joint.type == 'prismatic':  # TODO
+
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
 
