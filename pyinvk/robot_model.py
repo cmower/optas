@@ -1,7 +1,7 @@
 import casadi as cs
 
 # https://pypi.org/project/urdf-parser-py
-from urdf_parser_py.urdf import URDF
+from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 
 from .spatialmath import *
 
@@ -9,6 +9,38 @@ class RobotModel:
 
     def __init__(self, urdf_filename):
         self._urdf = URDF.from_xml_file(urdf_filename)
+
+
+
+    def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
+
+        if xyz is None:
+            xyz=[0.0]*3
+
+        if rpy is None:
+            rpy=[0.0]*3
+
+        if joint_name is None:
+            joint_name = parent_link_name + '_and_' + child_link_name + '_joint'
+
+        self._urdf.add_link(Link(name=child_link_name))
+
+        origin = Pose(xyz=xyz, rpy=rpy)
+        self._urdf.add_joint(
+            Joint(
+                name=joint_name,
+                parent=parent_link_name,
+                child=child_link_name,
+                joint_type='fixed',
+                origin=origin,
+            )
+        )
+
+    def add_base_frame(self, base_link_name, xyz=None, rpy=None, joint_name=None):
+        self._add_fixed_link(base_link_name, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
+
+    def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
+        self._add_fixed_link(parent_link_name, link_name, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
     @property
     def joint_names(self):
