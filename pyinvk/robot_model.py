@@ -35,9 +35,11 @@ class RobotModel:
         )
 
     def add_base_frame(self, base_link_name, xyz=None, rpy=None, joint_name=None):
+        """Add new base frame, note this changes the root link."""
         self._add_fixed_link(base_link_name, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
 
     def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
+        """Add a fixed link"""
         self._add_fixed_link(parent_link_name, link_name, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
     def get_root_link(self):
