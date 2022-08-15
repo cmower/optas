@@ -110,11 +110,11 @@ class RobotModel:
         return quat.getquat()
 
     @vectorize_args
-    def get_geometric_jacobian(self, q):
+    def get_geometric_jacobian(self, link_name, q):
 
         J = cs.SX.zeros(6, self.ndof)
 
-        e = self.get_global_link_position(self._end_effector_name, q)
+        e = self.get_global_link_position(link_name, q)
 
         w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
