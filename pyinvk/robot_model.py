@@ -7,9 +7,8 @@ from .spatialmath import *
 
 class RobotModel:
 
-    def __init__(self, urdf_filename, end_effector_name):
+    def __init__(self, urdf_filename):
         self._urdf = URDF.from_xml_file(urdf_filename)
-        self._end_effector_name = end_effector_name
 
     @property
     def actuated_joint_names(self):
