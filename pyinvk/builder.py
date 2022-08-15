@@ -10,7 +10,7 @@ class OptimizationBuilder:
         optimize_time = 1 if not optimize_time else 2
         assert T > Tmin, f"T must be greater than {Tmin}"
         assert all(d >= 0 for d in derivs), "derivs must be greater than or equal to zero"
-        assert all('dim' in value for tasks.values()), "each task must contain 'dim'"
+        assert all('dim' in value for value in tasks.values()), "each task must contain 'dim'"
 
         # Class attributes
         self.T = T
@@ -135,7 +135,7 @@ class OptimizationBuilder:
         """lhs >= rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
-        self.add_leq_ineq_constraint(name, rhs, lhs):
+        self.add_leq_ineq_constraint(name, rhs, lhs)
 
     @arrayify_args
     def add_leq_ineq_constraint(self, name, lhs, rhs=None):
