@@ -164,7 +164,7 @@ class RobotModel:
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
 
-        # Parse as casadi array
+        # Build jacoian array
         J = jacobian_columns_ordered.pop(0)
         while jacobian_columns_ordered:
             J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
