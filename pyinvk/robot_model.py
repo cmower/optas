@@ -10,8 +10,6 @@ class RobotModel:
     def __init__(self, urdf_filename):
         self._urdf = URDF.from_xml_file(urdf_filename)
 
-
-
     def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
 
         if xyz is None:
