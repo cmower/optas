@@ -232,3 +232,9 @@ class RobotModel:
         """Get the manipulability measure"""
         J = self.get_geometric_jacobian(link_index, q)
         return cs.sqrt(cs.det(J @ J.T))
+
+
+    def get_random_q(self):
+        lo = self.lower_actuated_joint_limits.toarray()
+        hi = self.upper_actuated_joint_limits.toarray()
+        return cs.vec(cs.np.random.uniform(lo, hi))
