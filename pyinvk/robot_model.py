@@ -172,3 +172,8 @@ class RobotModel:
             J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
 
         return J
+
+    def get_manipulability(self, link_index, q):
+        """Get the manipulability measure"""
+        J = self.get_geometric_jacobian(link_index, q)
+        return cs.sqrt(cs.det(J @ J.T))
