@@ -7,8 +7,9 @@ from .spatialmath import *
 
 class RobotModel:
 
-    def __init__(self, urdf_filename):
+    def __init__(self, urdf_filename, time_derivs=[0]):
         self._urdf = URDF.from_xml_file(urdf_filename)
+        self.time_derivs = time_derivs
 
     def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
 
