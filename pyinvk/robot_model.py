@@ -40,6 +40,10 @@ class RobotModel:
     def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
         self._add_fixed_link(parent_link_name, link_name, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
+    def get_root_link(self):
+        """Return the root link"""
+        return self._urdf.get_root()
+
     @property
     def joint_names(self):
         """All joint names"""
