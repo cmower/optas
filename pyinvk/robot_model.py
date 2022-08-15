@@ -111,8 +111,6 @@ class RobotModel:
     @vectorize_args
     def get_geometric_jacobian(self, link_name, q):
 
-        J = cs.SX.zeros(6, self.ndof)
-
         e = self.get_global_link_position(link_name, q)
 
         w = cs.DM.zeros(3)
@@ -120,16 +118,19 @@ class RobotModel:
 
         R = I3()
 
+        joint_index_order = []
+        jacobian_columns = []
+
         for joint in self._urdf.joints:
 
             xyz, rpy = self.get_joint_origin(joint)
-
 
             if joint.type == 'fixed':
                 R = R @ rpy2r(rpy)
                 continue
 
             joint_index = self.actuated_joint_names.index(joint.name)
+            joint_index_order.append(joint_index)
             qi = q[joint_index]
 
             if joint.type in {'revolute', 'continuous'}:
@@ -143,10 +144,18 @@ class RobotModel:
                 z = R @ axis
                 pdot = cs.cross(z, e - p)
 
-                J[:3, joint_index] = pdot
-                J[3:, joint_index] = z
+                jcol = cs.vertcat(pdot, z)
+                jacobian_columns.append(jcol)
 
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
+
+        # Sort columns of jacobian
+        jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
+
+        # Parse as casadi array
+        J = jacobian_columns_ordered.pop(0)
+        while jacobian_columns_ordered:
+            J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
 
         return J
