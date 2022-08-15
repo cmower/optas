@@ -32,21 +32,21 @@ class RobotModel:
         return len(self.actuated_joint_names)
 
     @staticmethod
-    def getJointOrigin(joint):
+    def get_joint_origin(joint):
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
             xyz, rpy = cs.DM(joint.origin.xyz), cs.DM(joint.origin.rpy)
         return xyz, rpy
 
     @staticmethod
-    def getJointAxis(joint):
+    def get_joint_axis(joint):
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
         if joint.type in {'revolute', 'continuous'}:
             axis = unit(axis)
         return axis
 
     @vectorize_args
-    def getGlobalLinkTransform(self, link_name, q):
+    def get_global_link_transform(self, link_name, q):
 
         assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
@@ -55,7 +55,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.getJointOrigin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
@@ -66,7 +66,7 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
                 T = T @ rt2tr(rpy2r(rpy), xyz)
-                T = T @ r2t(angvec2r(qi, self.getJointAxis(joint)))
+                T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
 
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
@@ -76,11 +76,11 @@ class RobotModel:
 
         return T
 
-    def getGlobalLinkPosition(self, link_name, q):
-        return transl(self.getGlobalLinkTransform(link_name, q))
+    def get_global_link_position(self, link_name, q):
+        return transl(self.get_global_link_transform(link_name, q))
 
     @vectorize_args
-    def getGlobalLinkQuaternion(self, link_name, q):
+    def get_global_link_quaternion(self, link_name, q):
 
         assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
@@ -89,7 +89,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.getJointOrigin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 quat = quat * Quaternion.fromrpy(rpy)
@@ -100,7 +100,7 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
                 quat = quat * Quaternion.fromrpy(rpy)
-                quat = quat * Quaternion.fromangvec(qi, self.getJointAxis(joint))
+                quat = quat * Quaternion.fromangvec(qi, self.get_joint_axis(joint))
 
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported")
@@ -110,11 +110,11 @@ class RobotModel:
         return quat.getquat()
 
     @vectorize_args
-    def getGeometricJacobian(self, q):
+    def get_geometric_jacobian(self, q):
 
         J = cs.SX.zeros(6, self.ndof)
 
-        e = self.getGlobalLinkPosition(self._end_effector_name, q)
+        e = self.get_global_link_position(self._end_effector_name, q)
 
         w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
@@ -123,7 +123,7 @@ class RobotModel:
 
         for joint in self._urdf.joints:
 
-            xyz, rpy = self.getJointOrigin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
 
             if joint.type == 'fixed':
@@ -135,11 +135,11 @@ class RobotModel:
 
             if joint.type in {'revolute', 'continuous'}:
 
-                axis = self.getJointAxis(joint)
+                axis = self.get_joint_axis(joint)
 
                 R = R @ rpy2r(rpy)
                 R = R @ angvec2r(qi, axis)
-                p = self.getGlobalLinkPosition(joint.child, q)
+                p = self.get_global_link_position(joint.child, q)
 
                 z = R @ axis
                 pdot = cs.cross(z, e - p)
