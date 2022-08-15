@@ -1,6 +1,16 @@
 import casadi as cs
 from casadi import sin, cos, vec
 
+"""
+
+This is a partial port to Python/CasADi, with some modifications, of
+the Spatial Math Toolbox for MATLAB. See the following.
+
+
+https://github.com/petercorke/spatialmath-matlab
+
+"""
+
 eps = cs.np.finfo(float).eps
 
 _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
