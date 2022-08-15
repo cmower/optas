@@ -74,6 +74,9 @@ class RobotModel:
     def upper_actuated_joint_limits(self):
         """Upper position limits for actuated joints"""
         return [jnt.limit.upper for jnt in self.robot.joints if jnt.type != 'fixed']
+    @property
+    def velocity_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
 
     @property
     def ndof(self):
