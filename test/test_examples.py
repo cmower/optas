@@ -5,7 +5,8 @@ import unittest
 
 """
 
-The goal of these unit tests are to ensure that each of the examples run without raising an exception.
+The goal of these unit tests are to ensure that each of the examples
+in example/ run without raising an exception.
 
 """
 
