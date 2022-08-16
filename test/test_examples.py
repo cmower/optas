@@ -3,6 +3,12 @@ import sys
 import pathlib
 import unittest
 
+"""
+
+The goal of these unit tests are to ensure that each of the examples run without raising an exception.
+
+"""
+
 examples_dir = os.path.join(pathlib.Path(__file__).parent.absolute().parent.absolute(), 'example')
 sys.path.append(examples_dir)
 
