@@ -147,6 +147,12 @@ class OptimizationBuilder:
             self._ineq_constraints[name] = diff
 
     @arrayify_args
+    def add_ineq_bound_constraint(self, name, lhs, mid, rhs):
+        """lhs <= mid <= rhs"""
+        self.add_leq_ineq_constraint(name+'_l', lhs, mid)
+        self.add_leq_ineq_constraint(name+'_r', mid, rhs)
+
+    @arrayify_args
     def add_eq_constraint(self, name, lhs, rhs=None):
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
