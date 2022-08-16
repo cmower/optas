@@ -241,11 +241,11 @@ class RobotModel:
         J = self.get_geometric_jacobian(link_index, q)
         return cs.sqrt(cs.det(J @ J.T))
 
-    def get_random_q(self):
+    def get_random_joint_positions(self):
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
         return cs.vec(cs.np.random.uniform(lo, hi))
 
     def get_random_pose_in_global_link(self, link_name):
-        q = self.get_random_q()
+        q = self.get_random_joint_positions()
         return self.get_global_link_transform(link_name, q)

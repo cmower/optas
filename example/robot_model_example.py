@@ -11,7 +11,7 @@ print("joint names:")
 for name in robot.actuated_joint_names:
     print(" ", name)
 
-qrand = robot.get_random_q()
+qrand = robot.get_random_joint_positions()
 print("\nRandom joint position state:")
 print(qrand.toarray().flatten())
 

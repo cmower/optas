@@ -52,7 +52,7 @@ def main():
     solver = pyinvk.OSQPSolver(builder.build()).setup()
 
     # Reset problem
-    solver.reset_parameters({'qcurr': robot.get_random_q(), 'vg': [0.05, 0.025, 0.02]})
+    solver.reset_parameters({'qcurr': robot.get_random_joint_positions(), 'vg': [0.05, 0.025, 0.02]})
 
     # Solve problem
     solution = solver.solve()
