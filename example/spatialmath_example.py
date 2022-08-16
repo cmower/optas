@@ -2,7 +2,6 @@ import pyinvk
 import pyinvk.spatialmath as sm
 pyinvk.cs.np.set_printoptions(precision=3, suppress=True)
 
-
 pi = pyinvk.cs.np.pi
 
 thetar = pyinvk.cs.np.random.uniform(-pi, pi)  # random angle
