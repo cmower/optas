@@ -1,21 +1,19 @@
 import casadi as cs
 from .sx_container import SXContainer
 from .spatialmath import vectorize_args, arrayify_args
+from .optimization import *
 
 class OptimizationBuilder:
 
     def __init__(self, T, robots={}, tasks={}, optimize_time=False, derivs_align=False):
 
         # Input check
-        optimize_time = 1 if not optimize_time else 2
-        assert T > Tmin, f"T must be greater than {Tmin}"
-        assert all(d >= 0 for d in derivs), "derivs must be greater than or equal to zero"
+        assert T > 0, f"T must be strictly positive"
         assert all('dim' in value for value in tasks.values()), "each task must contain 'dim'"
 
         # Class attributes
         self.T = T
         self.robots = robots
-        self.derivs = derivs
         self.tasks = tasks
         self.optimize_time = optimize_time
         self.derivs_align = derivs_align
@@ -105,7 +103,7 @@ class OptimizationBuilder:
         return cs.is_linear(y, self._x())
 
     def _cost(self):
-        return cs.sum1(self.cost_terms.vec())
+        return cs.sum1(self._cost_terms.vec())
 
     def is_cost_quadratic(self):
         return cs.is_quadratic(self._cost(), self._x())
