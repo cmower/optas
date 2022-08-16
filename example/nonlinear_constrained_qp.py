@@ -1,3 +1,4 @@
+import pathlib
 import pyinvk
 pyinvk.cs.np.set_printoptions(precision=3, suppress=True)
 
@@ -33,7 +34,7 @@ def main():
     T = 1  # time steps
     lambd = 0.1  # weighting term
     time_derivs=[1]  # time derivatives required in the robot model
-    urdf_filename = './robots/med7.urdf'  # filename for the robot urdf
+    urdf_filename = str(pathlib.Path(__file__).parent.absolute())+'/robots/med7.urdf'  # filename for the robot urdf
     eff_link_name = 'lbr_link_ee'  # link name for the end-effector
     derivs_align = True  # time derivatives align, False will throw an error
     plim_minus = [-0.5]*3  # lower position bound for end-effector
@@ -82,6 +83,7 @@ def main():
     # Solve problem
     solution = solver.solve()
     print("solution =", solution['kuka/dq'].toarray().flatten())
+
 
 if __name__ == '__main__':
     main()
