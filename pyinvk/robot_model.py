@@ -228,6 +228,14 @@ class RobotModel:
 
         return J
 
+    def get_linear_geometric_jacobian(self, link_name, q):
+        J = self.get_geometric_jacobian(link_name, q)
+        return J[:3, :]
+
+    def get_angular_geometric_jacobian(self, link_name, q):
+        J = self.get_geometric_jacobian(link_name, q)
+        return J[3:, :]
+
     def get_manipulability(self, link_index, q):
         """Get the manipulability measure"""
         J = self.get_geometric_jacobian(link_index, q)
