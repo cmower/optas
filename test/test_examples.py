@@ -19,7 +19,7 @@ class TestExamples(unittest.TestCase):
         self._run_main('linear_constrained_qd_example')
 
     def test_nonlinear_constrained_qp_py(self):
-        self._run_main('nonlinear_constrained_qp')
+        self._run_main('nonlinear_constrained_qp_example')
 
     def test_robot_model_example_py(self):
         self._run_main('robot_model_example')
