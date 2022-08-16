@@ -37,5 +37,8 @@ class TestExamples(unittest.TestCase):
     def test_unconstrained_qp_example_py(self):
         self._run_main('unconstrained_qp_example')
 
+    def test_unconstrained_nlp_example_py(self):
+        self._run_main('unconstrained_nlp_example')
+
 if __name__ == '__main__':
     unittest.main()
