@@ -24,7 +24,7 @@ def main():
     T = 1  # time steps
     lambd = 0.1  # weighting term
     time_derivs=[1]  # time derivatives required in the robot model
-    urdf_filename = 'med7.urdf'  # filename for the robot urdf
+    urdf_filename = './robots/med7.urdf'  # filename for the robot urdf
     eff_link_name = 'lbr_link_ee'  # link name for the end-effector
     derivs_align = True  # time derivatives align, False will throw an error
 
