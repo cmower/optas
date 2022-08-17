@@ -1,213 +1,251 @@
 import casadi as cs
-from typing import Dict
-from urdf_parser_py.urdf import URDF, Joint, Link, Pose
-from .tf import transformation_matrix_fixed, \
-    transformation_matrix_prismatic, \
-    transformation_matrix_revolute, \
-    quaternion_product, \
-    quaternion_fixed, \
-    quaternion_revolute
-from .transformations import euler_from_matrix, euler_matrix
-from .spatialmath import rt2tr
 
+# https://pypi.org/project/urdf-parser-py
+from urdf_parser_py.urdf import URDF, Joint, Link, Pose
+
+from .spatialmath import *
 
 class RobotModel:
 
-    """Robot model class"""
+    def __init__(self, urdf_filename, time_derivs=[0]):
+        self._urdf = URDF.from_xml_file(urdf_filename)
+        self.time_derivs = time_derivs
 
-    def __init__(self, urdf_filename, base_link_name='baselink', base_xyz=[0.0, 0.0, 0.0], base_rpy=[0.0, 0.0, 0.0], base_joint_name='basejoint'):
-        """Constructor for the RobotModel class.
+    def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
 
-        Parameters
-        ----------
+        if xyz is None:
+            xyz=[0.0]*3
 
-        urdf_filename : str
-            Filename for the URDF file.
+        if rpy is None:
+            rpy=[0.0]*3
 
-        base_link_name : str (default is 'baselink')
-            Name for the base link of the URDF. This allows you to
-            position several robots with respect to a common frame.
+        if joint_name is None:
+            joint_name = parent_link_name + '_and_' + child_link_name + '_joint'
 
-        base_xyz : list[float] (default is [0., 0., 0.])
-            The xyz position of the base link (must be a list of three elements).
+        self._urdf.add_link(Link(name=child_link_name))
 
-        base_rpy : list[float] (default is [0., 0., 0.])
-            The rpy orientation of the base link (must be a list of
-            three elements). The orientation is defined by the
-            roll-pitch-yaw Euler angles.
+        origin = Pose(xyz=xyz, rpy=rpy)
+        self._urdf.add_joint(
+            Joint(
+                name=joint_name,
+                parent=parent_link_name,
+                child=child_link_name,
+                joint_type='fixed',
+                origin=origin,
+            )
+        )
 
-        base_joint_name : str (default is 'basejoint')
-            The name for the base joint.
+    def add_base_frame(self, base_link_name, xyz=None, rpy=None, joint_name=None):
+        """Add new base frame, note this changes the root link."""
+        assert base_link_name not in self.link_names, f"'{base_link_name}' already exists"
+        self._add_fixed_link(base_link_name, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
 
-        """
+    def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
+        """Add a fixed link"""
+        assert link_name not in self.link_names, f"'{link_name}' already exists"
+        assert parent_link_name in self.link_names, f"{parent_link_name=}, does not appear in link names"
+        self._add_fixed_link(parent_link_name, link_name, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
-        # Load robot from urdf
-        self.robot = URDF.from_xml_file(urdf_filename)
-
-        # # Ensure base names are not already defined
-        # assert base_link_name not in self.robot.link_map, f"given base link name '{base_link_name}' already exists"
-        # assert base_joint_name not in self.robot.joint_map, f"given base joint name '{base_joint_name}' already exists"
-
-        # # Add base
-        # self.robot.add_link(Link(name=base_link_name))
-        # self.robot.add_joint(Joint(name=base_joint_name, parent=base_link_name, child=self.robot.links[0].name, joint_type='fixed', origin=Pose(xyz=base_xyz, rpy=base_rpy)))
+    def get_root_link(self):
+        """Return the root link"""
+        return self._urdf.get_root()
 
     @property
-    def ndof(self):
-        """Number of Degrees Of Freedom"""
-        return sum([jnt.type != 'fixed' for jnt in self.robot.joints])
+    def joint_names(self):
+        """All joint names"""
+        return [jnt.name for jnt in self._urdf.joints]
+
+    @property
+    def link_names(self):
+        """All link names"""
+        return [lnk.name for lnk in self._urdf.links]
 
     @property
     def actuated_joint_names(self):
         """Names of actuated joints"""
-        return [jnt.name for jnt in self.robot.joints if jnt.type != 'fixed']
+        return [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
 
     @property
     def lower_actuated_joint_limits(self):
         """Lower position limits for actuated joints"""
-        return [jnt.limit.lower for jnt in self.robot.joints if jnt.type != 'fixed']
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'])
 
     @property
     def upper_actuated_joint_limits(self):
         """Upper position limits for actuated joints"""
-        return [jnt.limit.upper for jnt in self.robot.joints if jnt.type != 'fixed']
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'])
 
-    def _get_joint_chain(self, parent, child):
-        """Private method for returning the joint chain."""
-        return [
-            self.robot.joint_map[name]
-            for name in self.robot.get_chain(parent, child)
-            if name in self.robot.joint_map
-        ]
+    @property
+    def velocity_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def ndof(self):
+        """Number of Degrees Of Freedom"""
+        return len(self.actuated_joint_names)
 
     @staticmethod
     def _get_joint_origin(joint):
-        """Private/static method for returning the joint origin."""
+        """Get the origin for the joint"""
+        xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
-            xyz = cs.DM(joint.origin.xyz)
-            rpy = cs.DM(joint.origin.rpy)
-        else:
-            xyz = cs.DM.zeros(3)
-            rpy = cs.DM.zeros(3)
+            xyz, rpy = cs.DM(joint.origin.xyz), cs.DM(joint.origin.rpy)
         return xyz, rpy
 
     @staticmethod
     def _get_joint_axis(joint):
-        """Private/state method for returning the joint axis."""
-        if joint.axis is not None:
-            axis = cs.DM(joint.axis)
-        else:
-            axis = cs.DM([1.0, 0.0, 0.0])
-        norm = cs.norm_fro(axis)
-        return axis/norm
+        """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
+        axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
+        if joint.type in {'revolute', 'continuous'}:
+            axis = unit(axis)
+        return axis
 
-    def fk(self, parent: str, child: str) -> Dict[str, cs.casadi.Function]:
-        """Forward kinematics.
+    @vectorize_args
+    def get_global_link_transform(self, link_name, q):
+        """Get the link transform in the global frame for a given joint state q"""
 
-        Parameters
-        ----------
+        assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
-        parent : str
-            The parent link name.
+        T = I4()
+        if link_name == self._urdf.get_root(): return T
 
-        child : str
-            The child link name.
+        for joint in self._urdf.joints:
 
-        Returns
-        -------
+            xyz, rpy = self._get_joint_origin(joint)
 
-        fk : Dict[str, casadi.casadi.Function]
-
-        The foward kinematics containing the following functions. Each
-        function is defined with respect to the joint configuration q
-        with ndof elements.
-        - 'T': 4-by-4 array defining the transformation frame between
-          the parent and child links.
-        - 'pos': position of the child link.
-        - 'pos_jac': the jacobian array of the position.
-        - 'eul': Euler angles defined the orientation between the
-          parent and child links.
-        - 'eul_jac': Jacobian of the Euler angles.
-        - 'quat': Quaternion defining the orientation between the
-          parent and child link.
-
-        """
-
-        # Initialize variables
-        q = cs.SX.sym('q', self.ndof)
-        T = cs.SX.eye(4)
-        quat = cs.SX([0.0, 0.0, 0.0, 1.0])
-
-        # Iterate over joints
-        for joint in self._get_joint_chain(parent, child):
-
-            # Handle fixed joints
             if joint.type == 'fixed':
-                xyz, rpy = RobotModel._get_joint_origin(joint)
-
-                E = rt2tr(euler_matrix(rpy[0], rpy[1], rpy[2]), xyz)
-
-                T = T @ E
-                quat = quaternion_product(quat, quaternion_fixed(rpy))
+                T  = T @ rt2tr(rpy2r(rpy), xyz)
                 continue
 
-            # Get actuated joint variable
             joint_index = self.actuated_joint_names.index(joint.name)
             qi = q[joint_index]
 
-            # Handle actuated joints
-            if joint.type == 'prismatic':
-                xyz, rpy = RobotModel._get_joint_origin(joint)
-                axis = RobotModel._get_joint_axis(joint)
-                T = T @ transformation_matrix_prismatic(xyz, rpy, axis, qi)
-                quat = quaternion_product(quat, quaternion_fixed(rpy))
+            if joint.type in {'revolute', 'continuous'}:
+                T = T @ rt2tr(rpy2r(rpy), xyz)
+                T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
 
-            elif joint.type in {'revolute', 'continuous'}:
-                xyz, rpy = RobotModel._get_joint_origin(joint)
-                axis = RobotModel._get_joint_axis(joint)
-                T = T @ transformation_matrix_revolute(xyz, rpy, axis, qi)
-                quat = quaternion_product(quat, quaternion_revolute(xyz, rpy, axis, qi))
+            else:
+                raise NotImplementedError(f"{joint.type} joints are currently not supported")
 
-        # Get Euler angles
-        qw, qx, qy, qz = quat[3], quat[0], quat[1], quat[2]
+            if joint.child == link_name:
+                break
 
-        sinr_cosp = 2.*(qw * qx + qy * qz)
-        cosr_cosp = 1. - 2. * (qx * qx + qy * qy)
-        roll = cs.atan2(sinr_cosp, cosr_cosp)
+        return T
 
-        sinp = 2. * (qw * qy - qz * qx)
+    def get_global_link_position(self, link_name, q):
+        """Get the link position in the global frame for a given joint state q"""
+        return transl(self.get_global_link_transform(link_name, q))
 
-        pitch = cs.if_else(
-            cs.fabs(sinp) >= 1.,
-            cs.np.pi/2.,
-            cs.asin(sinp),
-        )
+    @vectorize_args
+    def get_global_link_quaternion(self, link_name, q):
+        """Get the link orientation as a quaternion in the global frame for a given joint state q"""
 
-        siny_cosp = 2. * (qw * qz + qx * qy)
-        cosy_cosp = 1. - 2. * (qy * qy + qz * qz)
+        assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
 
-        yaw = cs.atan2(siny_cosp, cosy_cosp)
+        quat = Quaternion(0., 0., 0., 1.)
+        if link_name == self._urdf.get_root(): return quat
 
-        eul = cs.vertcat(roll, pitch, yaw)
+        for joint in self._urdf.joints:
 
-        # Get position
-        pos = T[:3, 3]
+            xyz, rpy = self._get_joint_origin(joint)
 
-        # Get jacobians
-        pos_jac = cs.jacobian(pos, q)
-        eul_jac = cs.jacobian(eul, q)
-        quat_jac = cs.jacobian(quat, q)
+            if joint.type == 'fixed':
+                quat = quat * Quaternion.fromrpy(rpy)
+                continue
 
-        return {
-            'T': cs.Function('T', [q], [T]),
-            'pos': cs.Function('pos', [q], [pos]),
-            'pos_jac': cs.Function('pos_jac', [q], [pos_jac]),
-            'eul': cs.Function('eul', [q], [eul]),
-            'eul_jac': cs.Function('eul_jac', [q], [eul_jac]),
-            'quat': cs.Function('quat', [q], [quat]),
-            'quat_jac': cs.Function('quat_jac', [q], [quat_jac]),
-            'pos_quat': cs.Function('pos_quat', [q], [cs.vertcat(pos, quat)]),
-            'pos_eul': cs.Function('pos_eul', [q], [cs.vertcat(pos, eul)]),
-            'pos_quat_jac': cs.Function('pos_quat_jac', [q], [cs.vertcat(pos_jac, quat_jac)]),
-            'pos_eul_jac': cs.Function('pos_eul_jac', [q], [cs.vertcat(pos_jac, eul_jac)]),
-        }
+            joint_index = self.actuated_joint_names.index(joint.name)
+            qi = q[joint_index]
+
+            if joint.type in {'revolute', 'continuous'}:
+                quat = quat * Quaternion.fromrpy(rpy)
+                quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
+
+            else:
+                raise NotImplementedError(f"{joint.type} joints are currently not supported")
+
+            if joint.child == link_name:
+                break
+
+        return quat.getquat()
+
+    @vectorize_args
+    def get_geometric_jacobian(self, link_name, q):
+        """Get the geometric jacobian matrix for a given link and joint state q"""
+
+        #
+        # TODO: allow user to compute jacobian in any frame (i.e. not
+        # only the root link).
+        #
+
+        e = self.get_global_link_position(link_name, q)
+
+        w = cs.DM.zeros(3)
+        pdot = cs.DM.zeros(3)
+
+        R = I3()
+
+        joint_index_order = []
+        jacobian_columns = []
+
+        for joint in self._urdf.joints:
+
+            xyz, rpy = self._get_joint_origin(joint)
+
+            if joint.type == 'fixed':
+                R = R @ rpy2r(rpy)
+                continue
+
+            joint_index = self.actuated_joint_names.index(joint.name)
+            joint_index_order.append(joint_index)
+            qi = q[joint_index]
+
+            if joint.type in {'revolute', 'continuous'}:
+
+                axis = self._get_joint_axis(joint)
+
+                R = R @ rpy2r(rpy)
+                R = R @ angvec2r(qi, axis)
+                p = self.get_global_link_position(joint.child, q)
+
+                z = R @ axis
+                pdot = cs.cross(z, e - p)
+
+                jcol = cs.vertcat(pdot, z)
+                jacobian_columns.append(jcol)
+
+            # elif joint.type == 'prismatic':  # TODO
+
+            else:
+                raise NotImplementedError(f"{joint.type} joints are currently not supported")
+
+        # Sort columns of jacobian
+        jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
+
+        # Build jacoian array
+        J = jacobian_columns_ordered.pop(0)
+        while jacobian_columns_ordered:
+            J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
+
+        return J
+
+    def get_linear_geometric_jacobian(self, link_name, q):
+        J = self.get_geometric_jacobian(link_name, q)
+        return J[:3, :]
+
+    def get_angular_geometric_jacobian(self, link_name, q):
+        J = self.get_geometric_jacobian(link_name, q)
+        return J[3:, :]
+
+    def get_manipulability(self, link_index, q):
+        """Get the manipulability measure"""
+        J = self.get_geometric_jacobian(link_index, q)
+        return cs.sqrt(cs.det(J @ J.T))
+
+    def get_random_joint_positions(self):
+        lo = self.lower_actuated_joint_limits.toarray()
+        hi = self.upper_actuated_joint_limits.toarray()
+        return cs.vec(cs.np.random.uniform(lo, hi))
+
+    def get_random_pose_in_global_link(self, link_name):
+        q = self.get_random_joint_positions()
+        return self.get_global_link_transform(link_name, q)

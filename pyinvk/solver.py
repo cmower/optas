@@ -123,6 +123,11 @@ class Solver(ABC):
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
 
+    def evaluate_cost(self, x, p):
+        x = self.opt.decision_variables.dict2vec(x)
+        p = self.opt.parameters.dict2vec(p)
+        return self.opt.f(x, p)
+
 
 ################################################################
 # CasADi solvers (https://web.casadi.org/)
