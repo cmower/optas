@@ -136,6 +136,10 @@ class CasADiSolver(Solver):
 
     """This is a base class for CasADi solver interfaces."""
 
+    nlp_solvers = {'ipopt', 'knitro', 'snopt', 'worhp', 'scpgen', 'sqpmethod'}
+    qp_solvers = {'cplex', 'gurobi', 'ooqp', 'qpoases', 'sqic', 'nlp'}
+    
+
     def setup(self, solver_name, solver_options={}):
 
         # Setup problem
@@ -159,10 +163,13 @@ class CasADiSolver(Solver):
             self._ubg = self.opt.ubv
 
         # Get solver interface
-        if self.opt_type in QP_COST:
+
+        if solver_name in self.qp_solvers:
             sol = cs.qpsol
-        else:
+        elif solver_name in self.nlp_solvers:
             sol = cs.nlpsol
+        else:
+            raise ValueError(f"did not recognize {solver_name=}")
 
         # Check for discrete variables
         if self.opt.decision_variables.has_discrete_variables():
