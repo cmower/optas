@@ -156,7 +156,7 @@ class OptimizationBuilder:
     def add_eq_constraint(self, name, lhs, rhs=None):
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
-        diff = rhs - lhs  # diff >= 0
+        diff = rhs - lhs  # diff == 0
         if self._is_linear(diff):
             self._lin_eq_constraints[name] = diff
         else:
