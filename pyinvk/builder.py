@@ -112,9 +112,11 @@ class OptimizationBuilder:
     # Upate optimization problem
     #
 
-    def add_decision_variables(self, name, m=1, n=1):
+    def add_decision_variables(self, name, m=1, n=1, is_discrete=False):
         x = cs.SX.sym(name, m, n)
         self._decision_variables[name] = x
+        if is_discrete:
+            self._decision_variables.variable_is_discrete(name)
         return x
 
     def add_parameter(self, name, m=1, n=1):
