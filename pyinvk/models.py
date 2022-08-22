@@ -26,6 +26,10 @@ class Model:
         assert time_deriv in self.dlim.keys(), f"Limit for time derivative {time_deriv=} has not been given"
         return self.dlim[time_deriv]
 
+    def in_limits(self, x, time_deriv):
+        lo, up = self.get_limits(time_deriv)
+        return cs.logic_all(cs.logical_and(lo <= x, x <= up))
+
 
 class TaskModel(Model):
 
