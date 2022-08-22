@@ -1,4 +1,4 @@
 import casadi as cs
-from .robot_model import RobotModel
+from .models import RobotModel, TaskModel
 from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver

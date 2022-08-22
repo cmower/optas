@@ -9,30 +9,20 @@ class OptimizationBuilder:
 
         # Input check
         assert T > 0, f"T must be strictly positive"
-        assert all('dim' in value for value in tasks.values()), "each task must contain 'dim'"
 
         # Class attributes
         self.T = T
-        self.robots = robots
-        self.tasks = tasks
+        self._models = {**robots, **tasks}
         self.optimize_time = optimize_time
         self.derivs_align = derivs_align
 
         # Setup decision variables
         self._decision_variables = SXContainer()
-
-        for name, robot in robots.items():
-            for d in robot.time_derivs:
-                n = self.joint_state_name(name, d)
-                t = T-d if not derivs_align else T
-                self.add_decision_variables(n, robot.ndof, t)
-
-        for name, task in tasks.items():
-            dim = task['dim']
-            for d in self._get_task_time_derivs(task):
-                n = self.task_state_name(name, d)
-                t = T-d if not derivs_align else T
-                self.add_decision_variables(n, dim, t)
+        for name, model in self._models.items():
+            for d in model.time_derivs:
+                n = model.state_name(d)
+                t = T-d if not derivs align else T
+                self.add_decision_variables(n, model.dim, t)
 
         if optimize_time:
             self.add_decision_variables('dt', T-1)
@@ -45,65 +35,38 @@ class OptimizationBuilder:
         self._ineq_constraints = SXContainer()
         self._eq_constraints = SXContainer()
 
-    #
-    # Joint/task state name generation
-    #
 
-    def joint_state_name(self, robot_name, time_deriv):
-        assert robot_name in self.robots.keys(), "robot name does not exist"
-        return robot_name + '/' + 'd'*time_deriv + 'q'
+    def get_model_state(self, name, t, time_deriv=0):
+        states = self.get_model_states(name, time_deriv)
+        return states[:, t]
 
-    def task_state_name(self, task_name, time_deriv):
-        assert task_name in self.tasks.keys(), "task name does not exist"
-        return 'd'*time_deriv + name
 
-    #
-    # Get joint/task states
-    #
+    def get_model_states(self, name, time_deriv=0):
+        assert time_deriv in self._models[name].time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        name = self._models[name].state_name(time_deriv)
+        return self._decision_variables[name]
 
-    def get_joint_state(self, robot_name, t, time_deriv=0):
-        joint_states = self.get_joint_states(robot_name, time_deriv)
-        return joint_states[:, t]
-
-    def get_joint_states(self, robot_name, time_deriv=0):
-        assert time_deriv in self.robots[robot_name].time_derivs, f"robot called {robot_name} was not specified with time derivatives to order {time_deriv}"
-        n = self.joint_state_name(robot_name, time_deriv)
-        return self._decision_variables[n]
-
-    def get_task_state(self, task_name, t, time_deriv=0):
-        task_states = self.get_task_states(task_name, time_deriv)
-        return task_states[:, t]
-
-    def get_task_states(self, task_name, time_deriv=0):
-        task = self.tasks[task_name]
-        time_derivs = self._get_task_time_derivs(task)
-        assert time_deriv in time_derivs, f"task called {task_name} was not specified with time derivatives to order {time_deriv}"
-        n = self.task_state_name(task_name, time_deriv)
-        return self._decision_variables[n]
-
-    #
-    # Helper methods
-    #
-
-    @staticmethod
-    def _get_task_time_derivs(task):
-        return task.get('time_derivs', [0])
 
     def get_dt(self):
-        assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
+        assert self.optimize_time, "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
         return self._decision_variables['dt']
+
 
     def _x(self):
         return self._decision_variables.vec()
 
+
     def _p(self):
         return self._parameters.vec()
+
 
     def _is_linear(self, y):
         return cs.is_linear(y, self._x())
 
+
     def _cost(self):
         return cs.sum1(self._cost_terms.vec())
+
 
     def is_cost_quadratic(self):
         return cs.is_quadratic(self._cost(), self._x())
@@ -119,10 +82,12 @@ class OptimizationBuilder:
             self._decision_variables.variable_is_discrete(name)
         return x
 
+
     def add_parameter(self, name, m=1, n=1):
         p = cs.SX.sym(name, m, n)
         self._parameters[name] = p
         return p
+
 
     @vectorize_args
     def add_cost_term(self, name, cost_term):
@@ -130,12 +95,14 @@ class OptimizationBuilder:
         assert m==1 and n==1, "cost term must be scalar"
         self._cost_terms[name] = cost_term
 
+
     @arrayify_args
     def add_geq_ineq_constraint(self, name, lhs, rhs=None):
         """lhs >= rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         self.add_leq_ineq_constraint(name, rhs, lhs)
+
 
     @arrayify_args
     def add_leq_ineq_constraint(self, name, lhs, rhs=None):
@@ -148,11 +115,13 @@ class OptimizationBuilder:
         else:
             self._ineq_constraints[name] = diff
 
+
     @arrayify_args
     def add_ineq_bound_constraint(self, name, lhs, mid, rhs):
         """lhs <= mid <= rhs"""
         self.add_leq_ineq_constraint(name+'_l', lhs, mid)
         self.add_leq_ineq_constraint(name+'_r', mid, rhs)
+
 
     @arrayify_args
     def add_eq_constraint(self, name, lhs, rhs=None):
@@ -164,12 +133,14 @@ class OptimizationBuilder:
         else:
             self._eq_constraints[name] = diff
 
+
     #
     # Common cost terms
     #
 
+
     def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1.):
-        robot = self.robots[robot_name]
+        robot = self._models[robot_name]
         if qnom is None:
             lo = robot.lower_actuated_joint_limits
             up = robot.upper_actuated_joint_limits
@@ -196,14 +167,17 @@ class OptimizationBuilder:
         # Add cost term
         self.add_cost_term(cost_term_name, c)
 
+
     #
     # Common constraints
     #
+
 
     def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
         """dt >= 0"""
         assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
         self.add_geq_ineq_constraint(constaint_name, self.get_dt())
+
 
     def _integr(self, m, n):
         xd = cs.SX.sym('xd', m)
@@ -213,49 +187,21 @@ class OptimizationBuilder:
         integr = cs.Function('integr', [x0, x1, xd, dt], [x0 + dt*xd - x1])
         return integr.map(n)
 
-    def integrate_joint_state(self, robot_name, time_deriv, dt=None):
+
+    def integrate_model_states(self, name, time_deriv, dt=None):
 
         if self.optimize_time and dt is not None:
             raise ValueError("dt is given but user specified optimize_time as True")
         if not self.optimize_time and dt is None:
             raise ValueError("dt is not given")
 
-        robot = self.robots[robot_name]
-        qd = self.get_joint_states(robot_name, time_deriv)
-        q = self.get_joint_states(robot_name, time_deriv-1)
-        n = qd.shape[1]
+        model = self._models[name]
+        xd = self.get_model_states(name, time_deriv)
+        x = self.get_model_states(name, time_deriv)
+        n = xd.shape[1]
         if self.derivs_align:
             n -= 1
             qd = qd[:, :-1]
-
-        if dt is None:
-            dt = self.get_dt()[:n]
-        else:
-            dt = cs.vec(dt)
-            assert dt.shape[0] in {1, n}, f"dt should be scalar or have {n} elements"
-            if dt.shape[0] == 1:
-                dt = dt*cs.DM.ones(n)
-        dt = cs.vec(dt).T  # ensure 1-by-n
-
-        integr = self._integr(robot.ndof, n)
-        name = f'__integrate_joint_state_{robot_name}_{time_deriv}__'
-        self.add_eq_constraint(name, integr(q[:, :-1], q[:, 1:], qd, dt))
-
-    def integrate_task_state(self, task_name, time_deriv, dt=None):
-
-        if self.optimize_time and dt is not None:
-            raise ValueError("dt is given but user specified optimize_time as True")
-        if not self.optimize_time and dt is None:
-            raise ValueError("dt is not given")
-
-        task = self.tasks[task_name]
-        assert time_deriv in _get_task_time_derivs(task), f"{time_deriv=}, does not exist"
-        yd = self.get_task_states(label, time_deriv)
-        y = self.get_task_states(label, time_deriv-1)
-        n = yd.shape[1]
-        if self.derivs_align:
-            n -= 1
-            yd = yd[:, :-1]
 
         if self.optimize_time:
             dt = self.get_dt()[:n]
@@ -266,23 +212,18 @@ class OptimizationBuilder:
                 dt = dt*cs.DM.ones(n)
         dt = cs.vec(dt).T  # ensure 1-by-n
 
-        integr = self._integr(task['dim'], n)
-        name = f'__integrate_task_state_{task_name}_{time_deriv}__'
-        self.add_eq_constraint(name, integr(y[:, :-1], y[:, 1:], yd, dt))
+        integr = self._integr(model.dim, n)
+        name = f'__integrate_model_states_{name}_{time_deriv}__'
 
-    def enforce_joint_position_limit_constraints(self, robot_name):
-        robot = self.robots[robot_name]
-        qlo = robot.lower_actuated_joint_limits
-        qup = robot.upper_actuated_joint_limits
-        q = self.get_joint_states(robot_name)
-        self.add_leq_ineq_constraint(f'__{robot_name}_joint_limit_lower__', qlo, q)
-        self.add_leq_ineq_constraint(f'__{robot_name}_joint_limit_upper__', q, qup)
+        self.add_eq_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
-    def enforce_joint_velocity_limit_constraints(self, robot_name):
-        qd = self.get_joint_states(robot_name, 1)
-        qdlim = self.robots[robot_name].velocity_actuated_joint_limits
-        self.add_leq_ineq_constraint(f'__{robot_name}_joint_velocity_limit_lower__', -qdlim, qd)
-        self.add_leq_ineq_constraint(f'__{robot_name}_joint_velocity_limit_upper__',  qd, qdlim)
+
+    def enforce_model_limits(self, name, time_deriv=0):
+        x = self.get_model_states(name, time_deriv)
+        xlo, xup = self._models[name].get_limits(time_deriv)
+        n = f'__{name}_model_limit_{time_deriv}__'
+        self.add_ineq_bound_constraint(n, xlo, x, xup)
+
 
     #
     # Main build method
