@@ -21,7 +21,7 @@ class OptimizationBuilder:
         for name, model in self._models.items():
             for d in model.time_derivs:
                 n = model.state_name(d)
-                t = T-d if not derivs align else T
+                t = T-d if not derivs_align else T
                 self.add_decision_variables(n, model.dim, t)
 
         if optimize_time:
