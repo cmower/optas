@@ -26,9 +26,17 @@ class Model:
         assert time_deriv in self.dlim.keys(), f"Limit for time derivative {time_deriv=} has not been given"
         return self.dlim[time_deriv]
 
-    def in_limits(self, x, time_deriv):
+
+    def in_limit(self, x, time_deriv):
         lo, up = self.get_limits(time_deriv)
         return cs.logic_all(cs.logical_and(lo <= x, x <= up))
+
+
+    def in_limits(self, states):
+        in_limits = []
+        for time_deriv, state in states.items():
+            in_limits.append(self.in_limit(state, time_deriv))
+        return cs.logical_all(cs.vertcat(*in_limits))
 
 
 class TaskModel(Model):
@@ -75,6 +83,7 @@ class RobotModel(Model):
             assert qddlim.shape[0] == self.ndof, f"expected ddlim to have {self.ndof} elements"
             dlim[2] = -qddlim, qddlim
 
+        name = 'robot'  # TODO get this from URDF
         super().__init__(name, self.ndof, time_derivs, 'q', dlim)
 
 
