@@ -187,6 +187,10 @@ class RobotModel(Model):
         """Get the link position in the global frame for a given joint state q"""
         return transl(self.get_global_link_transform(link_name, q))
 
+    def get_global_link_rotation(self, link_name, q):
+        """Get the link rotation in the global frame for a given joint state q"""
+        return t2r(self.get_global_link_transform(link_name, q))
+
 
     @vectorize_args
     def get_global_link_quaternion(self, link_name, q):
