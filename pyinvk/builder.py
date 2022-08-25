@@ -5,20 +5,20 @@ from .optimization import *
 
 class OptimizationBuilder:
 
-    def __init__(self, T, robots={}, tasks={}, optimize_time=False, derivs_align=False):
+    def __init__(self, T, robots=[], tasks=[], optimize_time=False, derivs_align=False):
 
         # Input check
         assert T > 0, f"T must be strictly positive"
 
         # Class attributes
         self.T = T
-        self._models = {**robots, **tasks}
+        self._models = robots + tasks
         self.optimize_time = optimize_time
         self.derivs_align = derivs_align
 
         # Setup decision variables
         self._decision_variables = SXContainer()
-        for name, model in self._models.items():
+        for model in self._models:
             for d in model.time_derivs:
                 n = model.state_name(d)
                 t = T-d if not derivs_align else T
@@ -36,14 +36,28 @@ class OptimizationBuilder:
         self._eq_constraints = SXContainer()
 
 
+    def get_model_names(self):
+        return [model.name for model in self._models]
+
+
+    def get_model_index(self, name):
+        return self.get_model_names().index(name)
+
+
+    def get_model(self, name):
+        idx = self.get_model_index(name)
+        return self._models[idx]
+
+
     def get_model_state(self, name, t, time_deriv=0):
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
 
     def get_model_states(self, name, time_deriv=0):
-        assert time_deriv in self._models[name].time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
-        name = self._models[name].state_name(time_deriv)
+        model = self.get_model(name)
+        assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        name = model.state_name(time_deriv)
         return self._decision_variables[name]
 
 
@@ -140,7 +154,7 @@ class OptimizationBuilder:
 
 
     def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1.):
-        robot = self._models[robot_name]
+        robot = self.get_model(robot_name)
         if qnom is None:
             lo = robot.lower_actuated_joint_limits
             up = robot.upper_actuated_joint_limits
@@ -195,7 +209,7 @@ class OptimizationBuilder:
         if not self.optimize_time and dt is None:
             raise ValueError("dt is not given")
 
-        model = self._models[name]
+        model = self.get_model(name)
         xd = self.get_model_states(name, time_deriv)
         x = self.get_model_states(name, time_deriv)
         n = xd.shape[1]
@@ -220,7 +234,7 @@ class OptimizationBuilder:
 
     def enforce_model_limits(self, name, time_deriv=0):
         x = self.get_model_states(name, time_deriv)
-        xlo, xup = self._models[name].get_limits(time_deriv)
+        xlo, xup = self.get_model(name).get_limits(time_deriv)
         n = f'__{name}_model_limit_{time_deriv}__'
         self.add_ineq_bound_constraint(n, xlo, x, xup)
 
