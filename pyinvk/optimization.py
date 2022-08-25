@@ -143,7 +143,9 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
             self.a(x, p),
             -self.a(x, p),
         )
+        dv = cs.vertcat(self.M(p), self.A(p), -self.A(p))
         self.v = cs.Function('v', [x, p], [v])
+        self.dv = cs.Function('dv', [x, p], [dv])
         self.nv = v.shape[0]
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
