@@ -16,6 +16,10 @@ class Model:
         self.dlim = dlim
 
 
+    def get_name(self):
+        return self.name
+
+
     def state_name(self, time_deriv):
         assert time_deriv in self.time_derivs, f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         return self.name + '/' + 'd'*time_deriv + self.symbol
