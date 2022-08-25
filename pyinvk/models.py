@@ -83,8 +83,7 @@ class RobotModel(Model):
             assert qddlim.shape[0] == self.ndof, f"expected ddlim to have {self.ndof} elements"
             dlim[2] = -qddlim, qddlim
 
-        name = 'robot'  # TODO get this from URDF
-        super().__init__(name, self.ndof, time_derivs, 'q', dlim)
+        super().__init__(self._urdf.name, self.ndof, time_derivs, 'q', dlim)
 
 
     def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
