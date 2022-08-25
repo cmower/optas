@@ -163,6 +163,8 @@ class RobotModel(Model):
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
+                if joint.child == link_name:
+                    return T
                 continue
 
             joint_index = self.actuated_joint_names.index(joint.name)
@@ -201,6 +203,8 @@ class RobotModel(Model):
 
             if joint.type == 'fixed':
                 quat = quat * Quaternion.fromrpy(rpy)
+                if joint.child == link_name:
+                    return quat.getquat()
                 continue
 
             joint_index = self.actuated_joint_names.index(joint.name)
@@ -233,28 +237,33 @@ class RobotModel(Model):
         w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
 
-        R = I3()
+        # R = I3()
 
         joint_index_order = []
         jacobian_columns = []
 
+        past_in_chain = False
+
         for joint in self._urdf.joints:
 
-            xyz, rpy = self._get_joint_origin(joint)
-
             if joint.type == 'fixed':
-                R = R @ rpy2r(rpy)
                 continue
+
+            if joint.child == link_name:
+                past_in_chain = True
 
             joint_index = self.actuated_joint_names.index(joint.name)
             joint_index_order.append(joint_index)
             qi = q[joint_index]
 
-            if joint.type in {'revolute', 'continuous'}:
+            if past_in_chain:
+                jcol = cs.DM.zeros(6)
+                jacobian_columns.append(jcol)
+
+            elif joint.type in {'revolute', 'continuous'}:
 
                 axis = self._get_joint_axis(joint)
-
-                R = R @ rpy2r(rpy)
+                R = self.get_global_link_rotation(joint.child, q)
                 R = R @ angvec2r(qi, axis)
                 p = self.get_global_link_position(joint.child, q)
 
