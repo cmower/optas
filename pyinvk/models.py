@@ -175,7 +175,7 @@ class RobotModel(Model):
             axis = unit(axis)
         return axis
 
-    def _get_joint_index(self, joint_name):
+    def _get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
 
 
@@ -205,7 +205,7 @@ class RobotModel(Model):
                     return T
                 continue
 
-            joint_index = self.actuated_joint_names.index(joint.name)
+            joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             if joint.type in {'revolute', 'continuous'}:
@@ -273,7 +273,7 @@ class RobotModel(Model):
                     return quat.getquat()
                 continue
 
-            joint_index = self._get_joint_index(joint.name)
+            joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             if joint.type in {'revolute', 'continuous'}:
@@ -320,7 +320,7 @@ class RobotModel(Model):
             if joint.child == link:
                 past_in_chain = True
 
-            joint_index = self._get_joint_index(joint.name)
+            joint_index = self._get_actuated_joint_index(joint.name)
             joint_index_order.append(joint_index)
             qi = q[joint_index]
 
