@@ -115,10 +115,10 @@ class RobotModel(Model):
         )
 
 
-    def add_base_frame(self, base_link_name, xyz=None, rpy=None, joint_name=None):
+    def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
-        assert base_link_name not in self.link_names, f"'{base_link_name}' already exists"
-        self._add_fixed_link(base_link_name, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
+        assert base_link not in self.link_names, f"'{base_link}' already exists"
+        self._add_fixed_link(base_link, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
 
 
     def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
@@ -231,7 +231,7 @@ class RobotModel(Model):
 
 
     @vectorize_args
-    def get_geometric_jacobian(self, link_name, q, base_link_name=None):
+    def get_geometric_jacobian(self, link_name, q, base_link=None):
         """Get the geometric jacobian matrix for a given link and joint state q"""
 
         #
