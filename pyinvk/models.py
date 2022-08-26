@@ -193,13 +193,37 @@ class RobotModel(Model):
         return T
 
 
+    def get_global_link_transform_function(self, link_name):
+        q = cs.SX.sym('q', self.ndof)
+        T = self.get_global_link_transform(link_name, q)
+        F = cs.Function('T', [q], [T])
+        return F
+
+
     def get_global_link_position(self, link_name, q):
         """Get the link position in the global frame for a given joint state q"""
         return transl(self.get_global_link_transform(link_name, q))
 
+
+    def get_global_link_position_function(self, link_name, n=1):
+        q = cs.SX.sym('q', self.ndof)
+        p = self.get_global_link_position(link_name, q)
+        F = cs.Function('p', [q], [p])
+        if n > 1:
+            F = F.map(n)
+        return F
+
+
     def get_global_link_rotation(self, link_name, q):
         """Get the link rotation in the global frame for a given joint state q"""
         return t2r(self.get_global_link_transform(link_name, q))
+
+
+    def get_global_link_rotation_function(self, link_name):
+        q = cs.SX.sym('q', self.ndof)
+        R = self.get_global_link_rotation(link_name, q)
+        F = cs.Function('R', [q], [R])
+        return F
 
 
     @vectorize_args
@@ -235,6 +259,15 @@ class RobotModel(Model):
                 break
 
         return quat.getquat()
+
+
+    def get_global_link_quaternion_function(self, link_name, n=1):
+        q = cs.SX.sym('q', self.ndof)
+        quat = self.get_global_link_quaternion(link_name, q)
+        F = cs.Function('quat', [q], [quat])
+        if n > 1:
+            F = F.map(n)
+        return F
 
 
     @vectorize_args
