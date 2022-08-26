@@ -272,6 +272,13 @@ def t2r(T):
     """Rotational submatrix"""
     return T[:3, :3]
 
+@arrayify_args
+def invt(T):
+    """Inverse of a homogeneous transformation matrix"""
+    R = t2r(T)
+    t = transl(T)
+    return rt2tr(R.T, -R.T@t)
+
 @vectorize_args
 def tr2angvec(T):
     """Convert rotation matrix to angle-vector form"""
