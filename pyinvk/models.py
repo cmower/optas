@@ -90,7 +90,7 @@ class RobotModel(Model):
         super().__init__(self._urdf.name, self.ndof, time_derivs, 'q', dlim)
 
 
-    def _add_fixed_link(self, parent_link_name, child_link_name, xyz=None, rpy=None, joint_name=None):
+    def _add_fixed_link(self, parent_link, child_link, xyz=None, rpy=None, joint_name=None):
 
         if xyz is None:
             xyz=[0.0]*3
@@ -99,16 +99,16 @@ class RobotModel(Model):
             rpy=[0.0]*3
 
         if joint_name is None:
-            joint_name = parent_link_name + '_and_' + child_link_name + '_joint'
+            joint_name = parent_link + '_and_' + child_link + '_joint'
 
-        self._urdf.add_link(Link(name=child_link_name))
+        self._urdf.add_link(Link(name=child_link))
 
         origin = Pose(xyz=xyz, rpy=rpy)
         self._urdf.add_joint(
             Joint(
                 name=joint_name,
-                parent=parent_link_name,
-                child=child_link_name,
+                parent=parent_link,
+                child=child_link,
                 joint_type='fixed',
                 origin=origin,
             )
@@ -121,11 +121,11 @@ class RobotModel(Model):
         self._add_fixed_link(base_link, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
 
 
-    def add_fixed_link(self, link_name, parent_link_name, xyz=None, rpy=None, joint_name=None):
+    def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
         """Add a fixed link"""
-        assert link_name not in self.link_names, f"'{link_name}' already exists"
-        assert parent_link_name in self.link_names, f"{parent_link_name=}, does not appear in link names"
-        self._add_fixed_link(parent_link_name, link_name, xyz=xyz, rpy=rpy, joint_name=joint_name)
+        assert link not in self.link_names, f"'{link}' already exists"
+        assert parent_link in self.link_names, f"{parent_link=}, does not appear in link names"
+        self._add_fixed_link(parent_link, link, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
 
     def get_root_link(self):
@@ -152,20 +152,20 @@ class RobotModel(Model):
 
 
     @vectorize_args
-    def get_link_transform(self, link_name, q, base_link):
-        T_L_W = self.get_global_link_transform(link_name, q)
+    def get_link_transform(self, link, q, base_link):
+        T_L_W = self.get_global_link_transform(link, q)
         T_B_W = self.get_global_link_transform(base_link, q)
         return T_L_W @ invt(T_B_W)
 
 
     @vectorize_args
-    def get_global_link_transform(self, link_name, q):
+    def get_global_link_transform(self, link, q):
         """Get the link transform in the global frame for a given joint state q"""
 
-        assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
+        assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
 
         T = I4()
-        if link_name == self._urdf.get_root(): return T
+        if link == self._urdf.get_root(): return T
 
         for joint in self._urdf.joints:
 
@@ -173,7 +173,7 @@ class RobotModel(Model):
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
-                if joint.child == link_name:
+                if joint.child == link:
                     return T
                 continue
 
@@ -187,53 +187,53 @@ class RobotModel(Model):
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
 
-            if joint.child == link_name:
+            if joint.child == link:
                 break
 
         return T
 
 
-    def get_global_link_transform_function(self, link_name):
+    def get_global_link_transform_function(self, link):
         q = cs.SX.sym('q', self.ndof)
-        T = self.get_global_link_transform(link_name, q)
+        T = self.get_global_link_transform(link, q)
         F = cs.Function('T', [q], [T])
         return F
 
 
-    def get_global_link_position(self, link_name, q):
+    def get_global_link_position(self, link, q):
         """Get the link position in the global frame for a given joint state q"""
-        return transl(self.get_global_link_transform(link_name, q))
+        return transl(self.get_global_link_transform(link, q))
 
 
-    def get_global_link_position_function(self, link_name, n=1):
+    def get_global_link_position_function(self, link, n=1):
         q = cs.SX.sym('q', self.ndof)
-        p = self.get_global_link_position(link_name, q)
+        p = self.get_global_link_position(link, q)
         F = cs.Function('p', [q], [p])
         if n > 1:
             F = F.map(n)
         return F
 
 
-    def get_global_link_rotation(self, link_name, q):
+    def get_global_link_rotation(self, link, q):
         """Get the link rotation in the global frame for a given joint state q"""
-        return t2r(self.get_global_link_transform(link_name, q))
+        return t2r(self.get_global_link_transform(link, q))
 
 
-    def get_global_link_rotation_function(self, link_name):
+    def get_global_link_rotation_function(self, link):
         q = cs.SX.sym('q', self.ndof)
-        R = self.get_global_link_rotation(link_name, q)
+        R = self.get_global_link_rotation(link, q)
         F = cs.Function('R', [q], [R])
         return F
 
 
     @vectorize_args
-    def get_global_link_quaternion(self, link_name, q):
+    def get_global_link_quaternion(self, link, q):
         """Get the link orientation as a quaternion in the global frame for a given joint state q"""
 
-        assert link_name in self._urdf.link_map.keys(), "given link_name does not appear in URDF"
+        assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
 
         quat = Quaternion(0., 0., 0., 1.)
-        if link_name == self._urdf.get_root(): return quat
+        if link == self._urdf.get_root(): return quat
 
         for joint in self._urdf.joints:
 
@@ -241,7 +241,7 @@ class RobotModel(Model):
 
             if joint.type == 'fixed':
                 quat = quat * Quaternion.fromrpy(rpy)
-                if joint.child == link_name:
+                if joint.child == link:
                     return quat.getquat()
                 continue
 
@@ -255,15 +255,15 @@ class RobotModel(Model):
             else:
                 raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
 
-            if joint.child == link_name:
+            if joint.child == link:
                 break
 
         return quat.getquat()
 
 
-    def get_global_link_quaternion_function(self, link_name, n=1):
+    def get_global_link_quaternion_function(self, link, n=1):
         q = cs.SX.sym('q', self.ndof)
-        quat = self.get_global_link_quaternion(link_name, q)
+        quat = self.get_global_link_quaternion(link, q)
         F = cs.Function('quat', [q], [quat])
         if n > 1:
             F = F.map(n)
@@ -271,10 +271,10 @@ class RobotModel(Model):
 
 
     @vectorize_args
-    def get_geometric_jacobian(self, link_name, q, base_link=None):
+    def get_geometric_jacobian(self, link, q, base_link=None):
         """Get the geometric jacobian matrix for a given link and joint state q"""
 
-        e = self.get_global_link_position(link_name, q)
+        e = self.get_global_link_position(link, q)
 
         w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
@@ -289,7 +289,7 @@ class RobotModel(Model):
             if joint.type == 'fixed':
                 continue
 
-            if joint.child == link_name:
+            if joint.child == link:
                 past_in_chain = True
 
             joint_index = self.actuated_joint_names.index(joint.name)
@@ -326,7 +326,7 @@ class RobotModel(Model):
 
         # Transform jacobian to given base link
         if base_link is not None:
-            R = self.get_global_link_rotation(link_name, q)
+            R = self.get_global_link_rotation(link, q)
             O = cs.DM.zeros(3, 3)
             K = cs.vertcat(
                 cs.horzcat(R, O),
@@ -337,31 +337,31 @@ class RobotModel(Model):
         return J
 
 
-    def get_geometric_jacobian_function(self, link_name, base_link=None):
+    def get_geometric_jacobian_function(self, link, base_link=None):
         q = cs.SX.sym('q', self.ndof)
-        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+        J = self.get_geometric_jacobian(link, q, base_link=base_link)
         return cs.Function('J', [q], [J])
 
 
-    def get_linear_geometric_jacobian(self, link_name, q, base_link=None):
-        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+    def get_linear_geometric_jacobian(self, link, q, base_link=None):
+        J = self.get_geometric_jacobian(link, q, base_link=base_link)
         return J[:3, :]
 
 
-    def get_linear_geometric_jacobian_function(self, link_name, base_link=None):
+    def get_linear_geometric_jacobian_function(self, link, base_link=None):
         q = cs.SX.sym('q', self.ndof)
-        J = self.get_linear_geometric_jacobian(link_name, q, base_link=base_link)
+        J = self.get_linear_geometric_jacobian(link, q, base_link=base_link)
         return cs.Function('Jl', [q], [J])
 
 
-    def get_angular_geometric_jacobian(self, link_name, q, base_link=None):
-        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+    def get_angular_geometric_jacobian(self, link, q, base_link=None):
+        J = self.get_geometric_jacobian(link, q, base_link=base_link)
         return J[3:, :]
 
 
-    def get_angular_geometric_jacobian_function(self, link_name, q, base_link=None):
+    def get_angular_geometric_jacobian_function(self, link, q, base_link=None):
         q = cs.SX.sym('q', self.ndof)
-        J = self.get_angular_geometric_jacobian(link_name, q, base_link=base_link)
+        J = self.get_angular_geometric_jacobian(link, q, base_link=base_link)
         return cs.Function('Ja', [q], [J])
 
 
@@ -369,19 +369,19 @@ class RobotModel(Model):
         return cs.sqrt(cs.det(J @ J.T))
 
 
-    def get_manipulability(self, link_name, q, base_link=None):
+    def get_manipulability(self, link, q, base_link=None):
         """Get the manipulability measure"""
-        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+        J = self.get_geometric_jacobian(link, q, base_link=base_link)
         return self._manipulability(J)
 
 
-    def get_linear_manipulability(self, link_name, q, base_link=None):
-        J = self.get_linear_geometric_jacobian(link_name, q, base_link=base_link)
+    def get_linear_manipulability(self, link, q, base_link=None):
+        J = self.get_linear_geometric_jacobian(link, q, base_link=base_link)
         return self._manipulability(J)
 
 
-    def get_angular_manipulability(self, link_name, q, base_link=None):
-        J = self.get_angular_geometric_jacobian(link_name, q, base_link=base_link)
+    def get_angular_manipulability(self, link, q, base_link=None):
+        J = self.get_angular_geometric_jacobian(link, q, base_link=base_link)
         return self._manipulability(J)
 
 
@@ -391,6 +391,6 @@ class RobotModel(Model):
         return cs.vec(cs.np.random.uniform(lo, hi))
 
 
-    def get_random_pose_in_global_link(self, link_name):
+    def get_random_pose_in_global_link(self, link):
         q = self.get_random_joint_positions()
-        return self.get_global_link_transform(link_name, q)
+        return self.get_global_link_transform(link, q)
