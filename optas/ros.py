@@ -23,7 +23,7 @@ except:
 
 class RosNode:
 
-    def __init__(self, robots, node_name='pyinvk_node', anonymous=False):
+    def __init__(self, robots, node_name='optas_node', anonymous=False):
         
         assert ROS_AVAILABLE, "RosNode requires ROS"
         rospy.init_node(node_name, anonymous=anonymous)

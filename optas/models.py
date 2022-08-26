@@ -213,7 +213,7 @@ class RobotModel(Model):
                 T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
 
             if joint.child == link:
                 break
@@ -281,7 +281,7 @@ class RobotModel(Model):
                 quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
 
             if joint.child == link:
                 break
@@ -342,7 +342,7 @@ class RobotModel(Model):
                 jacobian_columns.append(jcol)
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
 
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]

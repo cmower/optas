@@ -4,19 +4,19 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name='pyinvk',
-    version='2.0.0',
+    name='optas',
+    version='1.0.0',
     description='Python Inverse Kinematics.',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/cmower/pyinvk',
+    url='https://github.com/cmower/optas',
     project_urls={
-        "Bug Tracker": "https://github.com/cmower/pyinvk/issues",
+        "Bug Tracker": "https://github.com/cmower/optas/issues",
     },
     author='Christopher E. Mower',
     author_email='cmower@ed.ac.uk',
     license='BSD 2-Clause License',
-    packages=['pyinvk'],
+    packages=['optas'],
     install_requires=[
         'numpy',
         'scipy',
