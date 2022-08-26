@@ -3,8 +3,8 @@ from casadi import sin, cos, vec
 
 """
 
-This is a partial port to Python/CasADi, with some modifications, of
-the Spatial Math Toolbox for MATLAB. See the following.
+This is a partial port to Python/CasADi, with some modifications and
+additions, of the Spatial Math Toolbox for MATLAB. See the following.
 
 
 https://github.com/petercorke/spatialmath-matlab
