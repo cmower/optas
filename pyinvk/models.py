@@ -7,6 +7,31 @@ from .spatialmath import *
 
 class Model:
 
+    """
+
+    Model base class
+
+    name (str):
+        name of model
+
+    dim (int):
+        model dimension (for robots this is ndof)
+
+    time_derivs (list[int]):
+        time derivatives required for model, 0 means not time
+        derivative, 1 means first derivative wrt to time is required,
+        etc
+
+    symbol (str):
+        a short symbol to represent the model
+
+    dlim (dict[ int, tuple[list[float]] ]):
+        limits on each time derivative, index should correspond to a
+        time derivative (i.e. 0, 1, ...) and the value should be a
+        tuple of two lists containing the lower and upper bounds
+
+    """
+
 
     def __init__(self, name, dim, time_derivs, symbol, dlim):
         self.name = name
