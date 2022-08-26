@@ -234,11 +234,6 @@ class RobotModel(Model):
     def get_geometric_jacobian(self, link_name, q, base_link=None):
         """Get the geometric jacobian matrix for a given link and joint state q"""
 
-        #
-        # TODO: allow user to compute jacobian in any frame (i.e. not
-        # only the root link).
-        #
-
         e = self.get_global_link_position(link_name, q)
 
         w = cs.DM.zeros(3)
@@ -288,6 +283,16 @@ class RobotModel(Model):
         J = jacobian_columns_ordered.pop(0)
         while jacobian_columns_ordered:
             J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
+
+        # Transform jacobian to given base link
+        if base_link is not None:
+            R = self.get_global_link_rotation(link_name, q)
+            O = cs.DM.zeros(3, 3)
+            K = cs.vertcat(
+                cs.horzcat(R, O),
+                cs.horzcat(O, R),
+            )
+            J = K @ J
 
         return J
 
