@@ -178,7 +178,7 @@ class RobotModel(Model):
                 T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
 
             if joint.child == link_name:
                 break
@@ -222,7 +222,7 @@ class RobotModel(Model):
                 quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
 
             if joint.child == link_name:
                 break
@@ -243,8 +243,6 @@ class RobotModel(Model):
 
         w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
-
-        # R = I3()
 
         joint_index_order = []
         jacobian_columns = []
@@ -280,10 +278,8 @@ class RobotModel(Model):
                 jcol = cs.vertcat(pdot, z)
                 jacobian_columns.append(jcol)
 
-            # elif joint.type == 'prismatic':  # TODO
-
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported")
+                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/pyinvk/issues")
 
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
