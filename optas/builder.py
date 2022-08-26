@@ -111,7 +111,7 @@ class OptimizationBuilder:
 
 
     @arrayify_args
-    def add_geq_ineq_constraint(self, name, lhs, rhs=None):
+    def add_geq_inequality_constraint(self, name, lhs, rhs=None):
         """lhs >= rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
@@ -119,7 +119,7 @@ class OptimizationBuilder:
 
 
     @arrayify_args
-    def add_leq_ineq_constraint(self, name, lhs, rhs=None):
+    def add_leq_inequality_constraint(self, name, lhs, rhs=None):
         """lhs <= rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
@@ -131,14 +131,15 @@ class OptimizationBuilder:
 
 
     @arrayify_args
-    def add_ineq_bound_constraint(self, name, lhs, mid, rhs):
+    def add_bound_inequality_constraint(self, name, lhs, mid, rhs):
         """lhs <= mid <= rhs"""
         self.add_leq_ineq_constraint(name+'_l', lhs, mid)
         self.add_leq_ineq_constraint(name+'_r', mid, rhs)
 
 
     @arrayify_args
-    def add_eq_constraint(self, name, lhs, rhs=None):
+    def add_equality_constraint(self, name, lhs, rhs=None):
+        """lhs == rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
