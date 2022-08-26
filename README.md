@@ -1,5 +1,9 @@
 # pyinvk
 
+**Note**, PyInvK is the original conception of the OPTAS project.
+PyInvK is now deprecated.
+This branch is kept as legacy.
+
 ![Alt Text](https://raw.githubusercontent.com/cmower/pyinvk/master/fig8.gif)
 
 `pyinvk` is a library that allows you to setup an inverse kinematic problem with optional constraints.
