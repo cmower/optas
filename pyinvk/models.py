@@ -337,20 +337,52 @@ class RobotModel(Model):
         return J
 
 
-    def get_linear_geometric_jacobian(self, link_name, q):
-        J = self.get_geometric_jacobian(link_name, q)
+    def get_geometric_jacobian_function(self, link_name, base_link=None):
+        q = cs.SX.sym('q', self.ndof)
+        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+        return cs.Function('J', [q], [J])
+
+
+    def get_linear_geometric_jacobian(self, link_name, q, base_link=None):
+        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
         return J[:3, :]
 
 
-    def get_angular_geometric_jacobian(self, link_name, q):
-        J = self.get_geometric_jacobian(link_name, q)
+    def get_linear_geometric_jacobian_function(self, link_name, base_link=None):
+        q = cs.SX.sym('q', self.ndof)
+        J = self.get_linear_geometric_jacobian(link_name, q, base_link=base_link)
+        return cs.Function('Jl', [q], [J])
+
+
+    def get_angular_geometric_jacobian(self, link_name, q, base_link=None):
+        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
         return J[3:, :]
 
 
-    def get_manipulability(self, link_index, q):
-        """Get the manipulability measure"""
-        J = self.get_geometric_jacobian(link_index, q)
+    def get_angular_geometric_jacobian_function(self, link_name, q, base_link=None):
+        q = cs.SX.sym('q', self.ndof)
+        J = self.get_angular_geometric_jacobian(link_name, q, base_link=base_link)
+        return cs.Function('Ja', [q], [J])
+
+
+    def _manipulability(self, J):
         return cs.sqrt(cs.det(J @ J.T))
+
+
+    def get_manipulability(self, link_name, q, base_link=None):
+        """Get the manipulability measure"""
+        J = self.get_geometric_jacobian(link_name, q, base_link=base_link)
+        return self._manipulability(J)
+
+
+    def get_linear_manipulability(self, link_name, q, base_link=None):
+        J = self.get_linear_geometric_jacobian(link_name, q, base_link=base_link)
+        return self._manipulability(J)
+
+
+    def get_angular_manipulability(self, link_name, q, base_link=None):
+        J = self.get_angular_geometric_jacobian(link_name, q, base_link=base_link)
+        return self._manipulability(J)
 
 
     def get_random_joint_positions(self):
