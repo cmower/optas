@@ -1,5 +1,4 @@
 import casadi as cs
-from typing import Tuple
 from .sx_container import SXContainer
 
 def derive_jacobian_and_hessian_functions(name, fun, x, p):
