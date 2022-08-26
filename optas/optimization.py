@@ -8,6 +8,14 @@ def derive_jacobian_and_hessian_functions(name, fun, x, p):
     hes = cs.jacobian(jac, x)
     return cs.Function('d'+name, fun_input, [jac]), cs.Function('dd'+name, fun_input, [hes])
 
+def vertcon(x, p, ineq=[], eq=[]):
+    con = [i(x, p) for i in ineq]
+    for e in eq:
+        con.append(e(x, p))
+        con.append(-e(x, p))
+    return cs.Function('v', [x, p], [cs.vertcat(*con)])
+
+
 class _Optimization:
     """Base optimization class.
 
@@ -138,13 +146,8 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
         self.b = cs.Function('b', [p], [self.a(x_zero, p)])
 
         # Setup v, i.e. v(x, p) >= 0
-        v = cs.vertcat(
-            self.k(x, p),
-            self.a(x, p),
-            -self.a(x, p),
-        )
+        self.v = vertcon(x, p, ineq=[self.k], eq=[self.a])
         dv = cs.vertcat(self.M(p), self.A(p), -self.A(p))
-        self.v = cs.Function('v', [x, p], [v])
         self.dv = cs.Function('dv', [x, p], [dv])
         self.nv = v.shape[0]
         self.lbv = cs.DM.zeros(self.nv)
@@ -182,15 +185,7 @@ class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
         self.dh, self.ddh = derive_jacobian_and_hessian_functions('h', self.h, x, p)
 
         # Setup v, i.e. v(x, p) >= 0
-        v = cs.vertcat(
-            self.k(x, p),
-            self.a(x, p),
-            -self.a(x, p),
-            self.g(x, p),
-            self.h(x, p),
-            -self.h(x, p),
-        )
-        self.v = cs.Function('v', [x, p], [v])
+        self.v = vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
         self.nv = v.shape[0]
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
@@ -267,15 +262,11 @@ class NonlinearCostLinearConstraints(NonlinearCostUnconstrained):
         self.b = cs.Function('b', [p], [self.a(x_zero, p)])
 
         # Setup v, i.e. v(x, p) >= 0
-        v = cs.vertcat(
-            self.k(x, p),
-            self.a(x, p),
-            -self.a(x, p),
-        )
-        self.v = cs.Function('v', [x, p], [v])
+        self.v = vertcon(x, p, ineq=[self.k], eq=[self.a])
         self.nv = v.shape[0]
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
+        self.dv, self.ddv = derive_jacobian_and_hessian_functions('v', self.v, x, p)
 
 class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
     """Nonlinear constrained optimization problem.
@@ -325,15 +316,7 @@ class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
         self.dh, self.ddh = derive_jacobian_and_hessian_functions('h', self.h, x, p)
 
         # Setup v, i.e. v(x, p) >= 0
-        v = cs.vertcat(
-            self.k(x, p),
-            self.a(x, p),
-            -self.a(x, p),
-            self.g(x, p),
-            self.h(x, p),
-            -self.h(x, p),
-        )
-        self.v = cs.Function('v', [x, p], [v])
+        self.v = vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
         self.nv = v.shape[0]
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
