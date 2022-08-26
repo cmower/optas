@@ -154,7 +154,7 @@ class OptimizationBuilder:
     #
 
 
-    def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1.):
+    def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1., sigma=1.):
         robot = self.get_model(robot_name)
         if qnom is None:
             lo = robot.lower_actuated_joint_limits
@@ -165,7 +165,7 @@ class OptimizationBuilder:
 
         w = cs.vec(w)
         if w.shape[0] == 1 and w.shape[1] == 1:
-            w = cs.DM.ones(robot.ndof)
+            w = w*cs.DM.ones(robot.ndof)
         else:
             assert w.shape[0] == robot.ndof, f"w must be scalar or have {robot.ndof} elements"
 
@@ -176,8 +176,8 @@ class OptimizationBuilder:
         cost_term = cs.Function('nominal_cost', [q_], [qdiff_.T @ W @ qdiff_]).map(self.T)
 
         # Compute cost term
-        Q = self.get_joint_states(robot_name, 0)
-        c = cost_term(Q)
+        Q = self.get_model_states(robot_name, 0)
+        c = sigma*cs.sum1(cs.vec(cost_term(Q)))
 
         # Add cost term
         self.add_cost_term(cost_term_name, c)
