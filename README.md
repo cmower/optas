@@ -4,8 +4,6 @@
 
 # OPTAS
 
-![Alt Text](https://raw.githubusercontent.com/cmower/optas/master/fig8.gif)
-
 `OPTAS` is a library that allows you to setup an inverse kinematic problem for arbitrary time-horizon and optional constraints.
 The package interfaces with several open-source and commerical optimization solvers and is built on top of [CasADi](https://web.casadi.org/).
 This allows you to compute deriviates of any forward function to arbitrary order (including the foward kinematics).
