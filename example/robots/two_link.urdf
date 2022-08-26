@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<robot name="two_link">
+
+  <material name="red">
+    <color rgba="1.0 0 0 0.25"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0 0 1. 0.25"/>
+  </material>    
+
+  <link name="baselink">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.25"/>
+      </geometry>
+      <material name="two_link_baselink_material">
+	<color rgba="0.7 0.7 0.7 0.25"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="link1">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.5"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <link name="link2">
+    <visual>
+      <geometry>
+        <cylinder length="1.0" radius="0.125"/>
+      </geometry>
+      <material name="blue"/>
+      <origin xyz="1 0 0" rpy="0 1.571 0"/>      
+    </visual>
+  </link>
+
+  <link name="link3">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.5"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <link name="link4">
+    <visual>
+      <geometry>
+        <cylinder length="0.375" radius="0.125"/>
+      </geometry>
+      <material name="blue"/>
+      <origin xyz="0.6875 0 0" rpy="0 1.571 0"/>
+    </visual>
+  </link>
+  
+  <link name="eff">
+    <visual>
+      <geometry>
+        <box size="0.25 0.25 0.25"/>
+      </geometry>
+      <material name="eff_material">
+	<color rgba="0. 1. 0. 0.25"/>	
+      </material>
+      <origin xyz="0 0 0"/>
+    </visual>
+  </link>  
+
+  <joint name="baselink_joint" type="fixed">
+    <parent link="baselink"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.5"/>
+  </joint>
+
+  <joint name="joint1" type="revolute">
+    <axis xyz="0 1 1"/>
+    <parent link="link1"/>    
+    <child link="link2"/>
+    <origin xyz="0 0 0"/>
+    <limit lower="0" upper="1.517" effort="1000.0" velocity="0.5"/>
+  </joint>
+
+  <joint name="joint2" type="revolute">
+    <axis xyz="0 0 1"/>
+    <parent link="link2"/>    
+    <child link="link3"/>
+    <origin xyz="2 0 0"/>
+    <limit lower="0" upper="1.517" effort="1000.0" velocity="0.5"/>
+  </joint>
+
+  <joint name="eff_connect" type="fixed">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0 0 0."/>
+  </joint>
+
+  <joint name="eff_joint" type="fixed">
+    <parent link="link4"/>
+    <child link="eff"/>
+    <origin xyz="1. 0 0."/>
+  </joint>    
+    
+</robot>
