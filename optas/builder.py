@@ -5,7 +5,41 @@ from .optimization import *
 
 class OptimizationBuilder:
 
+    """
+
+    OptimizationBuilder allows you to build/specify an optimization problem.
+
+    """
+
     def __init__(self, T, robots=[], tasks=[], optimize_time=False, derivs_align=False):
+        """OptimizationBuilder constructor.
+
+        Syntax
+        ------
+
+        builder = OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
+
+        Parameters
+        ----------
+
+        T (int):
+          Number of time steps for the trajectory.
+
+        robots (list):
+          A list of robot models.
+
+        tasks (list):
+          A list of task models.
+
+        optimize_time (bool):
+          When true, a trajectory of dt variables are included in the
+          decision variables. Default is False.
+
+        derivs_align (bool):
+          When true, the time derivatives align for each time
+          step. Default is False.
+
+        """
 
         # Input check
         assert T > 0, f"T must be strictly positive"
@@ -37,24 +71,29 @@ class OptimizationBuilder:
 
 
     def get_model_names(self):
+        """Return the names of each defined model."""
         return [model.name for model in self._models]
 
 
     def get_model_index(self, name):
+        """Return the index of the model in the list of models."""
         return self.get_model_names().index(name)
 
 
     def get_model(self, name):
+        """Return the model with given name."""
         idx = self.get_model_index(name)
         return self._models[idx]
 
 
     def get_model_state(self, name, t, time_deriv=0):
+        """Get the model state at a given time."""
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
 
     def get_model_states(self, name, time_deriv=0):
+        """Get the full state trajectory for a given model."""
         model = self.get_model(name)
         assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
         name = model.state_name(time_deriv)
@@ -62,6 +101,7 @@ class OptimizationBuilder:
 
 
     def get_dt(self):
+        """When optimizing time, then this method returns the trajectory of dt variables."""
         assert self.optimize_time, "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
         return self._decision_variables['dt']
 
@@ -83,6 +123,7 @@ class OptimizationBuilder:
 
 
     def is_cost_quadratic(self):
+        """True when cost function is quadratic in the decision variables, False otherwise."""
         return cs.is_quadratic(self._cost(), self._x())
 
     #
@@ -90,6 +131,7 @@ class OptimizationBuilder:
     #
 
     def add_decision_variables(self, name, m=1, n=1, is_discrete=False):
+        """Add decision variables to the optimization problem."""
         x = cs.SX.sym(name, m, n)
         self._decision_variables[name] = x
         if is_discrete:
@@ -98,6 +140,7 @@ class OptimizationBuilder:
 
 
     def add_parameter(self, name, m=1, n=1):
+        """Add a parameter to the optimization problem."""
         p = cs.SX.sym(name, m, n)
         self._parameters[name] = p
         return p
