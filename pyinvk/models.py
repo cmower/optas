@@ -152,6 +152,13 @@ class RobotModel(Model):
 
 
     @vectorize_args
+    def get_link_transform(self, link_name, q, base_link):
+        T_L_W = self.get_global_link_transform(link_name, q)
+        T_B_W = self.get_global_link_transform(base_link, q)
+        return T_L_W @ invt(T_B_W)
+
+
+    @vectorize_args
     def get_global_link_transform(self, link_name, q):
         """Get the link transform in the global frame for a given joint state q"""
 
