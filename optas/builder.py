@@ -158,7 +158,7 @@ class OptimizationBuilder:
         """lhs >= rhs"""
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
-        self.add_leq_ineq_constraint(name, rhs, lhs)
+        self.add_leq_inequality_constraint(name, rhs, lhs)
 
 
     @arrayify_args
@@ -176,8 +176,8 @@ class OptimizationBuilder:
     @arrayify_args
     def add_bound_inequality_constraint(self, name, lhs, mid, rhs):
         """lhs <= mid <= rhs"""
-        self.add_leq_ineq_constraint(name+'_l', lhs, mid)
-        self.add_leq_ineq_constraint(name+'_r', mid, rhs)
+        self.add_leq_inequality_constraint(name+'_l', lhs, mid)
+        self.add_leq_inequality_constraint(name+'_r', mid, rhs)
 
 
     @arrayify_args
@@ -234,7 +234,7 @@ class OptimizationBuilder:
     def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
         """dt >= 0"""
         assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
-        self.add_geq_ineq_constraint(constaint_name, self.get_dt())
+        self.add_geq_inequality_constraint(constaint_name, self.get_dt())
 
 
     def _integr(self, m, n):
@@ -273,14 +273,14 @@ class OptimizationBuilder:
         integr = self._integr(model.dim, n)
         name = f'__integrate_model_states_{name}_{time_deriv}__'
 
-        self.add_eq_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
+        self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
 
     def enforce_model_limits(self, name, time_deriv=0):
         x = self.get_model_states(name, time_deriv)
         xlo, xup = self.get_model(name).get_limits(time_deriv)
         n = f'__{name}_model_limit_{time_deriv}__'
-        self.add_ineq_bound_constraint(n, xlo, x, xup)
+        self.add_bound_inequality_constraint(n, xlo, x, xup)
 
 
     #
