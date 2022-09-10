@@ -407,8 +407,14 @@ def vexa(S):
 
 class Quaternion:
 
-    def __init__(self, x, y, z, w):
-        self._q = cs.vertcat(x, y, z, w)
+    def __init__(self, x, y=None, z=None, w=None):
+        if y is None:
+            # assumes x/w are none also
+            x_ = cs.vec(x)
+            assert x.shape[0] == 4, ""
+            self._q = x
+        else:
+            self._q = cs.vertcat(x, y, z, w)
 
     def split(self):
         return cs.vertsplit(self._q)
