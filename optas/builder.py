@@ -50,6 +50,19 @@ class OptimizationBuilder:
         self.optimize_time = optimize_time
         self.derivs_align = derivs_align
 
+        # Ensure T is sufficiently large
+        if not derivs_align:
+
+            # Get max time deriv
+            all_time_derivs = []
+            for m in models:
+                all_time_derivs += m.time_derivs
+            max_time_deriv = max(all_time_derivs)
+
+            # Check T is large enough
+            Tmin = max_time_deriv+1
+            assert T >= Tmin, f"{T=} is too low, it should be at least {Tmin}"
+
         # Setup decision variables
         self._decision_variables = SXContainer()
         for model in self._models:
