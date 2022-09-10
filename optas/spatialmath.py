@@ -432,6 +432,12 @@ class Quaternion:
 
     def sumsqr(self):
         return cs.sumsqr(self._q)
+
+    def inv(self):
+        q = self.getquat()
+        qinv = cs.vertcat(-q[:3], q[3])/self.sumsqr()
+        return Quaternion(qinv)
+
     @staticmethod
     def fromrpy(rpy):
         r, p, y = cs.vertsplit(vec(rpy))
