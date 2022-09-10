@@ -75,7 +75,17 @@ class TaskModel(Model):
         super().__init__(name, dim, time_derivs, symbol, dlim)
 
 
+class JointTypeNotSupported(NotImplementedError):
+
+    def __init__(self, joint_type):
+        msg = f'{joint_type} joints are currently not supported\n'
+        msg += 'if you require this joint type please raise an issue at '
+        msg += 'https://github.com/cmower/optas/issues'
+        super().__init__(msg)
+
+
 class RobotModel(Model):
+
 
 
     def __init__(self, urdf_filename, time_derivs=[0], qddlim=None):
