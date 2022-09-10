@@ -430,6 +430,8 @@ class Quaternion:
             -x1*x0 - y1*y0 - z1*z0 + w1*w0
         )
 
+    def sumsqr(self):
+        return cs.sumsqr(self._q)
     @staticmethod
     def fromrpy(rpy):
         r, p, y = cs.vertsplit(vec(rpy))
