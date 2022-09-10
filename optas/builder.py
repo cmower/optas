@@ -44,6 +44,12 @@ class OptimizationBuilder:
         # Input check
         assert T > 0, f"T must be strictly positive"
 
+        if not isinstance(robots, list):
+            robots = [robots] # allow user to pass a single robot
+
+        if not isinstance(tasks, list):
+            tasks = [tasks] # all user to pass a single task
+
         # Class attributes
         self.T = T
         self._models = robots + tasks
