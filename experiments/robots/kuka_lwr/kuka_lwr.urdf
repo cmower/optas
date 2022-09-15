@@ -1,0 +1,479 @@
+<?xml version="1.0" ?>
+<robot name="kuka">
+    <material name="DarkGrey">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+    </material>
+    <material name="Black">
+        <color rgba="0 0 0 1.0"/>
+    </material>
+    <material name="Orange">
+        <color rgba="1.0 0.487 0 1.0"/>
+    </material>
+    <material name="Silver">
+        <color rgba="1.0 1.0 1.0 1.0"/>
+    </material>
+    <material name="Grey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+    </material>
+    <material name="Blue">
+        <color rgba="0.0 0.0 0.8 1.0"/>
+    </material>
+    <link name="lwr_arm_0_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin xyz="0 0 0.055"/>
+            <inertia ixx="0.00381666666667" ixy="0" ixz="0" iyy="0.0036" iyz="0" izz="0.00381666666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/visual/base.STL"/>
+            </geometry>
+            <material name="Grey"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.055"/>
+            <geometry>
+                <cylinder length="0.11" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="lwr_arm_0_joint" type="revolute">
+        <origin rpy="0 0 3.14159265359" xyz="0 0 0.11"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="204" lower="-2.96705972839" upper="2.96705972839" velocity="1.91986217719"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_0_link"/>
+        <child link="lwr_arm_1_link"/>
+    </joint>
+    <link name="lwr_arm_1_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin rpy="0 0 0" xyz="0 -0.06 0.130"/>
+            <inertia ixx="0.0136666666667" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.0118666666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.008"/>
+            <geometry>
+                <mesh filename="meshes/visual/link_1.STL"/>
+            </geometry>
+            <material name="Blue"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 -0.06 0.2"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0.291 0 0" xyz="0 -0.03 0.1"/>
+            <geometry>
+                <cylinder length="0.208" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <transmission name="lwr_arm_0_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_0_motor"/>
+        <joint name="lwr_arm_0_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_1_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0.2"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="306" lower="-2.09439510239" upper="2.09439510239" velocity="1.91986217719"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+        <dynamics damping="1.0" friction="10"/>
+        <parent link="lwr_arm_1_link"/>
+        <child link="lwr_arm_2_link"/>
+    </joint>
+    <link name="lwr_arm_2_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin rpy="0 0 0" xyz="0 0.06 0.07"/>
+            <inertia ixx="0.0136666666667" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.0118666666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+                <mesh filename="meshes/visual/link_2.STL"/>
+            </geometry>
+            <material name="Blue"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.2"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0.06 0.0"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0.291 0 0" xyz="0 0.03 0.1"/>
+            <geometry>
+                <cylinder length="0.208" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <transmission name="lwr_arm_1_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_1_motor"/>
+        <joint name="lwr_arm_1_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_2_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0.20"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="204" lower="-2.96705972839" upper="2.96705972839" velocity="2.26892802759"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_2_link"/>
+        <child link="lwr_arm_3_link"/>
+    </joint>
+    <link name="lwr_arm_3_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin rpy="0 0 0" xyz="0 0.06 0.130"/>
+            <inertia ixx="0.0136666666667" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.0118666666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.008"/>
+            <geometry>
+                <mesh filename="meshes/visual/link_3.STL"/>
+            </geometry>
+            <material name="Blue"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0.06 0.2"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="-0.291 0 0" xyz="0 0.03 0.1"/>
+            <geometry>
+                <cylinder length="0.208" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <transmission name="lwr_arm_2_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_2_motor"/>
+        <joint name="lwr_arm_2_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_3_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0.20"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="306" lower="-2.09439510239" upper="2.09439510239" velocity="2.26892802759"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_3_link"/>
+        <child link="lwr_arm_4_link"/>
+    </joint>
+    <link name="lwr_arm_4_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin rpy="0 0 0" xyz="0 -0.06 0.07"/>
+            <inertia ixx="0.0136666666667" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.0118666666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+            <mesh filename="meshes/visual/link_4.STL"/>
+                </geometry>
+            <material name="Blue"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.2"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+            <collision>
+            <origin rpy="0 0 0" xyz="0 -0.06 0.0"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="-0.291 0 0" xyz="0 -0.03 0.1"/>
+            <geometry>
+                <cylinder length="0.208" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <transmission name="lwr_arm_3_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_3_motor"/>
+        <joint name="lwr_arm_3_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_4_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0.20"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="204" lower="-2.96705972839" upper="2.96705972839" velocity="2.26892802759"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_4_link"/>
+        <child link="lwr_arm_5_link"/>
+    </joint>
+    <link name="lwr_arm_5_link">
+        <inertial>
+            <mass value="2.0"/>
+            <origin rpy="0 0 0" xyz="0 0 0.124"/>
+            <inertia ixx="0.0126506666667" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.0108506666667"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.008"/>
+            <geometry name="lwr_arm_5_geom">
+                <mesh filename="meshes/visual/link_5.STL"/>
+            </geometry>
+            <material name="Blue"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 -0.04 0.19"/>
+            <geometry>
+                <sphere radius="0.07"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0.207 0 0" xyz="0 -0.02 0.095"/>
+            <geometry>
+                <cylinder length="0.198" radius="0.07"/>
+            </geometry>
+        </collision>
+    </link>
+    <transmission name="lwr_arm_4_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_4_motor"/>
+        <joint name="lwr_arm_4_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_5_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0.19"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="306" lower="-2.09439510239" upper="2.09439510239" velocity="3.14159265359"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_5_link"/>
+        <child link="lwr_arm_6_link"/>
+    </joint>
+    <link name="lwr_arm_6_link">
+        <inertial>
+            <mass value="0.2"/>
+            <origin rpy="0 0 0" xyz="0 0 0.0625"/>
+            <inertia ixx="0.000520833333333" ixy="0" ixz="0" iyy="0.000520833333333" iyz="0" izz="0.000520833333333"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/visual/link_6.STL"/>
+            </geometry>
+            <material name="Grey"/>
+        </visual>
+    </link>
+    <transmission name="lwr_arm_5_trans" type="SimpleTransmission">
+        <actuator name="lwr_arm_5_motor"/>
+        <joint name="lwr_arm_5_joint"/>
+        <mechanicalReduction>1.0</mechanicalReduction>
+    </transmission>
+    <joint name="lwr_arm_6_joint" type="revolute">
+        <origin rpy="0 0 3.14159265359" xyz="0 0 0.078"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="204" lower="-2.96705972839" upper="2.96705972839" velocity="3.14159265359"/>
+        <safety_controller k_position="30" k_velocity="30" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+        <dynamics damping="1.0"/>
+        <parent link="lwr_arm_6_link"/>
+        <child link="lwr_arm_7_link"/>
+    </joint>
+    <link name="lwr_arm_7_link">
+        <inertial>
+            <mass value="0.2"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="0.0333333333333" ixy="0" ixz="0" iyy="0.0333333333333" iyz="0" izz="0.0333333333333"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/visual/link_7.STL"/>
+            </geometry>
+            <material name="DarkGrey"/>
+        </visual>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0.016"/>
+            <geometry>
+                <cylinder length="0.03" radius="0.033"/>
+            </geometry>
+            <material name="DarkGrey"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <cylinder length="0.046" radius="0.04"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="lwr_arm_7_joint" type="fixed">
+        <parent link="lwr_arm_7_link"/>
+        <child link="adaptor_kuka"/>
+        <origin rpy="0 0 3.14159265359" xyz="0 0 0.032"/>
+    </joint>
+    <link name="adaptor_kuka">
+        <inertial>
+            <mass value="0.1"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0.0"/>
+            <geometry>
+                <mesh filename="meshes/visual/adaptor_kuka.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+
+        <collision>
+            <origin rpy="0 3.1416 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/visual/adaptor_kuka.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="force_torque_sensor_mount" type="fixed">
+        <origin rpy="0 0 0" xyz="0 0 0.0453"/>
+        <parent link="adaptor_kuka"/>
+        <child link="force_torque_sensor"/>
+    </joint>
+    <link name="force_torque_sensor">
+        <inertial>
+            <mass value="0.5"/>
+            <origin xyz="-0.000007 0.001524 0.027591"/>
+            <inertia ixx="0.0333333333333" ixy="0" ixz="0" iyy="0.0333333333333" iyz="0" izz="0.0333333333333"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <material name="Silver"/>
+            <geometry>
+                <mesh filename="meshes/visual/force_sensor.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </visual>
+
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 -0.0333"/>
+            <geometry>
+                <cylinder length="0.0333" radius="0.04"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="end_effector_joint" type="fixed">
+        <origin rpy="0 0 0.0" xyz="0 0 0.02"/>
+        <parent link="force_torque_sensor"/>
+        <child link="end_effector"/>
+    </joint>
+    <link name="end_effector">
+        <inertial>
+            <mass value="1"/>
+            <origin xyz="-0.000007 0.001524 0.027591"/>
+            <inertia ixx="0.00409836" ixy="0.000000" ixz="0.000000" iyy="0.00061475" iyz="0.000000" izz="0.00409836"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <material name="Black"/>
+            <geometry>
+                <mesh filename="meshes/visual/adaptor_endeffector.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="meshes/visual/adaptor_endeffector.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="end_effector_joint_sponge" type="fixed">
+        <origin rpy="0 0 0.0" xyz="0 0 0.015"/>
+        <parent link="end_effector"/>
+        <child link="end_effector_sponge"/>
+    </joint>
+    <link name="end_effector_sponge">
+        <inertial>
+            <mass value="1"/>
+            <origin xyz="-0.000007 0.001524 0.027591"/>
+            <inertia ixx="0.00409836" ixy="0.000000" ixz="0.000000" iyy="0.00061475" iyz="0.000000" izz="0.00409836"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.006"/>
+            <geometry>
+                <!-- <cylinder length="0.015" radius="0.04"/> -->
+                <cylinder length="0.25" radius="0.005"/>
+            </geometry>
+            <material name="Silver"/>
+        </visual>
+        <!-- <collision>
+            <origin rpy="0 0 0" xyz="0 0 -0.006"/>
+            <geometry>
+                <cylinder length="0.25" radius="0.005"/>
+            </geometry>
+        </collision> -->
+    </link>
+    <joint name="end_effector_ball" type="fixed">
+        <origin rpy="0 0 0.0" xyz="0 0 0.12"/>
+        <parent link="end_effector_sponge"/>
+        <child link="end_effector_ball"/>
+    </joint>
+    <link name="end_effector_ball">
+    <contact>
+      <lateral_friction value="1.0"/>
+      <rolling_friction value="1.0"/>
+      <spinning_friction value="1.0"/>
+      <contact_stiffness value="10.0"/>
+      <contact_damping value="0.5"/>
+      <!-- <contact_cfm value="0.0"/> -->
+      <!-- <contact_erp value="1.0"/> -->
+    </contact>
+    <inertial>
+        <mass value="0.05"/>
+        <origin xyz="-0.0 0.0 0.0"/>
+        <inertia ixx="0.015" ixy="0.000000" ixz="0.000000" iyy="0.015" iyz="0.000000" izz="0.015"/>
+    </inertial>
+    <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.0"/>
+        <geometry>
+            <sphere radius="0.015"/>
+        </geometry>
+        <material name="Black"/>
+    </visual>
+    <collision>
+        <origin rpy="0 0 0" xyz="0 0 0.0"/>
+        <geometry>
+            <sphere radius="0.015"/>
+        </geometry>
+    </collision>
+    </link>
+</robot>
