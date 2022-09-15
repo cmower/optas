@@ -1,5 +1,4 @@
 import os
-import sys
 import abc
 import time
 import datetime
@@ -12,6 +11,20 @@ from optas.spatialmath import vectorize_args
 from optas.templates import DifferentialIK
 
 path = os.path.dirname(os.path.realpath(__file__))
+pi = optas.np.pi
+angle = -0.25*pi
+R = optas.np.array([
+    [optas.np.cos(angle), -optas.np.sin(angle)],
+    [optas.np.sin(angle), optas.np.cos(angle)]
+])
+
+datadir = os.path.join(path, 'data')
+if not os.path.exists(datadir):
+    os.mkdir(datadir)
+
+exprdir = os.path.join(datadir, 'expr1')
+if not os.path.exists(exprdir):
+    os.mkdir(exprdir)
 
 class ExprIK(DifferentialIK):
 
@@ -45,13 +58,14 @@ class ExprIK(DifferentialIK):
         self.builder.add_leq_inequality_constraint('upper_zlim', pn[2], zup)
 
 
-
     @abc.abstractmethod
     def _get_desired_vel_difference(self, xydir):
         pass
 
+
     def _solver_interface(self):
         return optas.OSQPSolver
+
 
     def _solver_setup_args(self):
         return []
@@ -88,16 +102,7 @@ class Data:
             self.DQ,
             self.P,
         ).toarray()
-
-        datadir = os.path.join(path, 'data')
-        if not os.path.exists(datadir):
-            os.mkdir(datadir)
-
-        expr1dir = os.path.join(datadir, 'expr1')
-        if not os.path.exists(expr1dir):
-            os.mkdir(expr1dir)
-
-        full_filename = os.path.join(expr1dir, filename)
+        full_filename = os.path.join(exprdir, filename)
         optas.np.savetxt(full_filename, data, delimiter=',')
 
         return self
@@ -110,7 +115,8 @@ class Data:
 
 
     def plot_position_path(self, ax, fmt='-k', **kwargs):
-        p = self.P.toarray()
+        p = R@self.P.toarray()[:2,:]
+        p -= p[:, 0].reshape(2, 1)
         ax.plot(p[0,:], p[1, :], fmt, **kwargs)
 
     def get_initial_position(self):
@@ -129,7 +135,7 @@ class Config:
 class Experiment:
 
 
-    N = 2*1400 + 100  # number of iterations of experiment
+    N = 2*1400 + 200  # number of iterations of experiment
     dt = 0.01*0.5  # time step for each iteration of experiment
 
 
@@ -163,7 +169,7 @@ class Experiment:
         msg.header.stamp = self.rospy.Time.now()
         self._pub.publish(msg)
 
-        
+
     def update_rpbi(self, q):
         self.publish_rpbi(q)
         time.sleep(self.dt)
@@ -213,15 +219,7 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    # Parse args
     rpbi = False
-    try:
-        idx = sys.argv.index('--rpbi')
-        if sys.argv[idx].lower() in {'1', 'true'}:
-            rpbi = True
-    except ValueError:
-        pass
-        
 
     # Setup config
     xydir = optas.np.array([0.70710678, 0.70710678])
@@ -245,18 +243,25 @@ if __name__ == '__main__':
     # ax.legend()
 
     # Plot position trajectory
-    fig, ax = plt.subplots(tight_layout=True)
+    fig, ax = plt.subplots(tight_layout=True, figsize=(6.5, 3))
     # fig.suptitle('Position path')
-    expr.data1.plot_position_path(ax, fmt='-r', label='Optimize 6D', linewidth=4)
+    expr.data1.plot_position_path(ax, fmt='-r', label='Optimize 6D', linewidth=5)
     expr.data2.plot_position_path(ax, fmt='-g', label='Optimize 2D', linewidth=3)
-    p0 = expr.data1.get_initial_position()[:2]
-    pN = p0 + 1.425*xydir
+    p0 = optas.np.zeros(2)
+    pN = R@(p0 + 1.425*xydir)
     ax.plot([p0[0], pN[0]], [p0[1], pN[1]], '--k', linewidth=1, label='Ideal path')
-    ax.plot([p0[0]], [p0[1]], 'ob', label='Start', markersize=10)
+    ax.plot([0], [0], 'ob', label='Start', markersize=10)
     ax.set_aspect('equal')
     ax.grid()
-    ax.legend()
-    
+    ax.set_xlim(-0.05, 1.45)
+    ax.set_ylim(-0.175, 0.175)
+    ax.legend(ncol=4)
+    ax.set_xlabel('$X$ (m)', fontsize=20)
+    ax.set_ylabel('$Y$ (m)', fontsize=20)
+
+    fig_filename = os.path.join(exprdir, 'plot_position_trajectory.pdf')
+    fig.savefig(fig_filename)
+
 
     # Show plot
     plt.show()
