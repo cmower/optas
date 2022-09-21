@@ -61,7 +61,7 @@ class OptimizationBuilder:
 
             # Get max time deriv
             all_time_derivs = []
-            for m in models:
+            for m in self._models:
                 all_time_derivs += m.time_derivs
             max_time_deriv = max(all_time_derivs)
 
