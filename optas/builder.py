@@ -69,6 +69,10 @@ class OptimizationBuilder:
             Tmin = max_time_deriv+1
             assert T >= Tmin, f"{T=} is too low, it should be at least {Tmin}"
 
+        model_names = [m.get_name() for m in self._models]
+        is_unique_names = len(model_names) == len(set(model_names))
+        assert is_unique_names, "each model should have a unique name"
+
         # Setup decision variables
         self._decision_variables = SXContainer()
         for model in self._models:
