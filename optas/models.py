@@ -87,8 +87,7 @@ class JointTypeNotSupported(NotImplementedError):
 class RobotModel(Model):
 
 
-
-    def __init__(self, urdf_filename, time_derivs=[0], qddlim=None):
+    def __init__(self, urdf_filename, name=None, time_derivs=[0], qddlim=None):
 
         # Load URDF
         self._urdf = URDF.from_xml_file(urdf_filename)
@@ -122,7 +121,11 @@ class RobotModel(Model):
             assert qddlim.shape[0] == self.ndof, f"expected ddlim to have {self.ndof} elements"
             dlim[2] = -qddlim, qddlim
 
-        super().__init__(self._urdf.name, self.ndof, time_derivs, 'q', dlim)
+        # If user did not supply name for the model then use the one in the URDF
+        if name is None:
+            name = self._urdf.name
+
+        super().__init__(name, self.ndof, time_derivs, 'q', dlim)
 
 
 
