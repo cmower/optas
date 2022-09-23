@@ -160,6 +160,7 @@ class Experiment:
 
     def reset_rpbi(self):
         self.publish_rpbi(self.q0)
+        time.sleep(1.)
 
 
     def publish_rpbi(self, q):
