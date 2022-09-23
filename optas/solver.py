@@ -118,7 +118,7 @@ class Solver(ABC):
         pass
 
     @staticmethod
-    def interpolate(self, traj: cs.casadi.DM, T: float, **interp_args):
+    def interpolate(traj, T, **interp_args):
         assert isinstance(traj, cs.casadi.DM), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
