@@ -305,10 +305,10 @@ class OptimizationBuilder:
         n = f'__{name}_model_limit_{time_deriv}__'
         self.add_bound_inequality_constraint(n, xlo, x, xup)
 
-    def initial_configuration(self, name, init, time_deriv=0, t0=0):
+    def initial_configuration(self, name, init=None, time_deriv=0, t0=0):
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
         n = f'__{name}_initial_configuration_{time_deriv}_{t0}__'
-        self.add_equality_constraint(n, x0, init)
+        self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
 
 
     #
