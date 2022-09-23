@@ -44,11 +44,30 @@ class OptimizationBuilder:
         # Input check
         assert T > 0, f"T must be strictly positive"
 
+        if not isinstance(robots, list):
+            robots = [robots] # allow user to pass a single robot
+
+        if not isinstance(tasks, list):
+            tasks = [tasks] # all user to pass a single task
+
         # Class attributes
         self.T = T
         self._models = robots + tasks
         self.optimize_time = optimize_time
         self.derivs_align = derivs_align
+
+        # Ensure T is sufficiently large
+        if not derivs_align:
+
+            # Get max time deriv
+            all_time_derivs = []
+            for m in self._models:
+                all_time_derivs += m.time_derivs
+            max_time_deriv = max(all_time_derivs)
+
+            # Check T is large enough
+            Tmin = max_time_deriv+1
+            assert T >= Tmin, f"{T=} is too low, it should be at least {Tmin}"
 
         # Setup decision variables
         self._decision_variables = SXContainer()

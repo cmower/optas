@@ -75,7 +75,17 @@ class TaskModel(Model):
         super().__init__(name, dim, time_derivs, symbol, dlim)
 
 
+class JointTypeNotSupported(NotImplementedError):
+
+    def __init__(self, joint_type):
+        msg = f'{joint_type} joints are currently not supported\n'
+        msg += 'if you require this joint type please raise an issue at '
+        msg += 'https://github.com/cmower/optas/issues'
+        super().__init__(msg)
+
+
 class RobotModel(Model):
+
 
 
     def __init__(self, urdf_filename, time_derivs=[0], qddlim=None):
@@ -113,6 +123,7 @@ class RobotModel(Model):
             dlim[2] = -qddlim, qddlim
 
         super().__init__(self._urdf.name, self.ndof, time_derivs, 'q', dlim)
+
 
 
     def _add_fixed_link(self, parent_link, child_link, xyz=None, rpy=None, joint_name=None):
@@ -167,6 +178,7 @@ class RobotModel(Model):
         return xyz, rpy
 
 
+
     @staticmethod
     def _get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
@@ -179,11 +191,29 @@ class RobotModel(Model):
         return self.actuated_joint_names.index(joint_name)
 
 
-    @vectorize_args
-    def get_link_transform(self, link, q, base_link):
-        T_L_W = self.get_global_link_transform(link, q)
-        T_B_W = self.get_global_link_transform(base_link, q)
-        return T_L_W @ invt(T_B_W)
+
+    def get_random_joint_positions(self):
+        lo = self.lower_actuated_joint_limits.toarray()
+        hi = self.upper_actuated_joint_limits.toarray()
+        return cs.vec(cs.np.random.uniform(lo, hi))
+
+
+    def get_random_pose_in_global_link(self, link):
+        q = self.get_random_joint_positions()
+        return self.get_global_link_transform(link, q)
+
+
+    def _make_function(self, label, link, method, n=1, base_link=None):
+        q = cs.SX.sym('q', self.ndof)
+        args = (link, q)
+        kwargs = {}
+        if base_link is not None:
+            kwargs['base_link'] = base_link
+        out = method(*args, **kwargs)
+        F = cs.Function(label, [q], [out])
+        if n > 1:
+            F = F.map(n)
+        return F
 
 
     @vectorize_args
@@ -213,7 +243,7 @@ class RobotModel(Model):
                 T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
+                raise JointTypeNotSupported(joint.type)
 
             if joint.child == link:
                 break
@@ -222,10 +252,18 @@ class RobotModel(Model):
 
 
     def get_global_link_transform_function(self, link):
-        q = cs.SX.sym('q', self.ndof)
-        T = self.get_global_link_transform(link, q)
-        F = cs.Function('T', [q], [T])
-        return F
+        return self._make_function('T', link, self.get_global_link_transform)
+
+
+    @vectorize_args
+    def get_link_transform(self, link, q, base_link):
+        T_L_W = self.get_global_link_transform(link, q)
+        T_B_W = self.get_global_link_transform(base_link, q)
+        return T_L_W @ invt(T_B_W)
+
+
+    def get_link_transform_function(self, link, base_link):
+        return self._make_function('T', link, self.get_link_transform, base_link=base_link)
 
 
     def get_global_link_position(self, link, q):
@@ -234,12 +272,15 @@ class RobotModel(Model):
 
 
     def get_global_link_position_function(self, link, n=1):
-        q = cs.SX.sym('q', self.ndof)
-        p = self.get_global_link_position(link, q)
-        F = cs.Function('p', [q], [p])
-        if n > 1:
-            F = F.map(n)
-        return F
+        return self._make_function('p', link, self.get_global_link_position, n=n)
+
+
+    def get_link_position(self, link, q, base_link):
+        return transl(self.get_link_transform(link, q, base_link))
+
+
+    def get_link_position_function(self, link, base_link, n=1):
+        return self._make_function('p', link, self.get_link_position, n=n, base_link=base_link)
 
 
     def get_global_link_rotation(self, link, q):
@@ -248,15 +289,19 @@ class RobotModel(Model):
 
 
     def get_global_link_rotation_function(self, link):
-        q = cs.SX.sym('q', self.ndof)
-        R = self.get_global_link_rotation(link, q)
-        F = cs.Function('R', [q], [R])
-        return F
+        return self._make_function('R', link, self.get_global_link_rotation)
+
+
+    def get_link_rotation(self, link, q, base_link):
+        return t2r(self.get_link_transform(link, q, base_link))
+
+
+    def get_link_rotation_function(self, link, base_link):
+        return self._make_function('R', link, self.get_link_rotation, base_link=base_link)
 
 
     @vectorize_args
     def get_global_link_quaternion(self, link, q):
-        """Get the link orientation as a quaternion in the global frame for a given joint state q"""
 
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
 
@@ -281,7 +326,7 @@ class RobotModel(Model):
                 quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
+                raise JointTypeNotSupported(joint.type)
 
             if joint.child == link:
                 break
@@ -290,17 +335,20 @@ class RobotModel(Model):
 
 
     def get_global_link_quaternion_function(self, link, n=1):
-        q = cs.SX.sym('q', self.ndof)
-        quat = self.get_global_link_quaternion(link, q)
-        F = cs.Function('quat', [q], [quat])
-        if n > 1:
-            F = F.map(n)
-        return F
+        return self._make_function('quat', link, self.get_global_link_quaternion, n=n)
 
 
-    @vectorize_args
-    def get_geometric_jacobian(self, link, q, base_link=None):
-        """Get the geometric jacobian matrix for a given link and joint state q"""
+    def get_link_quaternion(self, link, q, base_link):
+        quat_L_W = Quaternion(self.get_global_link_quaternion(link, q))
+        quat_B_W = Quaternion(self.get_global_link_quaternion(base_link, q))
+        return (quat_L_W * quat_B_W.inv()).getquat()
+
+
+    def get_link_quaternion_function(self, link, base_link, n=1):
+        return self._make_function('quat', link, self.get_link_quaternion, n=n, base_link=base_link)
+
+
+    def get_global_geometric_jacobian(self, link, q):
 
         e = self.get_global_link_position(link, q)
 
@@ -342,7 +390,7 @@ class RobotModel(Model):
                 jacobian_columns.append(jcol)
 
             else:
-                raise NotImplementedError(f"{joint.type} joints are currently not supported\nif you require this joint type please raise an issue at https://github.com/cmower/optas/issues")
+                raise JointTypeNotSupported(joint.type)
 
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
@@ -351,6 +399,18 @@ class RobotModel(Model):
         J = jacobian_columns_ordered.pop(0)
         while jacobian_columns_ordered:
             J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
+
+        return J
+
+
+    def get_global_geometric_jacobian_function(self, link):
+        return self._make_function('J', link, self.get_global_geometric_jacobian)
+
+
+    @vectorize_args
+    def get_geometric_jacobian(self, link, q, base_link):
+
+        J = self.get_global_geometric_jacobian(link, q)
 
         # Transform jacobian to given base link
         if base_link is not None:
@@ -365,60 +425,100 @@ class RobotModel(Model):
         return J
 
 
-    def get_geometric_jacobian_function(self, link, base_link=None):
-        q = cs.SX.sym('q', self.ndof)
-        J = self.get_geometric_jacobian(link, q, base_link=base_link)
-        return cs.Function('J', [q], [J])
+    def get_geometric_jacobian_function(self, link, base_link):
+        return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link)
 
 
-    def get_linear_geometric_jacobian(self, link, q, base_link=None):
-        J = self.get_geometric_jacobian(link, q, base_link=base_link)
+    def get_global_linear_geometric_jacobian(self, link, q):
+        J = self.get_global_geometric_jacobian(link, q)
         return J[:3, :]
 
 
-    def get_linear_geometric_jacobian_function(self, link, base_link=None):
-        q = cs.SX.sym('q', self.ndof)
-        J = self.get_linear_geometric_jacobian(link, q, base_link=base_link)
-        return cs.Function('Jl', [q], [J])
+    def get_global_linear_geometric_jacobian_function(self, link):
+        return self._make_function('Jl', link, self.get_global_linear_geometric_jacobian)
 
 
-    def get_angular_geometric_jacobian(self, link, q, base_link=None):
-        J = self.get_geometric_jacobian(link, q, base_link=base_link)
+    def get_linear_geometric_jacobian(self, link, q, base_link):
+        J = self.get_geometric_jacobian(link, q, base_link)
+        return J[:3, :]
+
+
+    def get_linear_geometric_jacobian_function(self, link, base_link):
+        return self._make_function('Jl', link, self.get_linear_geometric_jacobian, base_link=base_link)
+
+
+    def get_global_angular_geometric_jacobian(self, link, q):
+        J = self.get_global_geometric_jacobian(link, q)
         return J[3:, :]
 
 
-    def get_angular_geometric_jacobian_function(self, link, q, base_link=None):
-        q = cs.SX.sym('q', self.ndof)
-        J = self.get_angular_geometric_jacobian(link, q, base_link=base_link)
-        return cs.Function('Ja', [q], [J])
+    def get_global_angular_geometric_jacobian_function(self, link):
+        return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian)
+
+
+    def get_angular_geometric_jacobian(self, link, q, base_link):
+        J = self.get_geometric_jacobian(link, q, base_link)
+        return J[3:, :]
+
+
+    def get_angular_geometric_jacobian_function(self, link, base_link):
+        return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link)
 
 
     def _manipulability(self, J):
         return cs.sqrt(cs.det(J @ J.T))
 
 
-    def get_manipulability(self, link, q, base_link=None):
+    def get_global_manipulability(self, link, q):
+        J = self.get_global_geometric_jacobian(link, q)
+        return self._manipulability(J)
+
+
+    def get_global_manipulability_function(self, link, n=1):
+        return self._make_function('m', link, self.get_global_manipulability, n=n)
+
+
+    def get_manipulability(self, link, q, base_link):
         """Get the manipulability measure"""
-        J = self.get_geometric_jacobian(link, q, base_link=base_link)
+        J = self.get_geometric_jacobian(link, q, base_link)
         return self._manipulability(J)
 
 
-    def get_linear_manipulability(self, link, q, base_link=None):
-        J = self.get_linear_geometric_jacobian(link, q, base_link=base_link)
-        return self._manipulability(J)
+    def get_manipulability_function(self, link, base_link, n=1):
+        return self._make_function('m', link, self.get_manipulability, n=n, base_link=base_link)
 
 
-    def get_angular_manipulability(self, link, q, base_link=None):
-        J = self.get_angular_geometric_jacobian(link, q, base_link=base_link)
-        return self._manipulability(J)
+    def get_global_linear_manipulability(self, link, q):
+        Jl = self.get_global_linear_geometric_jacobian(link, q)
+        return self._manipulability(Jl)
 
 
-    def get_random_joint_positions(self):
-        lo = self.lower_actuated_joint_limits.toarray()
-        hi = self.upper_actuated_joint_limits.toarray()
-        return cs.vec(cs.np.random.uniform(lo, hi))
+    def get_global_linear_manipulability_function(self, link, n=1):
+        return self._make_function('ml', link, self.get_global_linear_manipulability, n=n)
 
 
-    def get_random_pose_in_global_link(self, link):
-        q = self.get_random_joint_positions()
-        return self.get_global_link_transform(link, q)
+    def get_linear_manipulability(self, link, q, base_link):
+        Jl = self.get_linear_geometric_jacobian(link, q, base_link)
+        return self._manipulability(Jl)
+
+
+    def get_linear_manipulability_function(self, link, base_link, n=1):
+        return self._make_function('Jl', link, self.get_linear_manipulability, n=n, base_link=base_link)
+
+
+    def get_global_angular_manipulability(self, link, q):
+        Ja = self.get_global_angular_geometric_jacobian(link, q)
+        return self._manipulability(Ja)
+
+
+    def get_global_angular_manipulability_function(self, link, n=1):
+        return self._make_function('ma', link, self.get_global_angular_manipulability, n=n)
+
+
+    def get_angular_manipulability(self, link, q, base_link):
+        Ja = self.get_angular_geometric_jacobian(link, q, base_link)
+        return self._manipulability(Ja)
+
+
+    def get_angular_manipulability_function(self, link, base_link, n=1):
+        return self._make_function('Ja', link, self.get_angular_manipulability, n=n, base_link=base_link)
