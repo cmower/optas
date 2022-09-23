@@ -278,24 +278,23 @@ class OptimizationBuilder:
 
         model = self.get_model(name)
         xd = self.get_model_states(name, time_deriv)
-        x = self.get_model_states(name, time_deriv)
-        n = xd.shape[1]
+        x = self.get_model_states(name, time_deriv-1)
+        n = x.shape[1]
         if self.derivs_align:
             n -= 1
-            qd = qd[:, :-1]
+            xd = xd[:, :-1]
 
         if self.optimize_time:
             dt = self.get_dt()[:n]
         else:
             dt = cs.vec(dt)
-            assert dt.shape[0] in {1, n}, f"dt should be scalar or have {n} elements"
+            assert dt.shape[0] in {1, n-1}, f"dt should be scalar or have {n-1} elements"
             if dt.shape[0] == 1:
-                dt = dt*cs.DM.ones(n)
-        dt = cs.vec(dt).T  # ensure 1-by-n
+                dt = dt*cs.DM.ones(n-1)
+        dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(model.dim, n)
+        integr = self._integr(model.dim, n-1)
         name = f'__integrate_model_states_{name}_{time_deriv}__'
-
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
 
