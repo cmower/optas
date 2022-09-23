@@ -244,7 +244,7 @@ if __name__ == '__main__':
     # ax.legend()
 
     # Plot position trajectory
-    fig, ax = plt.subplots(tight_layout=True, figsize=(6.5, 3))
+    fig, ax = plt.subplots(tight_layout=True, figsize=(3, 3))
     # fig.suptitle('Position path')
     expr.data1.plot_position_path(ax, fmt='-r', label='Optimize 6D', linewidth=5)
     expr.data2.plot_position_path(ax, fmt='-g', label='Optimize 2D', linewidth=3)
@@ -260,8 +260,15 @@ if __name__ == '__main__':
     ax.set_xlabel('$X$ (m)', fontsize=20)
     ax.set_ylabel('$Y$ (m)', fontsize=20)
 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(14)
+    for tick in ax.yaxis.get_major_ticks()
+        tick.label.set_fontsize(14)        
+
     fig_filename = os.path.join(exprdir, 'plot_position_trajectory.pdf')
     fig.savefig(fig_filename)
+
+    expr.reset_rpbi()
 
 
     # Show plot
