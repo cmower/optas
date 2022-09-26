@@ -5,15 +5,18 @@ import time
 import pathlib
 
 # ROS
-import rospy
-from sensor_msgs.msg import JointState
+# import rospy
+# from sensor_msgs.msg import JointState
+
+# PyBullet
+import pybullet_api
 
 # OpTaS
 import optas
 
 
 class Planner:
-    
+
 
     def __init__(self):
 
@@ -69,7 +72,7 @@ class Planner:
 
         # Put path in global frame
         for k in range(self.T):
-            path[:,k] = pc + Rc @ path[:,k]        
+            path[:,k] = pc + Rc @ path[:,k]
 
         # Cost: figure eight
         builder.add_cost_term('ee_path', 1000.*optas.sumsqr(path - pos_ee))
@@ -89,7 +92,7 @@ class Planner:
     def plan(self, qc):
 
         # Set parameters
-        self.solver.reset_parameters({'qc': optas.DM(qc)})        
+        self.solver.reset_parameters({'qc': optas.DM(qc)})
 
         # Set initial seed, note joint velocity will be set to zero
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
@@ -109,10 +112,11 @@ class Planner:
 
             def __call__(self, t):
                 q = self.plan_function(t)
-                msg = JointState(name=self.robot.actuated_joint_names, position=q.tolist())
-                msg.header.stamp = rospy.Time.now()
-                return msg
-                
+                # msg = JointState(name=self.robot.actuated_joint_names, position=q.tolist())
+                # msg.header.stamp = rospy.Time.now()
+                # return msg
+                return q
+
         return Plan(self.kuka, plan)
 
 def main():
@@ -121,13 +125,21 @@ def main():
     planner = Planner()
 
     # Plan trajectory
-    qc = optas.np.deg2rad([0, 30, 0, -90, 0, -30, 0])        
+    qc = optas.np.deg2rad([0, 30, 0, -90, 0, -30, 0])
     plan = planner.plan(qc)
 
+    # Setup PyBullet
+    hz = 50
+    dt = 1.0/float(hz)
+    pb = pybullet_api.PyBullet(dt)
+    kuka = pybullet_api.Kuka()
+
     # Connect to ROS and publish
-    rospy.init_node('figure_eight_plan_node')
-    js_pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
-    rate = rospy.Rate(50)
+    # rospy.init_node('figure_eight_plan_node')
+    # js_pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
+    # rate = rospy.Rate(50)
+    kuka.reset(plan(0.))
+    pb.start()
     start_time = time.time()
 
     # Main loop
@@ -135,11 +147,16 @@ def main():
         t = time.time() - start_time
         if t > planner.Tmax:
             break
-        js_pub.publish(plan(t))        
-        rate.sleep()
+        kuka.cmd(plan(t))
+        # js_pub.publish(plan(t))
+        # rate.sleep()
+        pybullet_api.time.sleep(dt)
+
+    pb.stop()
+    pb.close()
 
     return 0
-    
+
 
 if __name__ == '__main__':
     sys.exit(main())
