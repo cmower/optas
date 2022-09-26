@@ -43,6 +43,11 @@ class Kuka:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
 
+    def reset(self, q):
+        for j, idx in enumerate(self._actuated_joints):
+            qj = q[j]
+            p.resetJointState(self._id, idx, qj)
+
     def cmd(self, q):
         p.setJointMotorControlArray(
             self._id,
