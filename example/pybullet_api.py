@@ -33,8 +33,8 @@ class PyBullet:
 
 class Kuka:
 
-    def __init__(self):
-        self._id = p.loadURDF(fileName="robots/kuka_lwr.urdf", useFixedBase=1)
+    def __init__(self, base_position=[0.]*3):
+        self._id = p.loadURDF(fileName="robots/kuka_lwr.urdf", useFixedBase=1, basePosition=base_position)
         self.num_joints = p.getNumJoints(self._id)
         self._actuated_joints = []
         for j in range(self.num_joints):
