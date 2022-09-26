@@ -133,13 +133,13 @@ def main():
     dt = 1.0/float(hz)
     pb = pybullet_api.PyBullet(dt)
     kuka = pybullet_api.Kuka()
+    kuka.reset(plan(0.))
+    pb.start()
 
     # Connect to ROS and publish
     # rospy.init_node('figure_eight_plan_node')
     # js_pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
     # rate = rospy.Rate(50)
-    kuka.reset(plan(0.))
-    pb.start()
     start_time = time.time()
 
     # Main loop
