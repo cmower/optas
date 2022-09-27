@@ -5,7 +5,7 @@ import numpy as np
 
 class PyBullet:
 
-    def __init__(self, dt):
+    def __init__(self, dt, add_floor=True):
         self.client_id = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
@@ -18,9 +18,13 @@ class PyBullet:
             cameraPitch=-40,
             cameraTargetPosition=[0, 0, 0.5],
         )
+        if add_floor:
+            self.add_floor()
+
+    def add_floor(self, base_position=[0.0]*3):
         colid = p.createCollisionShape(p.GEOM_PLANE)
         visid = p.createVisualShape(p.GEOM_PLANE, rgbaColor=[0, 1, 0, 1.], planeNormal=[0, 0, 1])
-        p.createMultiBody(baseMass=0.0, basePosition=[0.]*3,baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+        p.createMultiBody(baseMass=0.0, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
 
     def start(self):
         p.setRealTimeSimulation(1)
@@ -30,6 +34,26 @@ class PyBullet:
 
     def close(self):
         p.disconnect(self.client_id)
+
+
+class DynamicBox:
+
+    def __init__(self, base_position, half_extents):
+        colid = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
+        visid = p.createVisualShape(p.GEOM_BOX, rgbaColor=[0, 1, 0, 1.], halfExtents=half_extents)
+        self._id = p.createMultiBody(baseMass=0.5, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+        p.changeDynamics(
+            self._id, -1,
+            lateralFriction=1.0,
+            spinningFriction=0.0,
+            rollingFriction=0.0,
+            restitution=0.0,
+            linearDamping=0.04,
+            angularDamping=0.04,
+            contactStiffness=2000.0,
+            contactDamping=0.7,
+        )
+
 
 class Kuka:
 

@@ -1,7 +1,6 @@
 # Python standard lib
 import os
 import sys
-import time
 import pathlib
 
 # ROS
@@ -140,11 +139,11 @@ def main():
     # rospy.init_node('figure_eight_plan_node')
     # js_pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
     # rate = rospy.Rate(50)
-    start_time = time.time()
+    start_time = pybullet_api.time.time()
 
     # Main loop
     while True:
-        t = time.time() - start_time
+        t = pybullet_api.time.time() - start_time
         if t > planner.Tmax:
             break
         kuka.cmd(plan(t))

@@ -92,21 +92,6 @@ class RobotModel(Model):
         # Load URDF
         self._urdf = URDF.from_xml_file(urdf_filename)
 
-        # Extract information from URDF
-        self.joint_names = [jnt.name for jnt in self._urdf.joints]
-        self.link_names = [lnk.name for lnk in self._urdf.links]
-        self.actuated_joint_names = [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
-        self.ndof = len(self.actuated_joint_names)
-        self.lower_actuated_joint_limits = cs.DM([
-            jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-        self.upper_actuated_joint_limits = cs.DM([
-            jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-        self.velocity_actuated_joint_limits = cs.DM([
-            jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-
         # Setup joint limits, joint position/velocity limits
         dlim = {
             0: (self.lower_actuated_joint_limits, self.upper_actuated_joint_limits),
@@ -127,9 +112,39 @@ class RobotModel(Model):
 
         super().__init__(name, self.ndof, time_derivs, 'q', dlim)
 
+    @property
+    def joint_names(self):
+        return [jnt.name for jnt in self._urdf.joints]
 
+    @property
+    def link_names(self):
+        return [lnk.name for lnk in self._urdf.links]
 
-    def _add_fixed_link(self, parent_link, child_link, xyz=None, rpy=None, joint_name=None):
+    @property
+    def actuated_joint_names(self):
+        return [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
+
+    @property
+    def ndof(self):
+        return len(self.actuated_joint_names)
+
+    @property
+    def lower_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def upper_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def velocity_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
+        """Add new base frame, note this changes the root link."""
+
+        parent_link = base_link
+        child_link = self._urdf.get_root()  # i.e. current root
 
         if xyz is None:
             xyz=[0.0]*3
@@ -137,7 +152,36 @@ class RobotModel(Model):
         if rpy is None:
             rpy=[0.0]*3
 
-        if joint_name is None:
+        if not isinstance(joint_name, str):
+            joint_name = parent_link + '_and_' + child_link + '_joint'
+
+        self._urdf.add_link(Link(name=parent_link))
+
+        joint = Joint(
+            name=joint_name,
+            parent=parent_link,
+            child=child_link,
+            joint_type='fixed',
+            origin=Pose(xyz=xyz, rpy=rpy),
+        )
+        self._urdf.add_joint(joint)
+
+
+    def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
+        """Add a fixed link"""
+
+        assert link not in self.link_names, f"'{link}' already exists"
+        assert parent_link in self.link_names, f"{parent_link=}, does not appear in link names"
+
+        child_link = link
+
+        if xyz is None:
+            xyz=[0.0]*3
+
+        if rpy is None:
+            rpy=[0.0]*3
+
+        if not isinstance(joint_name, str):
             joint_name = parent_link + '_and_' + child_link + '_joint'
 
         self._urdf.add_link(Link(name=child_link))
@@ -152,19 +196,6 @@ class RobotModel(Model):
                 origin=origin,
             )
         )
-
-
-    def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
-        """Add new base frame, note this changes the root link."""
-        assert base_link not in self.link_names, f"'{base_link}' already exists"
-        self._add_fixed_link(base_link, self._urdf.get_root(), xyz=xyz, rpy=rpy, joint_name=joint_name)
-
-
-    def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
-        """Add a fixed link"""
-        assert link not in self.link_names, f"'{link}' already exists"
-        assert parent_link in self.link_names, f"{parent_link=}, does not appear in link names"
-        self._add_fixed_link(parent_link, link, xyz=xyz, rpy=rpy, joint_name=joint_name)
 
 
     def get_root_link(self):
@@ -223,19 +254,20 @@ class RobotModel(Model):
     def get_global_link_transform(self, link, q):
         """Get the link transform in the global frame for a given joint state q"""
 
+        # Setup
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
-
+        root = self._urdf.get_root()
         T = I4()
-        if link == self._urdf.get_root(): return T
+        if link == root: return T
 
-        for joint in self._urdf.joints:
+        # Iterate over joints in chain
+        for joint_name in self._urdf.get_chain(root, link, links=False):
 
+            joint = self._urdf.joint_map[joint_name]
             xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
-                if joint.child == link:
-                    return T
                 continue
 
             joint_index = self._get_actuated_joint_index(joint.name)
@@ -247,9 +279,6 @@ class RobotModel(Model):
 
             else:
                 raise JointTypeNotSupported(joint.type)
-
-            if joint.child == link:
-                break
 
         return T
 
@@ -306,19 +335,20 @@ class RobotModel(Model):
     @vectorize_args
     def get_global_link_quaternion(self, link, q):
 
+        # Setup
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
-
+        root = self._urdf.get_root()
         quat = Quaternion(0., 0., 0., 1.)
-        if link == self._urdf.get_root(): return quat
+        if link == root: return quat
 
-        for joint in self._urdf.joints:
+        # Iterate over joints in chain
+        for joint_name in self._urdf.get_chain(root, link, links=False):
 
+            joint = self._urdf.joint_map[joint_name]
             xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 quat = quat * Quaternion.fromrpy(rpy)
-                if joint.child == link:
-                    return quat.getquat()
                 continue
 
             joint_index = self._get_actuated_joint_index(joint.name)
@@ -330,9 +360,6 @@ class RobotModel(Model):
 
             else:
                 raise JointTypeNotSupported(joint.type)
-
-            if joint.child == link:
-                break
 
         return quat.getquat()
 
@@ -416,14 +443,13 @@ class RobotModel(Model):
         J = self.get_global_geometric_jacobian(link, q)
 
         # Transform jacobian to given base link
-        if base_link is not None:
-            R = self.get_global_link_rotation(base_link, q).T
-            O = cs.DM.zeros(3, 3)
-            K = cs.vertcat(
-                cs.horzcat(R, O),
-                cs.horzcat(O, R),
-            )
-            J = K @ J
+        R = self.get_global_link_rotation(base_link, q).T
+        O = cs.DM.zeros(3, 3)
+        K = cs.vertcat(
+            cs.horzcat(R, O),
+            cs.horzcat(O, R),
+        )
+        J = K @ J
 
         return J
 
