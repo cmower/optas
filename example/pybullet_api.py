@@ -5,7 +5,7 @@ import numpy as np
 
 class PyBullet:
 
-    def __init__(self, dt):
+    def __init__(self, dt, add_floor=True):
         self.client_id = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
@@ -18,6 +18,10 @@ class PyBullet:
             cameraPitch=-40,
             cameraTargetPosition=[0, 0, 0.5],
         )
+        if add_floor:
+            self.add_floor()
+
+    def add_floor(self):
         colid = p.createCollisionShape(p.GEOM_PLANE)
         visid = p.createVisualShape(p.GEOM_PLANE, rgbaColor=[0, 1, 0, 1.], planeNormal=[0, 0, 1])
         p.createMultiBody(baseMass=0.0, basePosition=[0.]*3,baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
