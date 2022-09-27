@@ -92,21 +92,6 @@ class RobotModel(Model):
         # Load URDF
         self._urdf = URDF.from_xml_file(urdf_filename)
 
-        # Extract information from URDF
-        self.joint_names = [jnt.name for jnt in self._urdf.joints]
-        self.link_names = [lnk.name for lnk in self._urdf.links]
-        self.actuated_joint_names = [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
-        self.ndof = len(self.actuated_joint_names)
-        self.lower_actuated_joint_limits = cs.DM([
-            jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-        self.upper_actuated_joint_limits = cs.DM([
-            jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-        self.velocity_actuated_joint_limits = cs.DM([
-            jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'
-        ])
-
         # Setup joint limits, joint position/velocity limits
         dlim = {
             0: (self.lower_actuated_joint_limits, self.upper_actuated_joint_limits),
@@ -127,9 +112,39 @@ class RobotModel(Model):
 
         super().__init__(name, self.ndof, time_derivs, 'q', dlim)
 
+    @property
+    def joint_names(self):
+        return [jnt.name for jnt in self._urdf.joints]
 
+    @property
+    def link_names(self):
+        return [lnk.name for lnk in self._urdf.links]
 
-    def _add_fixed_link(self, parent_link, child_link, xyz=None, rpy=None, joint_name=None):
+    @property
+    def actuated_joint_names(self):
+        return [jnt.name for jnt in self._urdf.joints if jnt.type != 'fixed']
+
+    @property
+    def ndof(self):
+        return len(self.actuated_joint_names)
+
+    @property
+    def lower_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def upper_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def velocity_actuated_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
+        """Add new base frame, note this changes the root link."""
+
+        parent_link = base_link
+        child_link = self._urdf.get_root()  # i.e. current root
 
         if xyz is None:
             xyz=[0.0]*3
