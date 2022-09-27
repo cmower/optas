@@ -443,14 +443,13 @@ class RobotModel(Model):
         J = self.get_global_geometric_jacobian(link, q)
 
         # Transform jacobian to given base link
-        if base_link is not None:
-            R = self.get_global_link_rotation(base_link, q).T
-            O = cs.DM.zeros(3, 3)
-            K = cs.vertcat(
-                cs.horzcat(R, O),
-                cs.horzcat(O, R),
-            )
-            J = K @ J
+        R = self.get_global_link_rotation(base_link, q).T
+        O = cs.DM.zeros(3, 3)
+        K = cs.vertcat(
+            cs.horzcat(R, O),
+            cs.horzcat(O, R),
+        )
+        J = K @ J
 
         return J
 
