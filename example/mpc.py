@@ -187,6 +187,9 @@ def main():
         kuka.cmd(q)
         pybullet_api.time.sleep(dt)
 
+    # Plan a trajectory
+    plan = to_mpcc_planner.plan()
+
     # Main loop
     p = pginit.copy()
     start_time = pybullet_api.time.time()
