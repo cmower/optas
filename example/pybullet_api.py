@@ -54,6 +54,11 @@ class DynamicBox:
             contactDamping=0.7,
         )
 
+    def get_pose(self):
+        pos, ori = p.getBasePositionAndOrientation(self._id)
+        eul = p.getEulerFromQuaternion(ori)
+        return pos, eul
+
 
 class Kuka:
 
