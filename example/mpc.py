@@ -128,12 +128,6 @@ class IK:
         # Setup variables required later
         self.kuka_name = kuka_name
 
-        # Setup functions for later
-        self._pos = kuka.get_global_link_position_function(link_ee)
-
-    def ee_pos(self, q):
-        return self._pos(q).toarray().flatten()
-
     def compute_target_velocity(self, qc, pg):
         self.solver.reset_parameters({'qc': optas.DM(qc), 'pg': optas.DM(pg)})
         solution = self.solver.solve()
