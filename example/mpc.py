@@ -176,7 +176,7 @@ def main():
     start_time = pybullet_api.time.time()
 
     # Move robot to start position
-    Tmax_start = 5.
+    Tmax_start = 6.
     pginit = optas.np.array([0.4, 0., 0.06])
     while True:
         t = pybullet_api.time.time() - start_time
