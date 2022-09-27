@@ -21,10 +21,10 @@ class PyBullet:
         if add_floor:
             self.add_floor()
 
-    def add_floor(self):
+    def add_floor(self, base_position=[0.0]*3):
         colid = p.createCollisionShape(p.GEOM_PLANE)
         visid = p.createVisualShape(p.GEOM_PLANE, rgbaColor=[0, 1, 0, 1.], planeNormal=[0, 0, 1])
-        p.createMultiBody(baseMass=0.0, basePosition=[0.]*3,baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+        p.createMultiBody(baseMass=0.0, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
 
     def start(self):
         p.setRealTimeSimulation(1)
