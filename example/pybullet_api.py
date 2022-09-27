@@ -35,6 +35,26 @@ class PyBullet:
     def close(self):
         p.disconnect(self.client_id)
 
+
+class DynamicBox:
+
+    def __init__(self, base_position, half_extents):
+        colid = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
+        visid = p.createVisualShape(p.GEOM_BOX, rgbaColor=[0, 1, 0, 1.], halfExtents=half_extents)
+        self._id = p.createMultiBody(baseMass=0.5, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+        p.changeDynamics(
+            self._id, -1,
+            lateralFriction=1.0,
+            spinningFriction=0.0,
+            rollingFriction=0.0,
+            restitution=0.0,
+            linearDamping=0.04,
+            angularDamping=0.04,
+            contactStiffness=2000.0,
+            contactDamping=0.7,
+        )
+
+
 class Kuka:
 
     def __init__(self, base_position=[0.]*3):
