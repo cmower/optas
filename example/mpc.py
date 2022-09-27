@@ -162,10 +162,10 @@ def main():
     )
 
     # Setup TO MPCC planner
-    planner = TOMPCCPlanner()
+    to_mpcc_planner = TOMPCCPlanner()
 
     # Setup TO MPCC controller
-    controller = TOMPCCController()
+    to_mpcc_controller = TOMPCCController()
 
     # Setup IK
     thresh_angle = optas.np.deg2rad(30.)
