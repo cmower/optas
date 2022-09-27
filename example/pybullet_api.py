@@ -72,6 +72,21 @@ class DynamicBox:
         return pos, eul
 
 
+class VisualBox:
+
+    def __init__(self, base_position, half_extents, rgba_color=[0, 1, 0, 1.]):
+        visid = p.createVisualShape(
+            p.GEOM_BOX,
+            rgbaColor=rgba_color,
+            halfExtents=half_extents
+        )
+        self._id = p.createMultiBody(
+            baseMass=0.,
+            basePosition=base_position,
+            baseVisualShapeIndex=visid
+        )
+
+
 class Kuka:
 
     def __init__(self, base_position=[0.]*3):
