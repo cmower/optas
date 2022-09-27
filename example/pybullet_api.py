@@ -38,10 +38,22 @@ class PyBullet:
 
 class DynamicBox:
 
-    def __init__(self, base_position, half_extents):
-        colid = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
-        visid = p.createVisualShape(p.GEOM_BOX, rgbaColor=[0, 1, 0, 1.], halfExtents=half_extents)
-        self._id = p.createMultiBody(baseMass=0.5, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+    def __init__(self, base_position, half_extents, base_mass=0.5):
+        colid = p.createCollisionShape(
+            p.GEOM_BOX,
+            halfExtents=half_extents
+        )
+        visid = p.createVisualShape(
+            p.GEOM_BOX,
+            rgbaColor=[0, 1, 0, 1.],
+            halfExtents=half_extents
+        )
+        self._id = p.createMultiBody(
+            baseMass=base_mass,
+            basePosition=base_position,
+            baseCollisionShapeIndex=colid,
+            baseVisualShapeIndex=visid
+        )
         p.changeDynamics(
             self._id, -1,
             lateralFriction=1.0,
