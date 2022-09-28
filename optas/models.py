@@ -87,10 +87,15 @@ class JointTypeNotSupported(NotImplementedError):
 class RobotModel(Model):
 
 
-    def __init__(self, urdf_filename, name=None, time_derivs=[0], qddlim=None):
+    def __init__(self, urdf_filename=None, urdf_string=None, name=None, time_derivs=[0], qddlim=None):
 
         # Load URDF
-        self._urdf = URDF.from_xml_file(urdf_filename)
+        self._urdf = None
+        if(urdf_filename!=None):
+            self._urdf = URDF.from_xml_file(urdf_filename)
+        if(urdf_string!=None):
+            self._urdf = URDF.from_xml_string(urdf_string)
+        assert self._urdf is not None, "You need to supply a urdf, either through filename or as a string"
 
         # Setup joint limits, joint position/velocity limits
         dlim = {

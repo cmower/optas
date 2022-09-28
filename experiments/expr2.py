@@ -26,7 +26,7 @@ if not os.path.exists(exprdir):
 pi = optas.np.pi
 urdf = os.path.join(path, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
 ee_link = "end_effector_ball"
-robot = optas.RobotModel(urdf, time_derivs=[0, 1])
+robot = optas.RobotModel(urdf_filename=urdf, time_derivs=[0, 1])
 pos = robot.get_global_link_position_function(ee_link)
 q0 = optas.np.deg2rad([0, 30, 0, -90, 0, -30, 0])
 Tr = robot.get_global_link_transform_function(ee_link)
@@ -67,7 +67,7 @@ class OpTaSIK(ExprIK):
         super().__init__()
 
         # Setup
-        robot = optas.RobotModel(urdf, time_derivs=[0])
+        robot = optas.RobotModel(urdf_filename=urdf, time_derivs=[0])
         self.name = robot.get_name()
         builder = optas.OptimizationBuilder(T=1, robots=[robot])
         qc = builder.add_parameter('qc', robot.ndof)
