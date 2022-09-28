@@ -70,7 +70,7 @@ class IK:
         # Setup robot
         urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
         kuka = optas.RobotModel(
-            urdf_filename,
+            urdf_filename=urdf_filename,
             time_derivs=[1],  # i.e. joint velocity
         )
         kuka_name = kuka.get_name()
