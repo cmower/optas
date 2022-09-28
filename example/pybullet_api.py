@@ -1,4 +1,7 @@
+import os
 import time
+import pathlib
+import optas
 import pybullet as p
 import pybullet_data
 import numpy as np
@@ -98,6 +101,10 @@ class Kuka:
             if info[2] in {p.JOINT_REVOLUTE, p.JOINT_PRISMATIC}:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
+        cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        self.kuka = optas.RobotModel(urdf_filename, time_derivs=[0])
+
 
     def reset(self, q):
         for j, idx in enumerate(self._actuated_joints):
