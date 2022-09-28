@@ -17,7 +17,7 @@ class OptimizationBuilder:
         Syntax
         ------
 
-        builder = OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
+        builder = optas.OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
 
         Parameters
         ----------
