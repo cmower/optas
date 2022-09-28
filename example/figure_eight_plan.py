@@ -30,7 +30,7 @@ class Planner:
         # Setup robot
         urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
         self.kuka = optas.RobotModel(
-            urdf_filename,
+            urdf_filename=urdf_filename,
             time_derivs=[0, 1],  # i.e. joint position/velocity trajectory
         )
         self.kuka_name = self.kuka.get_name()

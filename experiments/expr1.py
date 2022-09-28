@@ -140,7 +140,7 @@ class Experiment:
 
 
     def __init__(self, config):
-        self.robot = optas.RobotModel(config.urdf, time_derivs=[1])
+        self.robot = optas.RobotModel(urdf_filename=config.urdf, time_derivs=[1])
         self.eff_pos = self.robot.get_global_link_position_function(config.eff_link, n=self.N+1)
         self.q0 = optas.vec(optas.np.deg2rad(config.q0))
         self.ik1 = IK1(self.robot, config.eff_link).setup_problem(config.xydir, self.dt).setup_solver()

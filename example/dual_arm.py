@@ -127,7 +127,7 @@ class DualKukaPlanner:
         cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
         urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
         model = optas.RobotModel(
-            urdf_filename,
+            urdf_filename=urdf_filename,
             name=name,
             time_derivs=[0, 1],  # i.e. joint position/velocity trajectory
         )
