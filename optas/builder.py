@@ -102,7 +102,26 @@ class OptimizationBuilder:
 
 
     def get_model_index(self, name):
-        """Return the index of the model in the list of models."""
+        """Return the index of the model in the list of models.
+
+        Syntax
+        ------
+
+        idx = builder.get_model_index(name)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        Returns
+        -------
+
+        idx (int)
+            Index of the model in the list of models.
+
+        """
         return self.get_model_names().index(name)
 
 
