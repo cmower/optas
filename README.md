@@ -4,7 +4,7 @@
 
 # OPTAS
 
-`OPTAS` is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control. 
+`OPTAS` is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 
 # Install
 
@@ -12,4 +12,5 @@
 
 1. `$ git clone git@github.com:cmower/optas.git`
 2. `$ cd optas`
-3. `$ pip install .`
+3. `$ pip install --upgrade pip`, ensure `pip` is up-to-date
+4. `$ pip install .`
