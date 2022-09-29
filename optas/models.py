@@ -353,15 +353,15 @@ class RobotModel(Model):
             xyz, rpy = self._get_joint_origin(joint)
 
             if joint.type == 'fixed':
-                quat = quat * Quaternion.fromrpy(rpy)
+                quat = Quaternion.fromrpy(rpy) * quat
                 continue
 
             joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             if joint.type in {'revolute', 'continuous'}:
-                quat = quat * Quaternion.fromrpy(rpy)
-                quat = quat * Quaternion.fromangvec(qi, self._get_joint_axis(joint))
+                quat = Quaternion.fromrpy(rpy) * quat
+                quat = Quaternion.fromangvec(qi, self._get_joint_axis(joint)) * quat
 
             else:
                 raise JointTypeNotSupported(joint.type)
