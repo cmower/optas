@@ -411,7 +411,7 @@ class Quaternion:
         if y is None:
             # assumes x/w are none also
             x_ = cs.vec(x)
-            assert x.shape[0] == 4, ""
+            assert x.shape[0] == 4, "quaternion requires 4 elements"
             self._q = x
         else:
             self._q = cs.vertcat(x, y, z, w)
