@@ -29,7 +29,7 @@ class TOMPCCPlanner:
     def __init__(self, dt, Lx, Ly):
 
         # Setup
-        mu = 0.01  # coef of friction
+        mu = 0.1  # coef of friction
         dt = float(dt)  # time step
         nX = 4  # number of state variables
         nU = 4  # number of control variables
@@ -97,12 +97,12 @@ class TOMPCCPlanner:
         for k in range(T-1):
 
             # Setup
-            xn = X[:, k+1]
-            x = X[:, k]
-            u = U[:, k]
-            R = rotz(theta[k])
-            SyC = -0.5*Ly
-            SxC = SyC/optas.tan(phi[k])
+            xn = X[:, k+1]  # next state
+            x = X[:, k]   # current state
+            u = U[:, k]  # control input
+            R = rotz(theta[k])  # rotation matrix in xy-plane
+            SyC = -0.5*Ly  # y-position of contact
+            SxC = SyC/optas.tan(phi[k])  # x-position of box
             JC = optas.horzcat(I, optas.vertcat(-SyC, SxC))
 
             # Compute system dynamics f(x, u) = Ku
@@ -119,7 +119,7 @@ class TOMPCCPlanner:
         lambda_minus = mu*fn - ft
         lambda_plus = mu*fn + ft
         lambda_v = optas.vertcat(lambda_minus, lambda_plus)
-        dphi_v = optas.vertcat(dphip, dphim)
+        dphi_v = optas.vertcat(dphim, dphip)
 
         builder.add_geq_inequality_constraint('positive_lambda_v', lambda_v)
         builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
@@ -151,7 +151,6 @@ class TOMPCCPlanner:
         # Constraint: bound phi
         builder.add_bound_inequality_constraint('phi_bound', phi_lo, phi, phi_up)
         
-
         # Setup solver
         opt = builder.build()
         self.solver = optas.CasADiSolver(opt).setup('ipopt')
@@ -181,7 +180,8 @@ class TOMPCCPlanner:
         })
 
         solution = self.solver.solve()
-        print(solution)
+        from pprint import pprint
+        pprint(solution)
         slider_traj = solution['state/x'][:3, :]
         slider_plan = self.solver.interpolate(slider_traj, self.Tmax)
         return slider_plan
