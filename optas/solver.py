@@ -9,6 +9,7 @@ from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
 from scipy.sparse import csc_matrix
 from .optimization import QuadraticCostUnconstrained,\
     QuadraticCostLinearConstraints,\
+    QuadraticCostNonlinearConstraints,\
     NonlinearCostUnconstrained,\
     NonlinearCostLinearConstraints,\
     NonlinearCostNonlinearConstraints
@@ -31,6 +32,7 @@ UNCONSTRAINED_OPT = {
 
 CONSTRAINED_OPT = {
     QuadraticCostLinearConstraints,
+    QuadraticCostNonlinearConstraints,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
 
@@ -138,7 +140,6 @@ class CasADiSolver(Solver):
 
     nlp_solvers = {'ipopt', 'knitro', 'snopt', 'worhp', 'scpgen', 'sqpmethod'}
     qp_solvers = {'cplex', 'gurobi', 'ooqp', 'qpoases', 'sqic', 'nlp'}
-    
 
     def setup(self, solver_name, solver_options={}):
 
@@ -157,13 +158,11 @@ class CasADiSolver(Solver):
         self._ubg = None
 
         if self.opt_type in CONSTRAINED_OPT:
-
             problem['g'] = self.opt.v(x, p)
             self._lbg = self.opt.lbv
             self._ubg = self.opt.ubv
 
         # Get solver interface
-
         if solver_name in self.qp_solvers:
             sol = cs.qpsol
         elif solver_name in self.nlp_solvers:
