@@ -8,6 +8,7 @@ import pybullet_api
 
 # OpTaS
 import optas
+from optas.spatialmath import *
 
 
 ######################################
@@ -22,32 +23,160 @@ import optas
 #      Complementarity Constraints, ICRA, 2022.
 #
 
+class TOMPCCPlanner:
 
-class TOMPCC:
-
-    def __init__(self):
-        self.L = optas.diag([1., 1., 1.])
-
-
-class TOMPCCPlanner(TOMPCC):
-
-    def __init__(self):
+    def __init__(self, dt, Lx, Ly):
 
         # Setup
-        super().__init__()
-        T = 100
+        mu = 0.01  # coef of friction
+        dt = float(dt)  # time step
+        nX = 4  # number of state variables
+        nU = 4  # number of control variables
+        T = 20  # number of step
+        Lx = float(Lx)  # length of slider (box) in x-axis
+        Ly = float(Ly)  # length of slider (box) in y-axis
+        L = optas.diag([1, 1, 0.5])  # limit surface model
+        SxC0 = 0.      # initial contact position in x-axis of slider
+        SyC0 = -0.5*Ly # initial contact position in y-axis of slider
+        SphiC0 = -0.5*optas.np.pi # initial contact orientation in slider frame
+        Wu = optas.diag([ # weigting on minimizing controls cost term
+            1.,  # normal contact force
+            1.,  # tangential contact force
+            1.,  # angular rate of sliding, positive part
+            1.,  # angular rate of sliding, negative part
+        ])
+        WxT = optas.diag([ # weighting for terminal state cost term
+            1000., # x-position of slider
+            1000., # y-position of slider
+            1., # orientation of slider
+            1., # orientation of contact
+        ])
+        we = 0.1  # slack weights
+        SphiCT = 0.  # final contact orientation in slider frame
 
-    def plan(self):
+        # Setup task models
+        state = optas.TaskModel('state', dim=nX, time_derivs=[0, 1])
+        control = optas.TaskModel('control', dim=nU, time_derivs=[0], T=T-1, symbol='u')
+
+        # Setup optimization builder
+        builder = optas.OptimizationBuilder(T=T, tasks=[state, control])
+
+        # Add additional decision variables
+        eps = builder.add_decision_variables('slack', T-1)
+
+        # Set parameters
+        GpS0 = builder.add_parameter('GpS0', 2)  # initial slider position in global frame
+        GthetaS0 = builder.add_parameter('GthetaS0') # initial slider orientation in global frame
+        GpST = builder.add_parameter('GpST', 2)  # goal slider position in global frame
+        GthetaST = builder.add_parameter('GphiST') # goal slider orientation in global frame
+
+        # Get states/controls
+        X = builder.get_model_states('state')
+        dX = builder.get_model_states('state', time_deriv=1)
+        U = builder.get_model_states('control')
+
+        # Constraint: initial configuration
+        x0 = optas.vertcat(GpS0, GthetaS0, SphiC0)
+        builder.initial_configuration('state', x0)
+
+        # Split X/U
+        x = X[0,:]
+        y = X[1,:]
+        theta = X[2,:]
+        phi = X[3, :]
+
+        fn = U[0,:]
+        ft = U[1,:]
+        dphip = U[2,:]
+        dphim = U[3,:]
+
+        # Constraint: dynamics
+        o2 = optas.DM.zeros(2)  # 2-vector of zeros
+        o3 = optas.DM.zeros(3)  # 3-vector of zeros
+        I = optas.DM.eye(2)  # 2-by-2 identity
+        for k in range(T-1):
+
+            # Setup
+            xn = X[:, k+1]
+            x = X[:, k]
+            dx = dX[:, k]
+            u = U[:, k]
+            R = rotz(theta[k])
+            SyC = -0.5*Ly
+            SxC = SyC/optas.tan(phi[k])
+            JC = optas.horzcat(I, optas.vertcat(-SyC, SxC))
+
+            # Compute system dynamics f(x, u) = Ku
+            K = optas.vertcat(
+                optas.horzcat(R @ L @ JC.T, o3, o3),
+                optas.horzcat(o2.T, 1, -1),
+            )
+            f = K @ u
+
+            # Add constraint
+            builder.add_equality_constraint(f'dynamics_{k}', xn, x + dt*f)
+
+        # Constraint: complementarity
+        lambda_minus = mu*fn - ft
+        lambda_plus = mu*fn + ft
+        lambda_v = optas.vertcat(lambda_minus, lambda_plus)
+        dphi_v = optas.vertcat(dphip, dphim)
+
+        builder.add_geq_inequality_constraint(f'positive_lambda_v', lambda_v)
+        builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
+
+        for k in range(T-1):
+            e = eps[k]
+            lambda_vk = lambda_v[:, k]
+            dphi_vk = dphi_v[:, k]
+            builder.add_equality_constraint(
+                f'complementarity_{k}', lambda_vk.T@dphi_vk + e,
+            )
+
+        # Cost: minimize control magnitude
+        for k in range(T-1):
+            u = U[:, k]
+            builder.add_cost_term(f'min_control_{k}', u.T@Wu@u)
+
+        # Cost: terminal state
+        xT = optas.vertcat(GpST, GthetaST, SphiCT)
+        xbarT = X[:, -1] - xT
+        builder.add_cost_term('terminal_state', xbarT.T@WxT@xbarT)
+
+        # Cost: slack terms
+        builder.add_cost_term('slack', we*cs.sumsqr(eps))
+
+        # Constraint: slack
+        builder.add_geq_inequality_constraint('positive_slack', eps)
+
+        # Setup solver
+        opt = builder.build()
+        self.solver = optas.CasADiSolver(opt).setup('ipopt')
+
+        # For later
+        self.Tmax = float(T-1)*dt
+
+    def plan(self, GpS0, GthetaS0, GpST, GthetaST):
+        self.solver.reset_parameters({
+            'GpS0': GpS0,
+            'GthetaS0': GthetaS0,
+            'GpST': GpST,
+            'GthetaST': GthetaST,
+        })
+
+
+
+
+        solution = self.solver.solve()
+        print(solution)
+        slider_traj = solution['state/x'][:3, :]
+        slider_plan = self.solver.interpolate(slider_traj, self.Tmax)
+        return slider_plan
+
+class TOMPCCController:
+
+    def __init__(self):
         pass
-
-
-class TOMPCCController(TOMPCC):
-
-    def __init__(self):
-
-        # Setup
-        super().__init__()
-        T = 10
 
     def compute_target_velocity(self):
         pass
@@ -143,20 +272,28 @@ def main():
     pb = pybullet_api.PyBullet(dt)
     kuka = pybullet_api.Kuka()
     kuka.reset(qc)
-    box_base_position = [0.4, 0.065, 0.06]
-    box_half_extents = [0.1, 0.05, 0.06]
+    GxS0 = 0.4
+    GyS0 = 0.065
+    GthetaS0 = 0.
+    box_base_position = [GxS0, GyS0, 0.06]
+    Lx = 0.2
+    Ly = 0.1
+    box_half_extents = [0.5*Lx, 0.5*Ly, 0.06]
     box = pybullet_api.DynamicBox(
         base_position=box_base_position,
         half_extents=box_half_extents,
     )
+    GxST = 0.4
+    GyST = 0.2
+    GthetaST = 0.
     pybullet_api.VisualBox(
-        base_position=[0.6, -0.2, 0.06],
+        base_position=[GxST, GyST, 0.06],
         half_extents=box_half_extents,
         rgba_color=[1., 0., 0., 0.5],
     )
 
     # Setup TO MPCC planner
-    to_mpcc_planner = TOMPCCPlanner()
+    to_mpcc_planner = TOMPCCPlanner(0.1, Lx, Ly)
 
     # Setup TO MPCC controller
     to_mpcc_controller = TOMPCCController()
@@ -172,7 +309,7 @@ def main():
     # Move robot to start position
     Tmax_start = 6.
     pginit = optas.np.array([0.4, 0., 0.06])
-    while True:
+    while False:  # >>>>>>>>>>TEMP<<<<<<<<<<<
         t = pybullet_api.time.time() - start_time
         if t > Tmax_start:
             break
@@ -182,7 +319,10 @@ def main():
         pybullet_api.time.sleep(dt)
 
     # Plan a trajectory
-    plan = to_mpcc_planner.plan()
+    GpS0 = [GxS0, GyS0]
+    GpST = [GxST, GyST]
+    plan = to_mpcc_planner.plan(GpS0, GthetaS0, GpST, GthetaST)
+    sys.exit(0)
 
     # Main loop
     p = pginit.copy()
