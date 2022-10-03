@@ -1,6 +1,7 @@
 # Python standard lib
 import os
 import sys
+import math
 import pathlib
 
 # PyBullet
@@ -35,6 +36,8 @@ class TOMPCCPlanner:
         T = 20  # number of step
         Lx = float(Lx)  # length of slider (box) in x-axis
         Ly = float(Ly)  # length of slider (box) in y-axis
+        phi_lo = -math.atan2(Ly, Lx)  # lower limit for phi
+        phi_up = -math.pi + abs(phi_lo) # upper limit for phi
         L = optas.diag([1, 1, 0.5])  # limit surface model
         SxC0 = 0.      # initial contact position in x-axis of slider
         SyC0 = -0.5*Ly # initial contact position in y-axis of slider
@@ -55,7 +58,7 @@ class TOMPCCPlanner:
         SphiCT = 0.  # final contact orientation in slider frame
 
         # Setup task models
-        state = optas.TaskModel('state', dim=nX, time_derivs=[0, 1])
+        state = optas.TaskModel('state', dim=nX, time_derivs=[0])
         control = optas.TaskModel('control', dim=nU, time_derivs=[0], T=T-1, symbol='u')
 
         # Setup optimization builder
@@ -68,11 +71,10 @@ class TOMPCCPlanner:
         GpS0 = builder.add_parameter('GpS0', 2)  # initial slider position in global frame
         GthetaS0 = builder.add_parameter('GthetaS0') # initial slider orientation in global frame
         GpST = builder.add_parameter('GpST', 2)  # goal slider position in global frame
-        GthetaST = builder.add_parameter('GphiST') # goal slider orientation in global frame
+        GthetaST = builder.add_parameter('GthetaST') # goal slider orientation in global frame
 
         # Get states/controls
         X = builder.get_model_states('state')
-        dX = builder.get_model_states('state', time_deriv=1)
         U = builder.get_model_states('control')
 
         # Constraint: initial configuration
@@ -80,8 +82,6 @@ class TOMPCCPlanner:
         builder.initial_configuration('state', x0)
 
         # Split X/U
-        x = X[0,:]
-        y = X[1,:]
         theta = X[2,:]
         phi = X[3, :]
 
@@ -99,7 +99,6 @@ class TOMPCCPlanner:
             # Setup
             xn = X[:, k+1]
             x = X[:, k]
-            dx = dX[:, k]
             u = U[:, k]
             R = rotz(theta[k])
             SyC = -0.5*Ly
@@ -122,7 +121,7 @@ class TOMPCCPlanner:
         lambda_v = optas.vertcat(lambda_minus, lambda_plus)
         dphi_v = optas.vertcat(dphip, dphim)
 
-        builder.add_geq_inequality_constraint(f'positive_lambda_v', lambda_v)
+        builder.add_geq_inequality_constraint('positive_lambda_v', lambda_v)
         builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
 
         for k in range(T-1):
@@ -136,12 +135,12 @@ class TOMPCCPlanner:
         # Cost: minimize control magnitude
         for k in range(T-1):
             u = U[:, k]
-            builder.add_cost_term(f'min_control_{k}', u.T@Wu@u)
+            builder.add_cost_term(f'min_control_{k}', u.T @ Wu @ u)
 
         # Cost: terminal state
         xT = optas.vertcat(GpST, GthetaST, SphiCT)
         xbarT = X[:, -1] - xT
-        builder.add_cost_term('terminal_state', xbarT.T@WxT@xbarT)
+        builder.add_cost_term('terminal_state', xbarT.T @ WxT @ xbarT)
 
         # Cost: slack terms
         builder.add_cost_term('slack', we*cs.sumsqr(eps))
@@ -149,23 +148,37 @@ class TOMPCCPlanner:
         # Constraint: slack
         builder.add_geq_inequality_constraint('positive_slack', eps)
 
+        # Constraint: bound phi
+        builder.add_bound_inequality_constraint('phi_bound', phi_lo, phi, phi_up)
+        
+
         # Setup solver
         opt = builder.build()
         self.solver = optas.CasADiSolver(opt).setup('ipopt')
+        # self.solver = optas.ScipyMinimizeSolver(opt).setup('SLSQP')
 
         # For later
         self.Tmax = float(T-1)*dt
+        self.T = T
+        self.nX = nX
 
     def plan(self, GpS0, GthetaS0, GpST, GthetaST):
+
+
+        state_x_init = optas.DM.zeros(self.nX, self.T)
+        
+        for k in range(self.T):
+            alpha = float(k)/float(self.T-1)
+            state_x_init[:2,k] = optas.DM(GpS0) * (1-alpha) + alpha*optas.DM(GpST)
+            state_x_init[2, k] = GthetaS0 * (1-alpha) + alpha * GthetaST
+        self.solver.reset_initial_seed({'state/x': state_x_init})
+        
         self.solver.reset_parameters({
             'GpS0': GpS0,
             'GthetaS0': GthetaS0,
             'GpST': GpST,
             'GthetaST': GthetaST,
         })
-
-
-
 
         solution = self.solver.solve()
         print(solution)
