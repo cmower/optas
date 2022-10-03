@@ -177,7 +177,7 @@ class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
         self.dg, self.ddg = derive_jacobian_and_hessian_functions('g', self.g, x, p)
 
         # Setup h
-        self.h = cs.Function('g', [x, p], [eq_constraints.vec()])
+        self.h = cs.Function('h', [x, p], [eq_constraints.vec()])
         self.nh = eq_constraints.numel()
         self.lbh = cs.DM.zeros(self.nh)
         self.ubh = cs.DM.zeros(self.nh)
