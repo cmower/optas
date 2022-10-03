@@ -59,6 +59,7 @@ class _Optimization:
         self.na = 0
         self.ng = 0
         self.nh = 0
+        self.nv = 0
 
 class QuadraticCostUnconstrained(_Optimization):
     """Unconstrained Quadratic Program.
