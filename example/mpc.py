@@ -100,7 +100,7 @@ class TOMPCCPlanner:
             xn = X[:, k+1]  # next state
             x = X[:, k]   # current state
             u = U[:, k]  # control input
-            R = rotz(theta[k])  # rotation matrix in xy-plane
+            R = rotz(theta[k])  # rotation matrix in xy-plane of slider
             SyC = -0.5*Ly  # y-position of contact
             SxC = SyC/optas.tan(phi[k])  # x-position of box
             JC = optas.horzcat(I, optas.vertcat(-SyC, SxC))
@@ -119,7 +119,7 @@ class TOMPCCPlanner:
         lambda_minus = mu*fn - ft
         lambda_plus = mu*fn + ft
         lambda_v = optas.vertcat(lambda_minus, lambda_plus)
-        dphi_v = optas.vertcat(dphip, dphiv)
+        dphi_v = optas.vertcat(dphip, dphim)
 
         builder.add_geq_inequality_constraint('positive_lambda_v', lambda_v)
         builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
