@@ -119,7 +119,7 @@ class TOMPCCPlanner:
         lambda_minus = mu*fn - ft
         lambda_plus = mu*fn + ft
         lambda_v = optas.vertcat(lambda_minus, lambda_plus)
-        dphi_v = optas.vertcat(dphim, dphip)
+        dphi_v = optas.vertcat(dphip, dphiv)
 
         builder.add_geq_inequality_constraint('positive_lambda_v', lambda_v)
         builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
