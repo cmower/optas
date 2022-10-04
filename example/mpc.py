@@ -43,8 +43,8 @@ class TOMPCCPlanner:
         SyC0 = -0.5*Ly # initial contact position in y-axis of slider
         SphiC0 = -0.5*optas.np.pi # initial contact orientation in slider frame
         Wu = optas.diag([ # weigting on minimizing controls cost term
-            1.,  # normal contact force
-            1.,  # tangential contact force
+            10.,  # normal contact force
+            10.,  # tangential contact force
             1.,  # angular rate of sliding, positive part
             1.,  # angular rate of sliding, negative part
         ])
@@ -82,7 +82,7 @@ class TOMPCCPlanner:
         builder.initial_configuration('state', x0)
 
         # Split X/U
-        theta = X[2,:]
+        theta = X[2, :]
         phi = X[3, :]
 
         fn = U[0,:]
@@ -118,18 +118,18 @@ class TOMPCCPlanner:
         # Constraint: complementarity
         lambda_minus = mu*fn - ft
         lambda_plus = mu*fn + ft
-        lambda_v = optas.vertcat(lambda_minus, lambda_plus)
-        dphi_v = optas.vertcat(dphip, dphim)
+        lambdav = optas.vertcat(lambda_minus, lambda_plus)
+        dphiv = optas.vertcat(dphip, dphim)
 
-        builder.add_geq_inequality_constraint('positive_lambda_v', lambda_v)
-        builder.add_geq_inequality_constraint('positive_dphi_v', dphi_v)
+        builder.add_geq_inequality_constraint('positive_lambdav', lambdav)
+        builder.add_geq_inequality_constraint('positive_dphiv', dphiv)
 
         for k in range(T-1):
             e = eps[k]
-            lambda_vk = lambda_v[:, k]
-            dphi_vk = dphi_v[:, k]
+            lambdavk = lambdav[:, k]
+            dphivk = dphiv[:, k]
             builder.add_equality_constraint(
-                f'complementarity_{k}', lambda_vk.T@dphi_vk + e,
+                f'complementarity_{k}', optas.dot(lambdavk, dphivk) + e,
             )
 
         # Cost: minimize control magnitude
@@ -150,11 +150,11 @@ class TOMPCCPlanner:
 
         # Constraint: bound phi
         builder.add_bound_inequality_constraint('phi_bound', phi_lo, phi, phi_up)
-        
+
         # Setup solver
         opt = builder.build()
-        self.solver = optas.CasADiSolver(opt).setup('ipopt')
-        # self.solver = optas.ScipyMinimizeSolver(opt).setup('SLSQP')
+        # self.solver = optas.CasADiSolver(opt).setup('ipopt')
+        self.solver = optas.ScipyMinimizeSolver(opt).setup('SLSQP')
 
         # For later
         self.Tmax = float(T-1)*dt
@@ -165,23 +165,27 @@ class TOMPCCPlanner:
 
 
         state_x_init = optas.DM.zeros(self.nX, self.T)
-        
+
         for k in range(self.T):
             alpha = float(k)/float(self.T-1)
             state_x_init[:2,k] = optas.DM(GpS0) * (1-alpha) + alpha*optas.DM(GpST)
             state_x_init[2, k] = GthetaS0 * (1-alpha) + alpha * GthetaST
-        self.solver.reset_initial_seed({'state/x': state_x_init})
-        
-        self.solver.reset_parameters({
+        x0 = {'state/x': state_x_init, 'control/u': optas.DM.ones(4, 19)}
+        self.solver.reset_initial_seed(x0)
+
+        p = {
             'GpS0': GpS0,
             'GthetaS0': GthetaS0,
             'GpST': GpST,
             'GthetaST': GthetaST,
-        })
+        }
+        self.solver.reset_parameters(p)
+
+        print("cost(x0, p) = ", self.solver.evaluate_cost(x0, p))
 
         solution = self.solver.solve()
-        from pprint import pprint
-        pprint(solution)
+        optas.np.set_printoptions(precision=2, suppress=True, linewidth=1000)
+        print(solution['state/x'].toarray())
         slider_traj = solution['state/x'][:3, :]
         slider_plan = self.solver.interpolate(slider_traj, self.Tmax)
         return slider_plan
