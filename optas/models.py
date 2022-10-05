@@ -78,7 +78,7 @@ class Model:
 
         Syntax
         ------
-    
+
         lower, upper = model.get_limits(time_deriv)
 
         Parameters
@@ -168,6 +168,7 @@ class RobotModel(Model):
 
     @property
     def ndof(self):
+        """Number of degrees of freedom."""
         return len(self.actuated_joint_names)
 
     @property
@@ -266,15 +267,15 @@ class RobotModel(Model):
     def _get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
 
-
-
     def get_random_joint_positions(self):
+        """Return a random array with joint positions within the actuator limits."""
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
         return cs.vec(cs.np.random.uniform(lo, hi))
 
 
     def get_random_pose_in_global_link(self, link):
+        """Returns a random end-effector pose within the robot limits defined in the global link frame."""
         q = self.get_random_joint_positions()
         return self.get_global_link_transform(link, q)
 
@@ -326,17 +327,20 @@ class RobotModel(Model):
 
 
     def get_global_link_transform_function(self, link):
+        """Get the function which computes the link transform in the global frame"""
         return self._make_function('T', link, self.get_global_link_transform)
 
 
     @vectorize_args
     def get_link_transform(self, link, q, base_link):
+        """Get the link transform in a given base frame."""
         T_L_W = self.get_global_link_transform(link, q)
         T_B_W = self.get_global_link_transform(base_link, q)
         return T_L_W @ invt(T_B_W)
 
 
     def get_link_transform_function(self, link, base_link):
+        """Get the function that computes the transform in a given base frame"""
         return self._make_function('T', link, self.get_link_transform, base_link=base_link)
 
 
@@ -346,14 +350,17 @@ class RobotModel(Model):
 
 
     def get_global_link_position_function(self, link, n=1):
+        """Get the function that computes the global position of a given link"""
         return self._make_function('p', link, self.get_global_link_position, n=n)
 
 
     def get_link_position(self, link, q, base_link):
+        """Get the link position in a given base frame"""
         return transl(self.get_link_transform(link, q, base_link))
 
 
     def get_link_position_function(self, link, base_link, n=1):
+        """Get the function that computes the position of a link in a given base frame."""
         return self._make_function('p', link, self.get_link_position, n=n, base_link=base_link)
 
 
@@ -363,19 +370,23 @@ class RobotModel(Model):
 
 
     def get_global_link_rotation_function(self, link):
+        """Get the function that computes a rotation matrix in the global link"""
         return self._make_function('R', link, self.get_global_link_rotation)
 
 
     def get_link_rotation(self, link, q, base_link):
+        """Get the rotation matrix for a link in a given base frame"""
         return t2r(self.get_link_transform(link, q, base_link))
 
 
     def get_link_rotation_function(self, link, base_link):
+        """Get the function that computes the rotation matrix for a link in a given base frame."""
         return self._make_function('R', link, self.get_link_rotation, base_link=base_link)
 
 
     @vectorize_args
     def get_global_link_quaternion(self, link, q):
+        """Get a quaternion in the global frame."""
 
         # Setup
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
@@ -407,20 +418,24 @@ class RobotModel(Model):
 
 
     def get_global_link_quaternion_function(self, link, n=1):
+        """Get the function that computes a quaternion in the global frame."""
         return self._make_function('quat', link, self.get_global_link_quaternion, n=n)
 
 
     def get_link_quaternion(self, link, q, base_link):
+        """Get the quaternion defined in a given base frame."""
         quat_L_W = Quaternion(self.get_global_link_quaternion(link, q))
         quat_B_W = Quaternion(self.get_global_link_quaternion(base_link, q))
         return (quat_L_W * quat_B_W.inv()).getquat()
 
 
     def get_link_quaternion_function(self, link, base_link, n=1):
+        """Get the function that computes a quaternion defined in a given base frame."""
         return self._make_function('quat', link, self.get_link_quaternion, n=n, base_link=base_link)
 
 
     def get_global_geometric_jacobian(self, link, q):
+        """Compute the geometric Jacobian matrix in the global frame."""
 
         e = self.get_global_link_position(link, q)
 
@@ -476,11 +491,13 @@ class RobotModel(Model):
 
 
     def get_global_geometric_jacobian_function(self, link):
+        """Get the function that computes the geometric jacobian in the global frame."""
         return self._make_function('J', link, self.get_global_geometric_jacobian)
 
 
     @vectorize_args
     def get_geometric_jacobian(self, link, q, base_link):
+        """Get the geometric jacobian in a given base link."""
 
         J = self.get_global_geometric_jacobian(link, q)
 
@@ -497,99 +514,120 @@ class RobotModel(Model):
 
 
     def get_geometric_jacobian_function(self, link, base_link):
+        """Get the function that computes the geometric jacobian in a given base frame"""
         return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link)
 
 
     def get_global_linear_geometric_jacobian(self, link, q):
+        """Compute the linear part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
         return J[:3, :]
 
 
     def get_global_linear_geometric_jacobian_function(self, link):
+        """Get the function that computes the linear part of the geometric jacobian in the global frame."""
         return self._make_function('Jl', link, self.get_global_linear_geometric_jacobian)
 
 
     def get_linear_geometric_jacobian(self, link, q, base_link):
+        """Get the linear part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
         return J[:3, :]
 
 
     def get_linear_geometric_jacobian_function(self, link, base_link):
+        """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
         return self._make_function('Jl', link, self.get_linear_geometric_jacobian, base_link=base_link)
 
 
     def get_global_angular_geometric_jacobian(self, link, q):
+        """Compute the angular part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
         return J[3:, :]
 
 
     def get_global_angular_geometric_jacobian_function(self, link):
+        """Get the function that computes the angular part of the geometric jacobian in the global frame."""
         return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian)
 
 
     def get_angular_geometric_jacobian(self, link, q, base_link):
+        """Get the angular part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
         return J[3:, :]
 
 
     def get_angular_geometric_jacobian_function(self, link, base_link):
+        """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
         return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link)
 
 
     def _manipulability(self, J):
+        """Computes the manipulability given a jacobian array."""
         return cs.sqrt(cs.det(J @ J.T))
 
 
     def get_global_manipulability(self, link, q):
+        """Get the manipulability measure in the global frame"""
         J = self.get_global_geometric_jacobian(link, q)
         return self._manipulability(J)
 
 
     def get_global_manipulability_function(self, link, n=1):
+        """Get the function that computes the manipulability measure in the global frame."""
         return self._make_function('m', link, self.get_global_manipulability, n=n)
 
 
     def get_manipulability(self, link, q, base_link):
-        """Get the manipulability measure"""
+        """Get the manipulability measure in a given base frame"""
         J = self.get_geometric_jacobian(link, q, base_link)
         return self._manipulability(J)
 
 
     def get_manipulability_function(self, link, base_link, n=1):
+        """Get the function that computes the manipulability measure in a given base frame"""
         return self._make_function('m', link, self.get_manipulability, n=n, base_link=base_link)
 
 
     def get_global_linear_manipulability(self, link, q):
+        """Get the manipulability measure for the linear dimensions in the global frame."""
         Jl = self.get_global_linear_geometric_jacobian(link, q)
         return self._manipulability(Jl)
 
 
     def get_global_linear_manipulability_function(self, link, n=1):
+        """Get the function that computes the manipulability measrure for the linear dimension in the global frame."""
         return self._make_function('ml', link, self.get_global_linear_manipulability, n=n)
 
 
     def get_linear_manipulability(self, link, q, base_link):
+        """Get the linear part of the manipulability measure in a given base frame"""
         Jl = self.get_linear_geometric_jacobian(link, q, base_link)
         return self._manipulability(Jl)
 
 
     def get_linear_manipulability_function(self, link, base_link, n=1):
+        """Get the function that computes the linear part of the manipulability measure in a given base frame"""
         return self._make_function('Jl', link, self.get_linear_manipulability, n=n, base_link=base_link)
 
 
     def get_global_angular_manipulability(self, link, q):
+        """Get the angular part of the manipulability measure in the global frame"""
         Ja = self.get_global_angular_geometric_jacobian(link, q)
         return self._manipulability(Ja)
 
 
     def get_global_angular_manipulability_function(self, link, n=1):
+        """Get the function that computes the angular part of the manipulability measure in a given base frame"""
         return self._make_function('ma', link, self.get_global_angular_manipulability, n=n)
 
 
     def get_angular_manipulability(self, link, q, base_link):
+        """Get the angular part of the manipulability measure in a given base frame"""
         Ja = self.get_angular_geometric_jacobian(link, q, base_link)
         return self._manipulability(Ja)
 
 
     def get_angular_manipulability_function(self, link, base_link, n=1):
+        """Get the function that computes the angular part of the manipulability measure in a given base frame"""
         return self._make_function('Ja', link, self.get_angular_manipulability, n=n, base_link=base_link)
