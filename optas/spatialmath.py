@@ -16,6 +16,7 @@ eps = cs.np.finfo(float).eps
 _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
 
 def _handle_arraylike_args(args, handle):
+    """Helper method that applies the handle to array like arguments."""
     args_out = []
     for a in args:
         if isinstance(a, _arraylike_types):
@@ -43,12 +44,15 @@ def vectorize_args(fun):
     return wrap
 
 def _is_shape(M, s1, s2):
+    """Abstract method for checking if an array has a given shape."""
     return M.shape[0] == s1 and M.shape[1] == s2
 
 def is_2x2(M):
+    """Returns true if M is a 2-by-2 array, false otherwise."""
     return _is_shape(M, 2, 2)
 
 def is_3x3(M):
+    """Returns true if M is a 3-by-3 array, false otherwise."""
     return _is_shape(M, 3, 3)
 
 def I3():
@@ -224,6 +228,7 @@ def rpy2r(rpy, opt='zyx'):
 
 @vectorize_args
 def rpy2tr(rpy, opt='zyx'):
+    """Roll-pitch-yaw angles to SE(3) homogeneous transform"""
     return r2t(rpy2r(rpy, opt=opt))
 
 @arrayify_args
@@ -387,6 +392,7 @@ def unit(v):
 
 @arrayify_args
 def vex(S):
+    """Convert skew-symmetric matrix to vector"""
     if is_2x2(S):
         return 0.5*(S[1,0]-S[0,1])
     elif is_3x3(S):
@@ -407,7 +413,32 @@ def vexa(S):
 
 class Quaternion:
 
+    """Quaternion class"""
+
     def __init__(self, x, y=None, z=None, w=None):
+        """Quaternion constructor.
+
+        Syntax
+        ------
+
+        quat = Quaternion(x, y=None, z=None, w=None)
+
+        Parameters
+        ----------
+
+        x (number, array)
+            Either the x-value of the quaternion or a 4-vector containing the quaternion.
+
+        y (number, None)
+            y-value of quaternion.
+
+        z (number, None)
+            z-value of quaternion.
+
+        w (number, None)
+            w-value of quaternion.
+
+        """
         if y is None:
             # assumes x/w are none also
             x_ = cs.vec(x)
@@ -417,9 +448,11 @@ class Quaternion:
             self._q = cs.vertcat(x, y, z, w)
 
     def split(self):
+        """Split the quaternion into its xyzw parts."""
         return cs.vertsplit(self._q)
 
     def __mul__(self, quat):
+        """Quaternion multiplication"""
         assert isinstance(quat, Quaternion), "unsupported type"
         x0, y0, z0, w0 = self.split()
         x1, y1, z1, w1 = quat.split()
@@ -431,15 +464,19 @@ class Quaternion:
         )
 
     def sumsqr(self):
+        """Sum the square values of the quaternion elements."""
         return cs.sumsqr(self._q)
 
     def inv(self):
+        """Quaternion inverse"""
         q = self.getquat()
         qinv = cs.vertcat(-q[:3], q[3])/self.sumsqr()
         return Quaternion(qinv)
 
     @staticmethod
     def fromrpy(rpy):
+        """Return a quaternion from Roll-Pitch-Yaw angles."""
+
         r, p, y = cs.vertsplit(vec(rpy))
         cr, sr = cs.cos(0.5*r), cs.sin(0.5*r)
         cp, sp = cs.cos(0.5*p), cs.sin(0.5*p)
@@ -455,15 +492,18 @@ class Quaternion:
 
     @staticmethod
     def fromangvec(theta, v):
+        """Return a quaternion from angle-vector form."""
         w = cos(0.5*theta)
         xyz = sin(0.5*theta)*unit(vec(v))
         x, y, z = cs.vertsplit(xyz)
         return Quaternion(x, y, z, w)
 
     def getquat(self):
+        """Return the quaternion vector."""
         return self._q
 
     def getrpy(self):
+        """Return the quaternion as Roll-Pitch-Yaw angles."""
         qx, qy, qz, qw = self.split()
 
         sinr_cosp = 2.*(qw * qx + qy * qz)
