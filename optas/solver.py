@@ -53,8 +53,7 @@ class Solver(ABC):
         Parameters
         ----------
 
-        optimization :
-
+        optimization
             The optimization problem created by calling the build
             method of the OptimizationBuilder class.
 
@@ -65,11 +64,12 @@ class Solver(ABC):
 
     @property
     def opt_type(self):
+        """Optimization type."""
         return type(self.opt)
 
     @abstractmethod
     def setup(self, *args, **kwargs):
-        """Setup solver, note this method must return self"""
+        """Setup solver, note this method must return self."""
         pass
 
     def reset_initial_seed(self, x0: Dict[str, ArrayLike]):
@@ -78,13 +78,8 @@ class Solver(ABC):
         Parameters
         ----------
 
-        x0 : Union[Dict[str, ArrayLike], ArrayLike]
-            Specifies the initial seed. When x0 is an array, it is
-            used directly (and assumed to be the correct length). When
-            it is a dictionary containing arrays, then it should have
-            the same keys as the decision variable SXContainer in the
-            optimization problem - if any keys are unspecified then
-            the default values for the initial seed is zero.
+        x0 : Dict[str, ArrayLike]
+            The initial seed.
 
         """
         self.x0 = self.opt.decision_variables.dict2vec(x0)
@@ -96,18 +91,14 @@ class Solver(ABC):
         ----------
 
         p : Union[Dict[str, ArrayLike], ArrayLike]
-            Specifies the parameters. When p is an array, it is used
-            directly (and assumed to be the correct length). When it
-            is a dictionary containing arrays, then it should have the
-            same keys as the parameters SXContainer in the
-            optimization problem - if any keys are unspecified then
-            the default values for the initial seed is zero.
+            Specifies the parameters.
 
         """
         self.p = self.opt.parameters.dict2vec(p)
 
     @abstractmethod
     def _solve(self) -> ArrayLike:
+        """Solve the optimization problem and return the optimal decision variables as an array."""
         pass
 
     def solve(self) -> Dict[str, cs.casadi.DM]:
@@ -116,16 +107,18 @@ class Solver(ABC):
 
     @abstractmethod
     def stats(self):
-        """Return stats from solver."""
+        """Return stats from solver. The return type is specifc to the solver used."""
         pass
 
     @staticmethod
     def interpolate(traj, T, **interp_args):
+        """Interpolate a trajectory where T is the time duration of the trajectory."""
         assert isinstance(traj, cs.casadi.DM), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
 
     def evaluate_cost(self, x, p):
+        """Evaluates the cost function for given decision variables x and parameters p."""
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
         return self.opt.f(x, p)
