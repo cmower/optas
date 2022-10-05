@@ -11,29 +11,30 @@ class Model:
 
     Model base class
 
-    name (str):
-        name of model
-
-    dim (int):
-        model dimension (for robots this is ndof)
-
-    time_derivs (list[int]):
-        time derivatives required for model, 0 means not time
-        derivative, 1 means first derivative wrt to time is required,
-        etc
-
-    symbol (str):
-        a short symbol to represent the model
-
-    dlim (dict[ int, tuple[list[float]] ]):
-        limits on each time derivative, index should correspond to a
-        time derivative (i.e. 0, 1, ...) and the value should be a
-        tuple of two lists containing the lower and upper bounds
-
     """
 
 
     def __init__(self, name, dim, time_derivs, symbol, dlim, T):
+        """
+        name (str):
+            Name of model.
+
+        dim (int):
+            Model dimension (for robots this is ndof).
+
+        time_derivs (list[int]):
+            Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
+
+        symbol (str):
+            A short symbol to represent the model.
+
+        dlim (dict[ int, tuple[list[float]] ]):
+            limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds        .
+
+        T (int)
+            Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
+
+        """
         self.name = name
         self.dim = dim
         self.time_derivs = time_derivs
@@ -43,30 +44,65 @@ class Model:
 
 
     def get_name(self):
+        """Return the name of the model."""
         return self.name
 
 
     def state_name(self, time_deriv):
+        """Return the state name.
+
+        Syntax
+        ------
+
+        state_name = model.state_name(time_deriv)
+
+        Parameters
+        ----------
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        state_name (string)
+            The state name in the form {name}/{d}{symbol}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model.
+
+        """
         assert time_deriv in self.time_derivs, f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         return self.name + '/' + 'd'*time_deriv + self.symbol
 
 
     def get_limits(self, time_deriv):
+        """Return the model limits.
+
+        Syntax
+        ------
+    
+        lower, upper = model.get_limits(time_deriv)
+
+        Parameters
+        ----------
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        lower/upper (casadi.DM)
+            The model lower/upper limits.
+
+        """
         assert time_deriv in self.time_derivs, f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         assert time_deriv in self.dlim.keys(), f"Limit for time derivative {time_deriv=} has not been given"
         return self.dlim[time_deriv]
 
 
     def in_limit(self, x, time_deriv):
+        """True when x is within limits for a given time derivative, False otherwise. The return type uses CasADi, so this can be used in the formulation."""
         lo, up = self.get_limits(time_deriv)
         return cs.logic_all(cs.logical_and(lo <= x, x <= up))
-
-
-    def in_limits(self, states):
-        in_limits = []
-        for time_deriv, state in states.items():
-            in_limits.append(self.in_limit(state, time_deriv))
-        return cs.logical_all(cs.vertcat(*in_limits))
 
 
 class TaskModel(Model):
