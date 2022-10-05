@@ -1,13 +1,13 @@
 import casadi as cs
 from .sx_container import SXContainer
 
-def derive_jacobian_and_hessian_functions(name, fun, x, p):
+def _derive_jacobian_and_hessian_functions(name, fun, x, p):
     fun_input = [x, p]
     jac = cs.jacobian(fun(x, p), x)
     hes = cs.jacobian(jac, x)
     return cs.Function('d'+name, fun_input, [jac]), cs.Function('dd'+name, fun_input, [hes])
 
-def vertcon(x, p, ineq=[], eq=[]):
+def _vertcon(x, p, ineq=[], eq=[]):
     con = [i(x, p) for i in ineq]
     for e in eq:
         con.append(e(x, p))
@@ -51,7 +51,7 @@ class _Optimization:
         self.f = cs.Function('f', [x, p], [f])
 
         # Derive jocobian/hessian of objective function
-        self.df, self.ddf = derive_jacobian_and_hessian_functions('f', self.f, x, p)
+        self.df, self.ddf = _derive_jacobian_and_hessian_functions('f', self.f, x, p)
 
         self.nx = decision_variables.numel()
         self.np = parameters.numel()
@@ -146,7 +146,7 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
         self.b = cs.Function('b', [p], [self.a(x_zero, p)])
 
         # Setup v, i.e. v(x, p) >= 0
-        self.v = vertcon(x, p, ineq=[self.k], eq=[self.a])
+        self.v = _vertcon(x, p, ineq=[self.k], eq=[self.a])
         dv = cs.vertcat(self.M(p), self.A(p), -self.A(p))
         self.dv = cs.Function('dv', [x, p], [dv])
         self.nv = self.v.numel_out()
@@ -175,21 +175,21 @@ class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
         self.ng = ineq_constraints.numel()
         self.lbg = cs.DM.zeros(self.ng)
         self.ubg = self.inf*cs.DM.ones(self.ng)
-        self.dg, self.ddg = derive_jacobian_and_hessian_functions('g', self.g, x, p)
+        self.dg, self.ddg = _derive_jacobian_and_hessian_functions('g', self.g, x, p)
 
         # Setup h
         self.h = cs.Function('h', [x, p], [eq_constraints.vec()])
         self.nh = eq_constraints.numel()
         self.lbh = cs.DM.zeros(self.nh)
         self.ubh = cs.DM.zeros(self.nh)
-        self.dh, self.ddh = derive_jacobian_and_hessian_functions('h', self.h, x, p)
+        self.dh, self.ddh = _derive_jacobian_and_hessian_functions('h', self.h, x, p)
 
         # Setup v, i.e. v(x, p) >= 0
-        self.v = vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
+        self.v = _vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
-        self.dv, self.ddv = derive_jacobian_and_hessian_functions('v', self.v, x, p)
+        self.dv, self.ddv = _derive_jacobian_and_hessian_functions('v', self.v, x, p)
 
 
 class NonlinearCostUnconstrained(_Optimization):
@@ -262,11 +262,11 @@ class NonlinearCostLinearConstraints(NonlinearCostUnconstrained):
         self.b = cs.Function('b', [p], [self.a(x_zero, p)])
 
         # Setup v, i.e. v(x, p) >= 0
-        self.v = vertcon(x, p, ineq=[self.k], eq=[self.a])
+        self.v = _vertcon(x, p, ineq=[self.k], eq=[self.a])
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
-        self.dv, self.ddv = derive_jacobian_and_hessian_functions('v', self.v, x, p)
+        self.dv, self.ddv = _derive_jacobian_and_hessian_functions('v', self.v, x, p)
 
 class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
     """Nonlinear constrained optimization problem.
@@ -306,18 +306,18 @@ class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
         self.ng = ineq_constraints.numel()
         self.lbg = cs.DM.zeros(self.ng)
         self.ubg = self.inf*cs.DM.ones(self.ng)
-        self.dg, self.ddg = derive_jacobian_and_hessian_functions('g', self.g, x, p)
+        self.dg, self.ddg = _derive_jacobian_and_hessian_functions('g', self.g, x, p)
 
         # Setup h
         self.h = cs.Function('g', [x, p], [eq_constraints.vec()])
         self.nh = eq_constraints.numel()
         self.lbh = cs.DM.zeros(self.nh)
         self.ubh = cs.DM.zeros(self.nh)
-        self.dh, self.ddh = derive_jacobian_and_hessian_functions('h', self.h, x, p)
+        self.dh, self.ddh = _derive_jacobian_and_hessian_functions('h', self.h, x, p)
 
         # Setup v, i.e. v(x, p) >= 0
-        self.v = vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
+        self.v = _vertcon(x, p, ineq=[self.k, self.g], eq=[self.a, self.h])
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf*cs.DM.ones(self.nv)
-        self.dv, self.ddv = derive_jacobian_and_hessian_functions('v', self.v, x, p)
+        self.dv, self.ddv = _derive_jacobian_and_hessian_functions('v', self.v, x, p)
