@@ -220,7 +220,7 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    rpbi = False
+    rpbi = True
 
     # Setup config
     xydir = optas.np.array([0.70710678, 0.70710678])
@@ -262,7 +262,7 @@ if __name__ == '__main__':
 
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(14)
-    for tick in ax.yaxis.get_major_ticks()
+    for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(14)        
 
     fig_filename = os.path.join(exprdir, 'plot_position_trajectory.pdf')
