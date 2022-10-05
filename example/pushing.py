@@ -278,6 +278,7 @@ def main():
     # Setup PyBullet
     qc = -optas.np.deg2rad([0, 30, 0, -90, 0, 60, 0])
     q = qc.copy()
+    eff_ball_radius = 0.015
     hz = 50
     dt = 1.0/float(hz)
     pb = pybullet_api.PyBullet(
@@ -355,6 +356,8 @@ def main():
         state = plan(t)
         SpC = optas.vertcat(0.5*Ly, 0.5*Ly*optas.tan(state[3]))
         GpC = state[:2] + rot2(state[2] + state[3] - 0.5*optas.np.pi)@SpC
+        dr = rot2(state[2] + state[3] - 0.5*optas.np.pi) @ optas.vertcat(optas.cos(-0.5*optas.np.pi), optas.sin(-0.5*optas.np.pi))
+        GpC -= dr*eff_ball_radius  # accounts for end effector ball radius
         p = GpC.toarray().flatten().tolist() + [0.06]
         box_position = state[:2].tolist() + [0.06]
         plan_box.reset(
