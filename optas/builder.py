@@ -459,10 +459,10 @@ class OptimizationBuilder:
     #
 
 
-    def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
+    def ensure_positive_dt(self):
         """Specifies the constraint dt >= 0 when optimize_time=True."""
         assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
-        self.add_geq_inequality_constraint(constaint_name, self.get_dt())
+        self.add_geq_inequality_constraint('__ensure_positive_dt__', self.get_dt())
 
 
     def _integr(self, m, n):
