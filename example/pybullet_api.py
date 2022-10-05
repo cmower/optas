@@ -1,11 +1,21 @@
+import os
 import time
+import pathlib
+import optas
 import pybullet as p
 import pybullet_data
 import numpy as np
 
 class PyBullet:
 
-    def __init__(self, dt, add_floor=True):
+    def __init__(self,
+                 dt,
+                 add_floor=True,
+                 camera_distance=1.5,
+                 camera_yaw=45,
+                 camera_pitch=-40,
+                 camera_target_position=[0, 0, 0.5],
+    ):
         self.client_id = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
@@ -13,10 +23,10 @@ class PyBullet:
         p.setTimeStep(dt)
         p.configureDebugVisualizer(flag=p.COV_ENABLE_GUI, enable=0)
         p.resetDebugVisualizerCamera(
-            cameraDistance=1.5,
-            cameraYaw=45,
-            cameraPitch=-40,
-            cameraTargetPosition=[0, 0, 0.5],
+            cameraDistance=camera_distance,
+            cameraYaw=camera_yaw,
+            cameraPitch=camera_pitch,
+            cameraTargetPosition=camera_target_position,
         )
         if add_floor:
             self.add_floor()
@@ -38,10 +48,22 @@ class PyBullet:
 
 class DynamicBox:
 
-    def __init__(self, base_position, half_extents):
-        colid = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
-        visid = p.createVisualShape(p.GEOM_BOX, rgbaColor=[0, 1, 0, 1.], halfExtents=half_extents)
-        self._id = p.createMultiBody(baseMass=0.5, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
+    def __init__(self, base_position, half_extents, base_mass=0.5):
+        colid = p.createCollisionShape(
+            p.GEOM_BOX,
+            halfExtents=half_extents
+        )
+        visid = p.createVisualShape(
+            p.GEOM_BOX,
+            rgbaColor=[0, 1, 0, 1.],
+            halfExtents=half_extents
+        )
+        self._id = p.createMultiBody(
+            baseMass=base_mass,
+            basePosition=base_position,
+            baseCollisionShapeIndex=colid,
+            baseVisualShapeIndex=visid
+        )
         p.changeDynamics(
             self._id, -1,
             lateralFriction=1.0,
@@ -52,6 +74,34 @@ class DynamicBox:
             angularDamping=0.04,
             contactStiffness=2000.0,
             contactDamping=0.7,
+        )
+
+    def get_pose(self):
+        pos, ori = p.getBasePositionAndOrientation(self._id)
+        eul = p.getEulerFromQuaternion(ori)
+        return pos, eul
+
+
+class VisualBox:
+
+    def __init__(self, base_position, half_extents, rgba_color=[0, 1, 0, 1.], base_orientation=[0, 0, 0, 1]):
+        visid = p.createVisualShape(
+            p.GEOM_BOX,
+            rgbaColor=rgba_color,
+            halfExtents=half_extents
+        )
+        self._id = p.createMultiBody(
+            baseMass=0.,
+            basePosition=base_position,
+            baseOrientation=base_orientation,
+            baseVisualShapeIndex=visid
+        )
+
+    def reset(self, base_position, base_orientation=[0, 0, 0, 1]):
+        p.resetBasePositionAndOrientation(
+            self._id,
+            base_position,
+            base_orientation,
         )
 
 
@@ -66,6 +116,10 @@ class Kuka:
             if info[2] in {p.JOINT_REVOLUTE, p.JOINT_PRISMATIC}:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
+        cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        self.kuka = optas.RobotModel(urdf_filename, time_derivs=[0])
+
 
     def reset(self, q):
         for j, idx in enumerate(self._actuated_joints):

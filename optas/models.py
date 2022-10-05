@@ -33,12 +33,13 @@ class Model:
     """
 
 
-    def __init__(self, name, dim, time_derivs, symbol, dlim):
+    def __init__(self, name, dim, time_derivs, symbol, dlim, T):
         self.name = name
         self.dim = dim
         self.time_derivs = time_derivs
         self.symbol = symbol
         self.dlim = dlim
+        self.T = T
 
 
     def get_name(self):
@@ -71,8 +72,8 @@ class Model:
 class TaskModel(Model):
 
 
-    def __init__(self, name, dim, time_derivs=[0], symbol='x', dlim={}):
-        super().__init__(name, dim, time_derivs, symbol, dlim)
+    def __init__(self, name, dim, time_derivs=[0], symbol='x', dlim={}, T=None):
+        super().__init__(name, dim, time_derivs, symbol, dlim, T)
 
 
 class JointTypeNotSupported(NotImplementedError):
@@ -87,7 +88,7 @@ class JointTypeNotSupported(NotImplementedError):
 class RobotModel(Model):
 
 
-    def __init__(self, urdf_filename=None, urdf_string=None, name=None, time_derivs=[0], qddlim=None):
+    def __init__(self, urdf_filename=None, urdf_string=None, name=None, time_derivs=[0], qddlim=None, T=None):
 
         # Load URDF
         self._urdf = None
@@ -115,7 +116,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, 'q', dlim)
+        super().__init__(name, self.ndof, time_derivs, 'q', dlim, T)
 
     @property
     def joint_names(self):

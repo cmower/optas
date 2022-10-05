@@ -78,7 +78,10 @@ class OptimizationBuilder:
         for model in self._models:
             for d in model.time_derivs:
                 n = model.state_name(d)
-                t = T-d if not derivs_align else T
+                if model.T is None:
+                    t = T-d if not derivs_align else T
+                else:
+                    t = model.T
                 self.add_decision_variables(n, model.dim, t)
 
         if optimize_time:
