@@ -84,7 +84,7 @@ class DynamicBox:
 
 class VisualBox:
 
-    def __init__(self, base_position, half_extents, rgba_color=[0, 1, 0, 1.]):
+    def __init__(self, base_position, half_extents, rgba_color=[0, 1, 0, 1.], base_orientation=[0, 0, 0, 1]):
         visid = p.createVisualShape(
             p.GEOM_BOX,
             rgbaColor=rgba_color,
@@ -93,7 +93,15 @@ class VisualBox:
         self._id = p.createMultiBody(
             baseMass=0.,
             basePosition=base_position,
+            baseOrientation=base_orientation,
             baseVisualShapeIndex=visid
+        )
+
+    def reset(self, base_position, base_orientation=[0, 0, 0, 1]):
+        p.resetBasePositionAndOrientation(
+            self._id,
+            base_position,
+            base_orientation,
         )
 
 
