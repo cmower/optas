@@ -12,8 +12,12 @@ import optas
 from optas.spatialmath import *
 
 
+def yaw2quat(angle):
+    return Quaternion.fromrpy(tr2eul(rotz(angle))).getquat()
+
+
 ######################################
-# Task space planner and controller
+# Task space planner
 #
 # This is an implementation of [1].
 #
@@ -36,26 +40,26 @@ class TOMPCCPlanner:
         T = 20  # number of step
         Lx = float(Lx)  # length of slider (box) in x-axis
         Ly = float(Ly)  # length of slider (box) in y-axis
-        phi_lo = -math.atan2(Ly, Lx)  # lower limit for phi
-        phi_up = -math.pi + abs(phi_lo) # upper limit for phi
+        phi_lo = math.atan2(Lx, Ly) # lower limit for phi
+        phi_up = -phi_lo # upper limit for phi
         L = optas.diag([1, 1, 0.5])  # limit surface model
-        SxC0 = 0.      # initial contact position in x-axis of slider
-        SyC0 = -0.5*Ly # initial contact position in y-axis of slider
-        SphiC0 = -0.5*optas.np.pi # initial contact orientation in slider frame
+        SxC0 = 0.5*Ly # initial contact position in x-axis of slider
+        SyC0 = 0. # initial contact position in y-axis of slider
+        SphiC0 = 0. # initial contact orientation in slider frame
         Wu = optas.diag([ # weigting on minimizing controls cost term
-            10.,  # normal contact force
-            10.,  # tangential contact force
-            1.,  # angular rate of sliding, positive part
-            1.,  # angular rate of sliding, negative part
+            0.,  # normal contact force
+            0.,  # tangential contact force
+            0.,  # angular rate of sliding, positive part
+            0.,  # angular rate of sliding, negative part
         ])
         WxT = optas.diag([ # weighting for terminal state cost term
-            1000., # x-position of slider
-            1000., # y-position of slider
-            1., # orientation of slider
-            1., # orientation of contact
+            1., # x-position of slider
+            1., # y-position of slider
+            0.01, # orientation of slider
+            0.001, # orientation of contact
         ])
         we = 0.1  # slack weights
-        SphiCT = 0.  # final contact orientation in slider frame
+        SphiCT = 0. # final contact orientation in slider frame
 
         # Setup task models
         state = optas.TaskModel('state', dim=nX, time_derivs=[0])
@@ -100,9 +104,9 @@ class TOMPCCPlanner:
             xn = X[:, k+1]  # next state
             x = X[:, k]   # current state
             u = U[:, k]  # control input
-            R = rotz(theta[k])  # rotation matrix in xy-plane of slider
-            SyC = -0.5*Ly  # y-position of contact
-            SxC = SyC/optas.tan(phi[k])  # x-position of box
+            R = rotz(theta[k]-0.5*optas.np.pi)  # rotation matrix in xy-plane of slider
+            SxC = 0.5*Ly # x-position of box
+            SyC = SxC*optas.tan(phi[0]) # y-position of contact
             JC = optas.horzcat(I, optas.vertcat(-SyC, SxC))
 
             # Compute system dynamics f(x, u) = Ku
@@ -163,40 +167,30 @@ class TOMPCCPlanner:
 
     def plan(self, GpS0, GthetaS0, GpST, GthetaST):
 
-
         state_x_init = optas.DM.zeros(self.nX, self.T)
 
         for k in range(self.T):
             alpha = float(k)/float(self.T-1)
             state_x_init[:2,k] = optas.DM(GpS0) * (1-alpha) + alpha*optas.DM(GpST)
             state_x_init[2, k] = GthetaS0 * (1-alpha) + alpha * GthetaST
-        x0 = {'state/x': state_x_init, 'control/u': optas.DM.ones(4, 19)}
-        self.solver.reset_initial_seed(x0)
 
-        p = {
+        self.solver.reset_initial_seed({
+            'state/x': state_x_init,
+            'control/u': optas.DM.ones(4, 19)
+        })
+
+        self.solver.reset_parameters({
             'GpS0': GpS0,
             'GthetaS0': GthetaS0,
             'GpST': GpST,
             'GthetaST': GthetaST,
-        }
-        self.solver.reset_parameters(p)
-
-        print("cost(x0, p) = ", self.solver.evaluate_cost(x0, p))
+        })
 
         solution = self.solver.solve()
-        optas.np.set_printoptions(precision=2, suppress=True, linewidth=1000)
-        print(solution['state/x'].toarray())
-        slider_traj = solution['state/x'][:3, :]
+        optas.np.set_printoptions(suppress=True, precision=3, linewidth=1000)
+        slider_traj = solution['state/x']
         slider_plan = self.solver.interpolate(slider_traj, self.Tmax)
         return slider_plan
-
-class TOMPCCController:
-
-    def __init__(self):
-        pass
-
-    def compute_target_velocity(self):
-        pass
 
 
 ######################################
@@ -248,7 +242,7 @@ class IK:
 
         # Cost: match end-effector position
         diffp = p - pg
-        W_p = optas.diag([20., 20., 1.])
+        W_p = optas.diag([1e2, 1e2, 1e3])
         builder.add_cost_term('match_p', diffp.T @ W_p @ diffp)
 
         # Cost: min joint velocity
@@ -264,7 +258,7 @@ class IK:
         builder.add_leq_inequality_constraint('eff_orien', optas.cos(thresh_angle), e.T @ z)
 
         # Cost: align eff
-        w_ori = 10.
+        w_ori = 1e4
         builder.add_cost_term('eff_orien', w_ori*optas.sumsqr(e.T @ z - 1))
 
         # Setup solver
@@ -286,7 +280,12 @@ def main():
     q = qc.copy()
     hz = 50
     dt = 1.0/float(hz)
-    pb = pybullet_api.PyBullet(dt)
+    pb = pybullet_api.PyBullet(
+        dt,
+        camera_distance=0.5,
+        camera_target_position=[0.3, 0.2, 0.],
+        camera_yaw=135,
+    )
     kuka = pybullet_api.Kuka()
     kuka.reset(qc)
     GxS0 = 0.4
@@ -300,20 +299,23 @@ def main():
         base_position=box_base_position,
         half_extents=box_half_extents,
     )
-    GxST = 0.4
-    GyST = 0.2
-    GthetaST = 0.
+    GxST = 0.45
+    GyST = 0.3
+    GthetaST = 0.1*optas.np.pi
     pybullet_api.VisualBox(
         base_position=[GxST, GyST, 0.06],
+        base_orientation=yaw2quat(GthetaST).toarray().flatten(),
         half_extents=box_half_extents,
         rgba_color=[1., 0., 0., 0.5],
+    )
+    plan_box = pybullet_api.VisualBox(
+        base_position=[GxS0, GyS0, 0.06],
+        half_extents=box_half_extents,
+        rgba_color=[0., 0., 1., 0.5],
     )
 
     # Setup TO MPCC planner
     to_mpcc_planner = TOMPCCPlanner(0.1, Lx, Ly)
-
-    # Setup TO MPCC controller
-    to_mpcc_controller = TOMPCCController()
 
     # Setup IK
     thresh_angle = optas.np.deg2rad(30.)
@@ -326,7 +328,7 @@ def main():
     # Move robot to start position
     Tmax_start = 6.
     pginit = optas.np.array([0.4, 0., 0.06])
-    while False:  # >>>>>>>>>>TEMP<<<<<<<<<<<
+    while True:
         t = pybullet_api.time.time() - start_time
         if t > Tmax_start:
             break
@@ -339,16 +341,26 @@ def main():
     GpS0 = [GxS0, GyS0]
     GpST = [GxST, GyST]
     plan = to_mpcc_planner.plan(GpS0, GthetaS0, GpST, GthetaST)
-    sys.exit(0)
 
     # Main loop
     p = pginit.copy()
     start_time = pybullet_api.time.time()
     while True:
         t = pybullet_api.time.time() - start_time
+        if t > to_mpcc_planner.Tmax:
+            break
         boxpose = box.get_pose()
         dqgoal = ik.compute_target_velocity(q, p)
         q += dt*dqgoal
+        state = plan(t)
+        SpC = optas.vertcat(0.5*Ly, 0.5*Ly*optas.tan(state[3]))
+        GpC = state[:2] + rot2(state[2] + state[3] - 0.5*optas.np.pi)@SpC
+        p = GpC.toarray().flatten().tolist() + [0.06]
+        box_position = state[:2].tolist() + [0.06]
+        plan_box.reset(
+            base_position=box_position,
+            base_orientation=yaw2quat(state[2]).toarray().flatten(),
+        )
         kuka.cmd(q)
         pybullet_api.time.sleep(dt)
 
