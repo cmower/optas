@@ -176,7 +176,7 @@ class TOMPCCPlanner:
 
         self.solver.reset_initial_seed({
             'state/x': state_x_init,
-            'control/u': optas.DM.ones(4, 19)
+            'control/u': 0.01*optas.DM.ones(4, self.T-1)
         })
 
         self.solver.reset_parameters({
