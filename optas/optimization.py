@@ -88,9 +88,7 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
                             a(x, p) = A(p).x + b(p) == 0
 
     The problem is constrained by only linear constraints and has a
-    quadratic cost function. Other methods defined are as follows
-
-
+    quadratic cost function.
 
     """
 
@@ -140,6 +138,23 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
         self.ubv = self.inf*cs.DM.ones(self.nv)
 
 class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
+
+    """Nonlinear constrained optimization problem with quadratic cost function.
+
+            min f(x, p) where f(x, p) = x'.P(p).x + x'.q(p)
+                 x
+
+            subject to
+
+                k(x, p) = M(p).x + c(p) >= 0
+                a(x, p) = A(p).x + b(p) == 0
+                g(x) >= 0, and
+                h(x) == 0
+
+    The problem is constrained by nonlinear constraints and has a
+    quadratic cost function.
+
+    """
 
     def __init__(
             self,
