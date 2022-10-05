@@ -298,8 +298,8 @@ def tr2eul(R, flip=False):
     """Convert SO(3) or SE(3) matrix to Euler angles"""
 
     cond = cs.logic_and(
-        cs.abs(R[0, 2]) < eps,
-        cs.abs(R[1, 2]) < eps,
+        cs.fabs(R[0, 2]) < eps,
+        cs.fabs(R[1, 2]) < eps,
     )
 
     eul_true = cs.vertcat(
