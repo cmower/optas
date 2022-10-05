@@ -2,9 +2,9 @@
   <img src="doc/logo.png" width="60" align="right">
 </p>
 
-# OPTAS
+# OpTaS
 
-`OPTAS` is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
+OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 
 # Install
 
