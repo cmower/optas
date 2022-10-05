@@ -1,4 +1,5 @@
 # Python standard lib
+import sys
 import os
 import pathlib
 import numpy as np
@@ -7,6 +8,7 @@ from scipy.spatial.transform import Rotation as R
 
 # OpTaS
 import optas
+from optas import optimization
 
 cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
 link_ee = 'end'  # end-effector link name
@@ -25,12 +27,30 @@ builder = optas.OptimizationBuilder(T=1, robots=[robot])
 
 # get robot state variables
 q_var = builder.get_model_states(robot_name)
-# q_nom = optas.DM.zeros(robot.ndof)
-q_nom = np.asarray([0., np.pi/2.0, 0.])
 
+# desired end-effector position
+pos_T = np.asarray([1.2, 0.2])
 # forward kinematics
-fk_pos = robot.get_global_link_position_function(link=link_ee)
-fk_ori = robot.get_global_link_quaternion_function(link=link_ee)
-print(q_nom)
-print(fk_pos(q_nom))
-print(fk_ori(q_nom))
+fk = robot.get_global_link_position_function(link=link_ee)
+# equality constraint on position
+builder.add_equality_constraint('pos_T', fk(q_var)[0:2], pos_T)
+
+#  bounds on orientation
+quat = robot.get_global_link_quaternion_function(link=link_ee)
+phi = lambda q: 2.0*optas.atan2(quat(q)[2],quat(q)[3])
+builder.add_bound_inequality_constraint('phi_T', 0., phi(q_var), np.deg2rad(-70.))
+
+# optimization cost
+q_nom = np.asarray([np.pi/2.0, 0., 0.])
+builder.add_cost_term('nom_q', optas.sumsqr(q_var-q_nom))
+
+# setup solver
+optimization = builder.build()
+solver = optas.CasADiSolver(optimization).setup('ipopt')
+# set initial seed
+solver.reset_initial_seed({f'{robot_name}/q': q_nom})
+# solve problem
+solution = solver.solve()
+
+print(fk(q_nom)[0:2])
+print(np.rad2deg(solution[f'{robot_name}/q']).T[0])
