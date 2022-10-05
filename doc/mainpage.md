@@ -1,3 +1,3 @@
-# OPTAS Documentation
+# OpTaS Documentation
 
-This is the documentation for OPTAS.
+This is the documentation for OpTaS.
