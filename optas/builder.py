@@ -17,7 +17,7 @@ class OptimizationBuilder:
         Syntax
         ------
 
-        builder = OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
+        builder = optas.OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
 
         Parameters
         ----------
@@ -97,29 +97,113 @@ class OptimizationBuilder:
 
 
     def get_model_names(self):
-        """Return the names of each defined model."""
+        """Return the names of each model."""
         return [model.name for model in self._models]
 
 
     def get_model_index(self, name):
-        """Return the index of the model in the list of models."""
+        """Return the index of the model in the list of models.
+
+        Syntax
+        ------
+
+        idx = builder.get_model_index(name)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        Returns
+        -------
+
+        idx (int)
+            Index of the model in the list of models.
+
+        """
         return self.get_model_names().index(name)
 
 
     def get_model(self, name):
-        """Return the model with given name."""
-        idx = self.get_model_index(name)
-        return self._models[idx]
+        """Return the model with given name.
+
+        Syntax
+        ------
+
+        model = builder.get_model(name)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        Returns
+        -------
+
+        model (optas.models.Model)
+            A task or robot model.
+
+        """
+        return self._models[self.get_model_index(name)]
 
 
     def get_model_state(self, name, t, time_deriv=0):
-        """Get the model state at a given time."""
+        """Get the model state at a given time.
+
+        Syntax
+        ------
+
+        state = builder.get_model_state(name, t, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        t (int)
+            Index of the desired state.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        state (casadi.SX, with shape dim-by-1)
+            The state vector where dim is the model dimension.
+
+        """
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
 
     def get_model_states(self, name, time_deriv=0):
-        """Get the full state trajectory for a given model."""
+        """Get the full state trajectory for a given model.
+
+        Syntax
+        ------
+
+        states = builder.get_model_states(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        states (casadi.SX, with shape dim-by-T)
+            The state vector where dim is the model dimension, and T is the number of time-steps in the trajectory.
+
+        """
         model = self.get_model(name)
         assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
         name = model.state_name(time_deriv)
@@ -133,18 +217,22 @@ class OptimizationBuilder:
 
 
     def _x(self):
+        """Return the decision variables as a casadi.SX vector."""
         return self._decision_variables.vec()
 
 
     def _p(self):
+        """Return the parameters as a casadi.SX vector."""
         return self._parameters.vec()
 
 
     def _is_linear(self, y):
+        """Returns true if y is a linear function of the decision variables."""
         return cs.is_linear(y, self._x())
 
 
     def _cost(self):
+        """Returns the cost function."""
         return cs.sum1(self._cost_terms.vec())
 
 
@@ -157,7 +245,35 @@ class OptimizationBuilder:
     #
 
     def add_decision_variables(self, name, m=1, n=1, is_discrete=False):
-        """Add decision variables to the optimization problem."""
+        """Add decision variables to the optimization problem.
+
+        Syntax
+        ------
+
+        d = builder.add_decision_variables(name, m=1, n=1, is_discrete=False)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of decision variable array.
+
+        m (int)
+            Number of rows in decision variable array.
+
+        n (int)
+            Number of columns in decision variable array.
+
+        is_discret (bool)
+            If true, then the decision variables are treated as discrete variables.
+
+        Return
+        ------
+
+        d (casadi.SX)
+            Array of the decision variables.
+
+        """
         x = cs.SX.sym(name, m, n)
         self._decision_variables[name] = x
         if is_discrete:
@@ -166,7 +282,32 @@ class OptimizationBuilder:
 
 
     def add_parameter(self, name, m=1, n=1):
-        """Add a parameter to the optimization problem."""
+        """Add a parameter to the optimization problem.
+
+        Syntax
+        ------
+
+        p = builder.add_parameter(name, m=1, n=1)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of parameter array.
+
+        m (int)
+            Number of rows in parameter array.
+
+        n (int)
+            Number of columns in parameter array.
+
+        Return
+        ------
+
+        p (casadi.SX)
+            Array of the parameters.
+
+        """
         p = cs.SX.sym(name, m, n)
         self._parameters[name] = p
         return p
@@ -174,6 +315,23 @@ class OptimizationBuilder:
 
     @vectorize_args
     def add_cost_term(self, name, cost_term):
+        """Add cost term to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_cost_term(name, cost_term)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for cost function.
+
+        cost_term (casadi.SX)
+            Cost term, must be an array with shape 1-by-1.
+
+        """
         m, n = cost_term.shape
         assert m==1 and n==1, "cost term must be scalar"
         self._cost_terms[name] = cost_term
@@ -181,7 +339,26 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_geq_inequality_constraint(self, name, lhs, rhs=None):
-        """lhs >= rhs"""
+        """Add the inequality constraint lhs >= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_geq_inequality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         self.add_leq_inequality_constraint(name, rhs, lhs)
@@ -189,7 +366,26 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_leq_inequality_constraint(self, name, lhs, rhs=None):
-        """lhs <= rhs"""
+        """Add the inequality constraint lhs <= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_leq_inequality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff >= 0
@@ -201,14 +397,55 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_bound_inequality_constraint(self, name, lhs, mid, rhs):
-        """lhs <= mid <= rhs"""
+        """Add the inequality constraint lhs <= mid <= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_bound_inequality_constraint(name, lhs, mid, rhs)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        mid (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Middle part of the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint.
+
+        """
         self.add_leq_inequality_constraint(name+'_l', lhs, mid)
         self.add_leq_inequality_constraint(name+'_r', mid, rhs)
 
 
     @arrayify_args
     def add_equality_constraint(self, name, lhs, rhs=None):
-        """lhs == rhs"""
+        """Add the equality constraint lhs == rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_equality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
@@ -217,53 +454,19 @@ class OptimizationBuilder:
         else:
             self._eq_constraints[name] = diff
 
-
-    #
-    # Common cost terms
-    #
-
-
-    def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1., sigma=1.):
-        robot = self.get_model(robot_name)
-        if qnom is None:
-            lo = robot.lower_actuated_joint_limits
-            up = robot.upper_actuated_joint_limits
-            qnom = 0.5*(lo + up)
-
-        qnom = cs.vec(qnom)
-
-        w = cs.vec(w)
-        if w.shape[0] == 1 and w.shape[1] == 1:
-            w = w*cs.DM.ones(robot.ndof)
-        else:
-            assert w.shape[0] == robot.ndof, f"w must be scalar or have {robot.ndof} elements"
-
-        # Create nominal function
-        W = cs.diag(w)
-        q_ = cs.SX.sym('q', robot.ndof)
-        qdiff_ = q_ - qnom
-        cost_term = cs.Function('nominal_cost', [q_], [qdiff_.T @ W @ qdiff_]).map(self.T)
-
-        # Compute cost term
-        Q = self.get_model_states(robot_name, 0)
-        c = sigma*cs.sum1(cs.vec(cost_term(Q)))
-
-        # Add cost term
-        self.add_cost_term(cost_term_name, c)
-
-
     #
     # Common constraints
     #
 
 
-    def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
-        """dt >= 0"""
+    def ensure_positive_dt(self):
+        """Specifies the constraint dt >= 0 when optimize_time=True."""
         assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
-        self.add_geq_inequality_constraint(constaint_name, self.get_dt())
+        self.add_geq_inequality_constraint('__ensure_positive_dt__', self.get_dt())
 
 
     def _integr(self, m, n):
+        """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
         xd = cs.SX.sym('xd', m)
         x0 = cs.SX.sym('x0', m)
         x1 = cs.SX.sym('x1', m)
@@ -273,6 +476,26 @@ class OptimizationBuilder:
 
 
     def integrate_model_states(self, name, time_deriv, dt=None):
+        """Integrates the model states over time.
+
+        Syntax
+        ------
+
+        builder.integrate_model_states(name, time_deriv, dt=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
+
+        dt (None, float, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Integration time step.
+
+        """
 
         if self.optimize_time and dt is not None:
             raise ValueError("dt is given but user specified optimize_time as True")
@@ -301,13 +524,66 @@ class OptimizationBuilder:
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
 
-    def enforce_model_limits(self, name, time_deriv=0):
+    def enforce_model_limits(self, name, time_deriv=0, lo=None, up=None):
+        """Enforce model limits.
+
+        Syntax
+        ------
+
+        builder.enforce_model_limits(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        lo (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Lower limits, if None then model limits specified in the model class are used.
+
+        up (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Upper limits, if None then model limits specified in the model class are used.
+
+        """
         x = self.get_model_states(name, time_deriv)
-        xlo, xup = self.get_model(name).get_limits(time_deriv)
+        xlo = lo
+        xup = up
+        if (xlo is None) or (xup is None):
+            mlo, mup = self.get_model(name).get_limits(time_deriv)
+            if xlo is None:
+                xlo = mlo
+            if xup is None:
+                xup = mup
         n = f'__{name}_model_limit_{time_deriv}__'
         self.add_bound_inequality_constraint(n, xlo, x, xup)
 
     def initial_configuration(self, name, init=None, time_deriv=0, t0=0):
+        """Set initial configuration.
+
+        Syntax
+        ------
+
+        builder.initial_configuration(name, init=None, time_deriv=0, t0=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of model.
+
+        init (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Initial configuration.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        t0 (int)
+            Index for the initial configuration in trajectory (typically this will be the first element but it could also be the last for example in moving horizon estimation).
+
+        """
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
         n = f'__{name}_initial_configuration_{time_deriv}_{t0}__'
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
@@ -318,6 +594,7 @@ class OptimizationBuilder:
     #
 
     def build(self):
+        """Build the optimization problem."""
 
         # Setup optimization
         nlin = self._lin_ineq_constraints.numel()+self._lin_eq_constraints.numel() # total no. linear constraints

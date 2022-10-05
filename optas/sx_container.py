@@ -31,6 +31,7 @@ class SXContainer(collections.OrderedDict):
         self.is_discrete[label] = False  # assume non-discrete, otherwise variable_is_discrete(..) should be called
 
     def variable_is_discrete(self, label: str) -> None:
+        """Specify that a given variable is discrete."""
         assert label in self, f"'{label}' was not found"
         self.is_discrete[label] = True
 
