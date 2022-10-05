@@ -8,7 +8,14 @@ import numpy as np
 
 class PyBullet:
 
-    def __init__(self, dt, add_floor=True):
+    def __init__(self,
+                 dt,
+                 add_floor=True,
+                 camera_distance=1.5,
+                 camera_yaw=45,
+                 camera_pitch=-40,
+                 camera_target_position=[0, 0, 0.5],
+    ):
         self.client_id = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
@@ -16,10 +23,10 @@ class PyBullet:
         p.setTimeStep(dt)
         p.configureDebugVisualizer(flag=p.COV_ENABLE_GUI, enable=0)
         p.resetDebugVisualizerCamera(
-            cameraDistance=1.5,
-            cameraYaw=45,
-            cameraPitch=-40,
-            cameraTargetPosition=[0, 0, 0.5],
+            cameraDistance=camera_distance,
+            cameraYaw=camera_yaw,
+            cameraPitch=camera_pitch,
+            cameraTargetPosition=camera_target_position,
         )
         if add_floor:
             self.add_floor()
