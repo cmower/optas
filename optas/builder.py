@@ -483,6 +483,18 @@ class OptimizationBuilder:
 
         builder.integrate_model_states(name, time_deriv, dt=None)
 
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
+
+        dt (None, float, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Integration time step.
+
         """
 
         if self.optimize_time and dt is not None:
