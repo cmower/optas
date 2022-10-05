@@ -127,8 +127,7 @@ class OptimizationBuilder:
 
     def get_model(self, name):
         """Return the model with given name."""
-        idx = self.get_model_index(name)
-        return self._models[idx]
+        return self._models[self.get_model_index(name)]
 
 
     def get_model_state(self, name, t, time_deriv=0):
