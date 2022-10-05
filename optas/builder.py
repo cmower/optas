@@ -461,6 +461,8 @@ class OptimizationBuilder:
 
 
     def add_nominal_configuration_cost_term(self, cost_term_name, robot_name, qnom=None, w=1., sigma=1.):
+        """Add a nominal configuration cost term."""
+
         robot = self.get_model(robot_name)
         if qnom is None:
             lo = robot.lower_actuated_joint_limits
@@ -495,12 +497,13 @@ class OptimizationBuilder:
 
 
     def ensure_positive_dt(self, constraint_name='__ensure_positive_dt__'):
-        """dt >= 0"""
+        """Specifies the constraint dt >= 0 when optimize_time=True."""
         assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
         self.add_geq_inequality_constraint(constaint_name, self.get_dt())
 
 
     def _integr(self, m, n):
+        """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
         xd = cs.SX.sym('xd', m)
         x0 = cs.SX.sym('x0', m)
         x1 = cs.SX.sym('x1', m)
@@ -510,6 +513,14 @@ class OptimizationBuilder:
 
 
     def integrate_model_states(self, name, time_deriv, dt=None):
+        """Integrates the model states over time.
+
+        Syntax
+        ------
+
+        builder.integrate_model_states(name, time_deriv, dt=None)
+
+        """
 
         if self.optimize_time and dt is not None:
             raise ValueError("dt is given but user specified optimize_time as True")
@@ -538,13 +549,66 @@ class OptimizationBuilder:
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
 
-    def enforce_model_limits(self, name, time_deriv=0):
+    def enforce_model_limits(self, name, time_deriv=0, lo=None, up=None):
+        """Enforce model limits.
+
+        Syntax
+        ------
+
+        builder.enforce_model_limits(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        lo (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Lower limits, if None then model limits specified in the model class are used.
+
+        up (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Upper limits, if None then model limits specified in the model class are used.
+
+        """
         x = self.get_model_states(name, time_deriv)
-        xlo, xup = self.get_model(name).get_limits(time_deriv)
+        xlo = lo
+        xup = up
+        if (xlo is None) or (xup is None):
+            mlo, mup = self.get_model(name).get_limits(time_deriv)
+            if xlo is None:
+                xlo = mlo
+            if xup is None:
+                xup = mup
         n = f'__{name}_model_limit_{time_deriv}__'
         self.add_bound_inequality_constraint(n, xlo, x, xup)
 
     def initial_configuration(self, name, init=None, time_deriv=0, t0=0):
+        """Set initial configuration.
+
+        Syntax
+        ------
+
+        builder.initial_configuration(name, init=None, time_deriv=0, t0=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of model.
+
+        init (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Initial configuration.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        t0 (int)
+            Index for the initial configuration in trajectory (typically this will be the first element but it could also be the last for example in moving horizon estimation).
+
+        """
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
         n = f'__{name}_initial_configuration_{time_deriv}_{t0}__'
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
@@ -555,6 +619,7 @@ class OptimizationBuilder:
     #
 
     def build(self):
+        """Build the optimization problem."""
 
         # Setup optimization
         nlin = self._lin_ineq_constraints.numel()+self._lin_eq_constraints.numel() # total no. linear constraints
