@@ -15,27 +15,13 @@ def _vertcon(x, p, ineq=[], eq=[]):
     return cs.Function('v', [x, p], [cs.vertcat(*con)])
 
 
-class _Optimization:
-    """Base optimization class.
+class Optimization:
 
-    This class provides basic functions for the following optimization.
-
-      min f(x, p)
-       x
-
-    Classes derived from this one will add additional methods
-    regarding the cost function, and constraints.
-
-    """
+    """Base optimization class"""
 
     inf = 1.0e10  # big number rather than np.inf
 
-    def __init__(
-            self,
-            decision_variables: SXContainer, # SXContainer for decision variables
-            parameters: SXContainer, # SXContainer for parameters
-            cost_terms: SXContainer, # SXContainer for cost terms
-    ):
+    def __init__(self, decision_variables, parameters, cost_terms):
 
         # Set class attributes
         self.decision_variables = decision_variables
@@ -61,7 +47,7 @@ class _Optimization:
         self.nh = 0
         self.nv = 0
 
-class QuadraticCostUnconstrained(_Optimization):
+class QuadraticCostUnconstrained(Optimization):
     """Unconstrained Quadratic Program.
 
             min f(x, p) where f(x, p) = x'.P(p).x + x'.q(p)
@@ -192,7 +178,7 @@ class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
         self.dv, self.ddv = _derive_jacobian_and_hessian_functions('v', self.v, x, p)
 
 
-class NonlinearCostUnconstrained(_Optimization):
+class NonlinearCostUnconstrained(Optimization):
     """Unconstrained optimization problem.
 
             min f(x, p)
