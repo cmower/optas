@@ -97,7 +97,7 @@ class OptimizationBuilder:
 
 
     def get_model_names(self):
-        """Return the names of each defined model."""
+        """Return the names of each model."""
         return [model.name for model in self._models]
 
 
@@ -126,18 +126,84 @@ class OptimizationBuilder:
 
 
     def get_model(self, name):
-        """Return the model with given name."""
+        """Return the model with given name.
+
+        Syntax
+        ------
+
+        model = builder.get_model(name)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        Returns
+        -------
+
+        model (optas.models.Model)
+            A task or robot model.
+
+        """
         return self._models[self.get_model_index(name)]
 
 
     def get_model_state(self, name, t, time_deriv=0):
-        """Get the model state at a given time."""
+        """Get the model state at a given time.
+
+        Syntax
+        ------
+
+        state = builder.get_model_state(name, t, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        t (int)
+            Index of the desired state.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        state (casadi.SX, with shape dim-by-1)
+            The state vector where dim is the model dimension.
+
+        """
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
 
     def get_model_states(self, name, time_deriv=0):
-        """Get the full state trajectory for a given model."""
+        """Get the full state trajectory for a given model.
+
+        Syntax
+        ------
+
+        states = builder.get_model_states(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        states (casadi.SX, with shape dim-by-T)
+            The state vector where dim is the model dimension, and T is the number of time-steps in the trajectory.
+
+        """
         model = self.get_model(name)
         assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
         name = model.state_name(time_deriv)
@@ -151,18 +217,22 @@ class OptimizationBuilder:
 
 
     def _x(self):
+        """Return the decision variables as a casadi.SX vector."""
         return self._decision_variables.vec()
 
 
     def _p(self):
+        """Return the parameters as a casadi.SX vector."""
         return self._parameters.vec()
 
 
     def _is_linear(self, y):
+        """Returns true if y is a linear function of the decision variables."""
         return cs.is_linear(y, self._x())
 
 
     def _cost(self):
+        """Returns the cost function."""
         return cs.sum1(self._cost_terms.vec())
 
 
@@ -175,7 +245,35 @@ class OptimizationBuilder:
     #
 
     def add_decision_variables(self, name, m=1, n=1, is_discrete=False):
-        """Add decision variables to the optimization problem."""
+        """Add decision variables to the optimization problem.
+
+        Syntax
+        ------
+
+        d = builder.add_decision_variables(name, m=1, n=1, is_discrete=False)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of decision variable array.
+
+        m (int)
+            Number of rows in decision variable array.
+
+        n (int)
+            Number of columns in decision variable array.
+
+        is_discret (bool)
+            If true, then the decision variables are treated as discrete variables.
+
+        Return
+        ------
+
+        d (casadi.SX)
+            Array of the decision variables.
+
+        """
         x = cs.SX.sym(name, m, n)
         self._decision_variables[name] = x
         if is_discrete:
@@ -184,7 +282,32 @@ class OptimizationBuilder:
 
 
     def add_parameter(self, name, m=1, n=1):
-        """Add a parameter to the optimization problem."""
+        """Add a parameter to the optimization problem.
+
+        Syntax
+        ------
+
+        p = builder.add_parameter(name, m=1, n=1)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of parameter array.
+
+        m (int)
+            Number of rows in parameter array.
+
+        n (int)
+            Number of columns in parameter array.
+
+        Return
+        ------
+
+        p (casadi.SX)
+            Array of the parameters.
+
+        """
         p = cs.SX.sym(name, m, n)
         self._parameters[name] = p
         return p
@@ -192,6 +315,23 @@ class OptimizationBuilder:
 
     @vectorize_args
     def add_cost_term(self, name, cost_term):
+        """Add cost term to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_cost_term(name, cost_term)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for cost function.
+
+        cost_term (casadi.SX)
+            Cost term, must be an array with shape 1-by-1.
+
+        """
         m, n = cost_term.shape
         assert m==1 and n==1, "cost term must be scalar"
         self._cost_terms[name] = cost_term
@@ -199,7 +339,26 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_geq_inequality_constraint(self, name, lhs, rhs=None):
-        """lhs >= rhs"""
+        """Add the inequality constraint lhs >= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_geq_inequality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         self.add_leq_inequality_constraint(name, rhs, lhs)
@@ -207,7 +366,26 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_leq_inequality_constraint(self, name, lhs, rhs=None):
-        """lhs <= rhs"""
+        """Add the inequality constraint lhs <= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_leq_inequality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff >= 0
@@ -219,14 +397,55 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_bound_inequality_constraint(self, name, lhs, mid, rhs):
-        """lhs <= mid <= rhs"""
+        """Add the inequality constraint lhs <= mid <= rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_bound_inequality_constraint(name, lhs, mid, rhs)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        mid (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Middle part of the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint.
+
+        """
         self.add_leq_inequality_constraint(name+'_l', lhs, mid)
         self.add_leq_inequality_constraint(name+'_r', mid, rhs)
 
 
     @arrayify_args
     def add_equality_constraint(self, name, lhs, rhs=None):
-        """lhs == rhs"""
+        """Add the equality constraint lhs == rhs to the optimization problem.
+
+        Syntax
+        ------
+
+        builder.add_equality_constraint(name, lhs, rhs=None)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name for the constraint.
+
+        lhs (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Left-hand side for the inequality constraint.
+
+        rhs (None, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+
+        """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
