@@ -5,7 +5,6 @@ import pathlib
 
 # OpTaS
 import optas
-from optas import optimization
 
 cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
 
@@ -40,7 +39,7 @@ builder.add_equality_constraint('FDK', (J(q_t)[0:2,:])@dq, dx)
 builder.add_bound_inequality_constraint('joint', dq_min, dq, dq_max)
 
 #  bounds on orientation
-builder.add_bound_inequality_constraint('task', (-70*(optas.pi/180.)-phi(q))/dt, (J_phi(q)[2,:])@dq, -phi(q)/dt)
+builder.add_bound_inequality_constraint('task', -70*(optas.pi/180.), phi(q)+dt*(J_phi(q)[2,:])@dq, 0.)
 
 # setup solver
 optimization = builder.build()
@@ -51,3 +50,6 @@ solver.reset_parameters({'q': q_t})
 # solve problem
 solution = solver.solve()
 print(solution[f'{robot_name}/dq'])
+
+# 
+print(optas.pinv(J(q_t)[0:2,:])@dx)
