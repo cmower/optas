@@ -53,3 +53,4 @@ print(solution[f'{robot_name}/dq'])
 
 # 
 print(optas.pinv(J(q_t)[0:2,:])@dx)
+print(robot.get_limits(1))
