@@ -119,6 +119,11 @@ class Solver(ABC):
         """Returns true when the solver solved the previous problem, false otherwise."""
         pass
 
+    @abstractmethod
+    def number_of_iterations(self):
+        """Returns the number of iterations required to solve the problem."""
+        pass
+
     def evaluate_cost(self, x, p):
         """Evaluates the cost function for given decision variables x and parameters p."""
         x = self.opt.decision_variables.dict2vec(x)
@@ -180,15 +185,18 @@ class CasADiSolver(Solver):
             solver_input['lbg'] = self._lbg
             solver_input['ubg'] = self._ubg
         self._solution = self._solver(**solver_input)
+        self._stats = self._solver.stats()
+        self._stats['solution'] = self._solution
         return self._solution['x']
 
     def stats(self):
-        stats = self._solver.stats()
-        stats['solution'] = self._solution
-        return stats
+        return self._stats
 
     def did_solve(self):
-        return self.stats()['success']
+        return self._stats['success']
+
+    def number_of_iterations(self):
+        return self._stats['iter_count']
 
 ################################################################
 # OSQP solver (https://osqp.org/)
@@ -257,6 +265,9 @@ class OSQPSolver(Solver):
     def did_solve(self):
         return self._solution.info.status == self.OSQP_SOLVED
 
+    def number_of_iterations(self):
+        return self._solution.info.iter
+
 ################################################################
 # CVXOPT QP solver (https://cvxopt.org/)
 
@@ -309,6 +320,9 @@ class CVXOPTSolver(Solver):
 
     def did_solve(self):
         return self._solution['status'] == 'optimal'
+
+    def number_of_iterations(self):
+        return self._solution['iterations']
 
 ################################################################
 # Scipy Minimize solvers (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
@@ -474,3 +488,6 @@ class ScipyMinimizeSolver(Solver):
 
     def did_solve(self):
         return self._solution.success
+
+    def number_of_iterations(self):
+        return self._solution.nit
