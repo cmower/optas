@@ -2,7 +2,6 @@ import osqp
 import cvxopt
 import numpy as np
 import casadi as cs
-from typing import Union, Dict, List
 from abc import ABC, abstractmethod
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
@@ -38,8 +37,6 @@ CONSTRAINED_OPT = {
 
 }
 
-ArrayLike = Union[cs.casadi.DM, np.ndarray, List]
-
 ################################################################
 # Solver base class
 
@@ -72,7 +69,7 @@ class Solver(ABC):
         """Setup solver, note this method must return self."""
         pass
 
-    def reset_initial_seed(self, x0: Dict[str, ArrayLike]):
+    def reset_initial_seed(self, x0):
         """Reset initial seed for the optimization problem.
 
         Parameters
@@ -84,7 +81,7 @@ class Solver(ABC):
         """
         self.x0 = self.opt.decision_variables.dict2vec(x0)
 
-    def reset_parameters(self, p: Dict[str, ArrayLike]) -> None:
+    def reset_parameters(self, p):
         """Reset the parameters for the optimization problem.
 
         Parameters
@@ -97,11 +94,11 @@ class Solver(ABC):
         self.p = self.opt.parameters.dict2vec(p)
 
     @abstractmethod
-    def _solve(self) -> ArrayLike:
+    def _solve(self):
         """Solve the optimization problem and return the optimal decision variables as an array."""
         pass
 
-    def solve(self) -> Dict[str, cs.casadi.DM]:
+    def solve(self):
         """Solve the optimization problem."""
         return self.opt.decision_variables.vec2dict(self._solve())
 
@@ -116,6 +113,16 @@ class Solver(ABC):
         assert isinstance(traj, cs.casadi.DM), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
+
+    @abstractmethod
+    def did_solve(self):
+        """Returns true when the solver solved the previous problem, false otherwise."""
+        pass
+
+    @abstractmethod
+    def number_of_iterations(self):
+        """Returns the number of iterations required to solve the problem."""
+        pass
 
     def evaluate_cost(self, x, p):
         """Evaluates the cost function for given decision variables x and parameters p."""
@@ -178,12 +185,18 @@ class CasADiSolver(Solver):
             solver_input['lbg'] = self._lbg
             solver_input['ubg'] = self._ubg
         self._solution = self._solver(**solver_input)
+        self._stats = self._solver.stats()
+        self._stats['solution'] = self._solution
         return self._solution['x']
 
     def stats(self):
-        stats = self._solver.stats()
-        stats['solution'] = self._solution
-        return stats
+        return self._stats
+
+    def did_solve(self):
+        return self._stats['success']
+
+    def number_of_iterations(self):
+        return self._stats['iter_count']
 
 ################################################################
 # OSQP solver (https://osqp.org/)
@@ -192,7 +205,9 @@ class OSQPSolver(Solver):
 
     """OSQP solver interface."""
 
-    def setup(self, use_warm_start: bool=True, settings: Dict={}):
+    OSQP_SOLVED = osqp.constant('OSQP_SOLVED')
+
+    def setup(self, use_warm_start, settings={}):
         """Setup solver.
 
         Parameters
@@ -219,7 +234,7 @@ class OSQPSolver(Solver):
         self._reset_parameters()
         return self
 
-    def reset_parameters(self, p: Dict[str, ArrayLike]) -> None:
+    def reset_parameters(self, p):
         super().reset_parameters(p)
         self._reset_parameters()
 
@@ -247,6 +262,12 @@ class OSQPSolver(Solver):
     def stats(self):
         return self._solution
 
+    def did_solve(self):
+        return self._solution.info.status == self.OSQP_SOLVED
+
+    def number_of_iterations(self):
+        return self._solution.info.iter
+
 ################################################################
 # CVXOPT QP solver (https://cvxopt.org/)
 
@@ -254,7 +275,7 @@ class CVXOPTSolver(Solver):
 
     """CVXOPT solver interface."""
 
-    def setup(self, solver_settings: Dict={}):
+    def setup(self, solver_settings={}):
         """Setup the cvxopt solver interface.
 
         Parameters
@@ -296,6 +317,12 @@ class CVXOPTSolver(Solver):
 
     def stats(self):
         return self._solution
+
+    def did_solve(self):
+        return self._solution['status'] == 'optimal'
+
+    def number_of_iterations(self):
+        return self._solution['iterations']
 
 ################################################################
 # Scipy Minimize solvers (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
@@ -458,3 +485,9 @@ class ScipyMinimizeSolver(Solver):
 
     def stats(self):
         return self._solution
+
+    def did_solve(self):
+        return self._solution.success
+
+    def number_of_iterations(self):
+        return self._solution.nit
