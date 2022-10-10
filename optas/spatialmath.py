@@ -11,6 +11,7 @@ https://github.com/petercorke/spatialmath-matlab
 
 """
 
+pi = cs.np.pi
 eps = cs.np.finfo(float).eps
 
 _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
@@ -512,7 +513,7 @@ class Quaternion:
 
         sinp = 2. * (qw * qy - qz * qx)
 
-        pitch = cs.if_else(cs.fabs(sinp) >= 1., cs.np.pi/2., cs.asin(sinp))
+        pitch = cs.if_else(cs.fabs(sinp) >= 1., pi/2., cs.asin(sinp))
 
         siny_cosp = 2. * (qw * qz + qx * qy)
         cosy_cosp = 1. - 2. * (qy * qy + qz * qz)
