@@ -114,6 +114,11 @@ class Solver(ABC):
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
 
+    @abstractmethod
+    def did_solve(self):
+        """Returns true when the solver solved the previous problem, false otherwise."""
+        pass
+
     def evaluate_cost(self, x, p):
         """Evaluates the cost function for given decision variables x and parameters p."""
         x = self.opt.decision_variables.dict2vec(x)
@@ -182,6 +187,9 @@ class CasADiSolver(Solver):
         stats['solution'] = self._solution
         return stats
 
+    def did_solve(self):
+        return self.stats()['success']
+
 ################################################################
 # OSQP solver (https://osqp.org/)
 
@@ -189,7 +197,9 @@ class OSQPSolver(Solver):
 
     """OSQP solver interface."""
 
-    def setup(self, use_warm_start: bool=True, settings: Dict={}):
+    OSQP_SOLVED = osqp.constant('OSQP_SOLVED')
+
+    def setup(self, use_warm_start, settings={}):
         """Setup solver.
 
         Parameters
@@ -244,6 +254,9 @@ class OSQPSolver(Solver):
     def stats(self):
         return self._solution
 
+    def did_solve(self):
+        return self._solution.info.status == self.OSQP_SOLVED
+
 ################################################################
 # CVXOPT QP solver (https://cvxopt.org/)
 
@@ -251,7 +264,7 @@ class CVXOPTSolver(Solver):
 
     """CVXOPT solver interface."""
 
-    def setup(self, solver_settings: Dict={}):
+    def setup(self, solver_settings={}):
         """Setup the cvxopt solver interface.
 
         Parameters
@@ -293,6 +306,9 @@ class CVXOPTSolver(Solver):
 
     def stats(self):
         return self._solution
+
+    def did_solve(self):
+        return self._solution['status'] == 'optimal'
 
 ################################################################
 # Scipy Minimize solvers (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
@@ -455,3 +471,6 @@ class ScipyMinimizeSolver(Solver):
 
     def stats(self):
         return self._solution
+
+    def did_solve(self):
+        return self._solution.success
