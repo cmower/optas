@@ -2,7 +2,6 @@ import osqp
 import cvxopt
 import numpy as np
 import casadi as cs
-from typing import Union, Dict, List
 from abc import ABC, abstractmethod
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
@@ -38,8 +37,6 @@ CONSTRAINED_OPT = {
 
 }
 
-ArrayLike = Union[cs.casadi.DM, np.ndarray, List]
-
 ################################################################
 # Solver base class
 
@@ -72,7 +69,7 @@ class Solver(ABC):
         """Setup solver, note this method must return self."""
         pass
 
-    def reset_initial_seed(self, x0: Dict[str, ArrayLike]):
+    def reset_initial_seed(self, x0):
         """Reset initial seed for the optimization problem.
 
         Parameters
@@ -84,7 +81,7 @@ class Solver(ABC):
         """
         self.x0 = self.opt.decision_variables.dict2vec(x0)
 
-    def reset_parameters(self, p: Dict[str, ArrayLike]) -> None:
+    def reset_parameters(self, p):
         """Reset the parameters for the optimization problem.
 
         Parameters
@@ -97,11 +94,11 @@ class Solver(ABC):
         self.p = self.opt.parameters.dict2vec(p)
 
     @abstractmethod
-    def _solve(self) -> ArrayLike:
+    def _solve(self):
         """Solve the optimization problem and return the optimal decision variables as an array."""
         pass
 
-    def solve(self) -> Dict[str, cs.casadi.DM]:
+    def solve(self):
         """Solve the optimization problem."""
         return self.opt.decision_variables.vec2dict(self._solve())
 
@@ -219,7 +216,7 @@ class OSQPSolver(Solver):
         self._reset_parameters()
         return self
 
-    def reset_parameters(self, p: Dict[str, ArrayLike]) -> None:
+    def reset_parameters(self, p):
         super().reset_parameters(p)
         self._reset_parameters()
 
