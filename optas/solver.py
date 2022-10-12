@@ -207,7 +207,7 @@ class OSQPSolver(Solver):
 
     OSQP_SOLVED = osqp.constant('OSQP_SOLVED')
 
-    def setup(self, use_warm_start, settings={}):
+    def setup(self, use_warm_start=True, settings={}):
         """Setup solver.
 
         Parameters
