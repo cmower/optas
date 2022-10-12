@@ -173,7 +173,7 @@ class FixedBaseRobot:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
         self.kuka = optas.RobotModel(urdf_filename, time_derivs=[0])
-
+        self.eff_pos = self.kuka.get_global_link_position_function('end_effector_ball')
 
     def reset(self, q):
         for j, idx in enumerate(self._actuated_joints):
