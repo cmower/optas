@@ -53,6 +53,9 @@ class PyBullet:
     def stop(self):
         p.setRealTimeSimulation(0)
 
+    def step(self, dt):
+        time.sleep(dt)
+
     def close(self):
         p.disconnect(self.client_id)
 
