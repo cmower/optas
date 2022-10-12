@@ -4,6 +4,9 @@ import sys
 import math
 import pathlib
 
+# Plotting
+import matplotlib.pyplot as plt
+
 # PyBullet
 import pybullet_api
 
@@ -221,8 +224,8 @@ class TOMPCCPlanner:
         T = 20  # number of step
         Lx = float(Lx)  # length of slider (box) in x-axis
         Ly = float(Ly)  # length of slider (box) in y-axis
-        phi_lo = math.atan2(Lx, Ly) # lower limit for phi
-        phi_up = -phi_lo # upper limit for phi
+        phi_lo = 100#math.atan2(Lx, Ly) # lower limit for phi
+        phi_up = -100.#-phi_lo # upper limit for phi
         L = optas.diag([1, 1, 0.5])  # limit surface model
         SxC0 = 0.5*Ly # initial contact position in x-axis of slider
         SyC0 = 0. # initial contact position in y-axis of slider
@@ -334,7 +337,7 @@ class TOMPCCPlanner:
         builder.add_geq_inequality_constraint('positive_slack', eps)
 
         # Constraint: bound phi
-        builder.add_bound_inequality_constraint('phi_bound', phi_lo, phi, phi_up)
+        # builder.add_bound_inequality_constraint('phi_bound', phi_lo, phi, phi_up)
 
         # Setup solver
         opt = builder.build()
@@ -344,7 +347,9 @@ class TOMPCCPlanner:
         # For later
         self.Tmax = float(T-1)*dt
         self.T = T
+        self.dt = dt
         self.nX = nX
+        self.nU = nU
 
     def plan(self, GpS0, GthetaS0, GpST, GthetaST):
 
@@ -370,6 +375,33 @@ class TOMPCCPlanner:
         solution = self.solver.solve()
         slider_traj = solution['state/x']
         slider_plan = self.solver.interpolate(slider_traj, self.Tmax, fill_value='extrapolate')
+        ctrl_plan = self.solver.interpolate(solution['control/u'], self.Tmax-self.dt, fill_value='extrapolate')
+
+        # Plot results
+        fig, ax = plt.subplots(2, 1, sharex=True)
+        for i in range(self.nX):
+            ax[0].plot(optas.np.linspace(0, self.Tmax, self.T), slider_plan(optas.np.linspace(0, self.Tmax, self.T))[i, :], label=str(i))
+
+        ax[0].plot([0.], [GpS0[0]], 'or', label='GpS0x')
+        ax[0].plot([0.], [GpS0[1]], 'og', label='GpS0y')
+        ax[0].plot([0.], [GthetaS0], 'ob', label='GpS0th')
+
+        ax[0].plot([self.Tmax], [GpST[0]], 'oc', label='GpSTx')
+        ax[0].plot([self.Tmax], [GpST[1]], 'om', label='GpSTy')
+        ax[0].plot([self.Tmax], [GthetaST], 'oy', label='GpSTth')
+
+        ax[0].set_ylabel('X', fontsize=20)
+
+        for i in range(self.nU):
+            ax[1].plot(optas.np.linspace(0, self.Tmax, self.T-1), ctrl_plan(optas.np.linspace(0, self.Tmax, self.T-1))[i, :], label=str(i))
+
+        ax[1].set_ylabel('U', fontsize=20)
+        ax[1].set_xlabel('Time', fontsize=20)
+
+        for a in ax.flatten():
+            a.legend(ncol=4)
+
+        plt.show()
 
         class Plan:
 
@@ -381,8 +413,8 @@ class TOMPCCPlanner:
                 if t > self.duration:
                     return self.plan(self.duration)
                 else:
-                    return self.plan(t)                
-        
+                    return self.plan(t)
+
         return Plan(slider_plan, self.Tmax)
 
 
