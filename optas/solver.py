@@ -263,7 +263,7 @@ class OSQPSolver(Solver):
         return self._solution
 
     def did_solve(self):
-        return self._solution.info.status == self.OSQP_SOLVED
+        return self._solution.info.status_val == self.OSQP_SOLVED
 
     def number_of_iterations(self):
         return self._solution.info.iter
@@ -397,7 +397,7 @@ class ScipyMinimizeSolver(Solver):
                 if self.opt.nk:
                     self._constraints['k'] = LinearConstraint(
                         A=csc_matrix(self.opt.M(self.p).toarray()),
-                        lb=-self.opt.c(self.p).toarray.flatten(),
+                        lb=-self.opt.c(self.p).toarray().flatten(),
                         ub=self.opt.inf*np.ones(self.opt.nk),
                     )
 
