@@ -57,12 +57,8 @@ class QuadraticCostUnconstrained(Optimization):
 
     """
 
-    def __init__(
-            self,
-            decision_variables: SXContainer, # SXContainer for decision variables
-            parameters: SXContainer, # SXContainer for parameters
-            cost_terms: SXContainer, # SXContainer for cost terms
-    ):
+    def __init__(self, decision_variables, parameters, cost_terms):
+
         super().__init__(decision_variables, parameters, cost_terms)
 
         # Ensure cost function is quadratic
@@ -92,14 +88,8 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
 
     """
 
-    def __init__(
-            self,
-            decision_variables: SXContainer, # SXContainer for decision variables
-            parameters: SXContainer, # SXContainer for parameters
-            cost_terms: SXContainer, # SXContainer for cost terms
-            lin_eq_constraints: SXContainer, # SXContainer for linear equality constraints
-            lin_ineq_constraints: SXContainer, # SXContainer for linear inequality constraints
-    ):
+    def __init__(self, decision_variables, parameters, cost_terms, lin_eq_constraints, lin_ineq_constraints):
+
         super().__init__(decision_variables, parameters, cost_terms)
 
         x = decision_variables.vec() # symbolic decision variables
@@ -117,7 +107,7 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
         # Setup M and c
         x_zero = cs.DM.zeros(self.nx)
         self.M = cs.Function('M', [p], [cs.jacobian(self.k(x, p), x)])
-        self.c = cs.Function('c', [p], [self.k(x_zero, p)])
+        self.c = cs.Function('c', [p], [cs.vec(self.k(x_zero, p))])
 
         # Setup a
         self.a = cs.Function('a', [x, p], [lin_eq_constraints.vec()])
