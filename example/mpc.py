@@ -21,10 +21,13 @@ from optas.spatialmath import *
 
 pi = math.pi
 
-def debug(val, kill=False):
+def debug(val, pause=False, kill=False):
     print("---------------------------")
     print(val)
     print("---------------------------")
+
+    if pause:
+        input(">>>CLICK ANY KEY TO CONTINUE<<<")
     if kill:
         sys.exit(0)
 
