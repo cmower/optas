@@ -337,9 +337,9 @@ def main():
     use_mpc = False  # True: robot uses MPC, False: robot follows plan
     eff_ball_radius = 0.015
     box_position0 = [0.4, 0.1, 0.05]   # initial box position
-    box_positionF = [0.6, 0.3, 0.05]  # goal box position
+    box_positionF = [0.65, 0.4, 0.05]  # goal box position
     box_theta0 = optas.deg2rad(-90)
-    box_thetaF = optas.deg2rad(-90)
+    box_thetaF = optas.deg2rad(-180)
     Lx, Ly = 0.1, 0.2
     q0 = optas.deg2rad([0, -30, 0, 90, 0, -60, 0])
     q = q0
