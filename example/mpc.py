@@ -36,7 +36,7 @@ class TOMPCC(abc.ABC):
     nX = 4  # state dimension
     nU = 4  # control dimension
     g = 9.81  # gravitational acceleration
-    m = 1.0 # mass of box
+    m = 0.5 # mass of box
     mu = 0.5  # cooeficient of friction between slider and surface
 
     def __init__(self, T, time_horizon, Lx, Ly, we):
@@ -199,28 +199,30 @@ class TOMPCCPlanner(TOMPCC):
         U = self.solver.interpolate(solution['control/u'], self.time_horizon-self.dt, fill_value='extrapolate')
 
         # Plot plan
-        fig, ax = plt.subplots(2, 1, sharex=True)
-        T_ = optas.np.linspace(0, self.time_horizon, 50)
-        X_ = X(T_)
-        U_ = U(T_)
-        for i in range(self.nX):
-            ax[0].plot(T_, X_[i, :], label=str(i))
+        plot_plan = False
+        if plot_plan:
+            fig, ax = plt.subplots(2, 1, sharex=True)
+            T_ = optas.np.linspace(0, self.time_horizon, 50)
+            X_ = X(T_)
+            U_ = U(T_)
+            for i in range(self.nX):
+                ax[0].plot(T_, X_[i, :], label=str(i))
 
 
-            x0 = self.x0[i].toarray()[0, 0]
-            ax[0].plot([0.], [x0], 'o', label=str(i)+'_init')
+                x0 = self.x0[i].toarray()[0, 0]
+                ax[0].plot([0.], [x0], 'o', label=str(i)+'_init')
 
-            xF = self.xF[i].toarray()[0, 0]
-            ax[0].plot([self.time_horizon], [xF], 'o', label=str(i)+'_goal')
+                xF = self.xF[i].toarray()[0, 0]
+                ax[0].plot([self.time_horizon], [xF], 'o', label=str(i)+'_goal')
 
-        for i in range(self.nU):
-            ax[1].plot(T_, U_[i, :], label=str(i))
+            for i in range(self.nU):
+                ax[1].plot(T_, U_[i, :], label=str(i))
 
-        for a in ax.flatten():
-            a.legend(ncol=4)
-            a.grid()
+            for a in ax.flatten():
+                a.legend(ncol=4)
+                a.grid()
 
-        plt.show()
+            plt.show()
 
         class Plan:
 
@@ -230,12 +232,110 @@ class TOMPCCPlanner(TOMPCC):
                 self.final_state = plan(time_horizon)
 
             def __call__(self, t):
+
                 if t < self.time_horizon:
                     return self.plan(t)
                 else:
                     return self.final_state
 
-        return Plan(X, self.time_horizon)
+
+        return Plan(X, self.time_horizon), Plan(U, self.time_horizon)
+
+class TOMPCCController(TOMPCC):
+
+    def setup(self, planx, planu, wx, wu):
+
+        # Setup
+        self.planx = planx
+        self.planu = planu
+
+        # Add parameters
+        Xnom = self.builder.add_parameter('Xnom', self.nX, self.T)  # nominal trajectory
+        xc = self.builder.add_parameter('xc', self.nX) # current state
+
+        # Constraint: initial state
+        self.builder.add_equality_constraint('initial_state', self.X[:, 0], xc)
+
+        # Cost: match nominal plan
+        Wx = optas.diag(wx)
+        Xbar = self.X - Xnom
+        for i in range(self.T):
+            xbar = Xbar[:, i]
+            w = 1.  # 10.*float(self.T-i)
+            self.builder.add_cost_term(f'match_nominal_plan_{i}', w*xbar.T@Wx@xbar)
+
+        # Cost: minimize controls
+        Wu = optas.diag(wu)
+        for i in range(self.T-1):
+            u = self.U[:, i]
+            self.builder.add_cost_term(f'minimize_control_{i}', u.T @ Wu @ u)
+
+        # Setup solver
+        opt = self.builder.build()
+        self.solution = None
+        self.solver = optas.CasADiSolver(self.builder.build()).setup('ipopt')
+        # self.solver = optas.ScipyMinimizeSolver(self.builder.build()).setup('SLSQP')
+
+        return self
+
+    def compute_next_state(self, t, xc, dt):
+
+        # Setup solver
+        xc = optas.DM(xc)
+        tt = optas.np.linspace(t, t + self.time_horizon, self.T)
+        Xnom = optas.DM.zeros(self.nX, self.T)
+        for i in range(self.T):
+            Xnom[:, i] = optas.DM(self.planx(tt[i]))
+
+        # debug(Xnom.toarray(), pause=True)
+
+        if self.solution is not None:
+            self.solver.reset_initial_seed(self.solution) # reset with previous solution
+        else:
+            X0 = Xnom
+            U0 = optas.DM.zeros(self.nU, self.T-1)
+            for i in range(self.T-1):
+                U0[:,i] = self.planu(tt[i])
+            self.solver.reset_initial_seed({'state/x': X0, 'control/u': U0})
+
+        self.solver.reset_parameters({'Xnom': Xnom, 'xc': xc})
+
+        # Solve problem
+        self.solution = self.solver.solve()
+        if not self.solver.did_solve():
+            print("[ERROR] MPC controller did not solve")
+            sys.exit(0)
+
+        # Interpolate solution
+        mpc_x = self.solver.interpolate(self.solution['state/x'], self.time_horizon)
+        mpc_u = self.solver.interpolate(self.solution['control/u'], self.time_horizon-self.dt, fill_value='extrapolate')
+        xtarget = mpc_x(dt)
+
+        # Plot mpc
+        plot_mpc = True
+        if plot_mpc:
+            fig, ax = plt.subplots(2, 1, sharex=True)
+            T_ = optas.np.linspace(0, self.time_horizon, 50)
+            X_ = mpc_x(T_)
+            U_ = mpc_u(T_)
+            for i in range(self.nX):
+                ax[0].plot(t+T_, X_[i, :], label=str(i))
+                ax[0].plot(tt, Xnom[i,:].toarray().flatten(), label=str(i)+'_nom')
+
+
+                x0 = xc[i].toarray()[0, 0]
+                ax[0].plot([t], [x0], 'o', label=str(i)+'_c')
+
+                err = optas.np.sqrt((self.solution['state/x'][i,:] - Xnom[i,:]).toarray().flatten()**2)
+                ax[1].plot(tt, err, label=str(i))
+
+            for a in ax.flatten():
+                a.legend(ncol=4)
+                a.grid()
+
+            plt.show()
+
+        return xtarget
 
 class IK:
 
@@ -268,17 +368,20 @@ class IK:
         Jp = J[:3, :]
         Ja = J[3:, :]
 
+        # Constraint: no motion in end joint
+        builder.add_equality_constraint('no_eff_motion', dq[-1])
+
         # Compute current end-effector position
         pc = kuka.get_global_link_position(link_ee, qc)
 
         # Cost: minimize joint velocity
-        Wdq = optas.diag([1., 0.5, 0.25, 0.1, 0.05, 0.025, 0.01])
+        Wdq = 0.01*optas.DM.eye(7)
         builder.add_cost_term('minimize_joint_velocity', dq.T@Wdq@dq)
 
         # Cost: goal position
         p = pc + dt*Jp@dq
         pdiff = p - pg
-        Wp = optas.diag([1000., 1000., 500.])
+        Wp = optas.diag([100000., 100000., 50000.])
         builder.add_cost_term('goal_position', pdiff.T@Wp@pdiff)
 
         # Constraint: bound angular motion
@@ -298,7 +401,7 @@ class IK:
 
         # Setup solver
         self.solution = None
-        self.solver = optas.OSQPSolver(builder.build()).setup()
+        self.solver = optas.OSQPSolver(builder.build()).setup(settings={'verbose': False})
 
         # Save for later
         self.dt = dt
@@ -331,13 +434,34 @@ class IK:
 
         return qn.toarray().flatten()
 
-def get_state():
-    pass
+def get_state(box, kuka, Lx, x_plan, pg):
+
+    # Extract box pose and end-effector position
+    boxpos, boxori = box.get_pose()
+    effpos = kuka.eff_pos(kuka.q())
+
+    # Compute orientation of contact point
+    R = rot2(boxori[2])
+    e = optas.DM(pg[:2])
+    b = optas.DM(boxpos[:2])
+    c = (R.T@(e - b)).toarray().flatten().tolist()
+    phi = math.atan2(c[1], c[0])
+
+    # Build xc
+    xc = [
+        boxpos[0],
+        boxpos[1],
+        boxori[2],
+        phi,
+    ]
+
+    return xc
+
 
 def main():
 
     # Constants
-    use_mpc = False  # True: robot uses MPC, False: robot follows plan
+    use_mpc = True  # True: robot uses MPC, False: robot follows plan
     eff_ball_radius = 0.015
     box_position0 = [0.4, 0.1, 0.05]   # initial box position
     box_positionF = [0.65, 0.4, 0.05]  # goal box position
@@ -351,10 +475,11 @@ def main():
     pb_dt = 0.02
     pb = pybullet_api.PyBullet(
         pb_dt,
-        camera_distance=0.8,
+        camera_distance=0.6,
         camera_yaw=45,
-        camera_pitch=-40,
-        camera_target_position=[0.4, 0., 0.05],
+        camera_pitch=-50,
+        camera_target_position=[0.5, 0.2, 0.05],
+        real_time=False,
 
     )
     kuka = pybullet_api.Kuka()
@@ -363,7 +488,7 @@ def main():
         box_position0,
         [0.5*Lx, 0.5*Ly, 0.05],
         base_orientation=[0, 0, box_theta0],
-        base_mass=1.,
+        base_mass=TOMPCC.m,
     )
     visual_box = pybullet_api.VisualBox(
         box_position0,
@@ -377,25 +502,30 @@ def main():
         base_orientation=[0, 0, box_thetaF],
         rgba_color=[1., 0., 0., 0.5],
     )
-    sphere = pybullet_api.VisualSphere([0, 0, 0], eff_ball_radius, rgba_color=[0., 1., 1., 0.5])
 
     # Setup IK
     ik = IK(pb_dt)
 
     # Setup planner
     T_plan = 40
-    time_horizon_plan = 15
+    time_horizon_plan = 10.
     we_plan = 50.
     x0 = optas.vertcat(box_position0[:2], box_theta0, 0.)
     xF = optas.vertcat(box_positionF[:2], box_thetaF, 0.)
     planner = TOMPCCPlanner(T_plan, time_horizon_plan, Lx, Ly, we_plan).setup(x0, xF, wx=[100, 100, 1, 0.01], wu=[0.01, 0.01, 0.0, 0.0])
 
     # Plan trajectory
-    plan = planner.plan()
+    planx, planu = planner.plan()
+
+    # Setup controller
+    T_mpc = 10
+    time_horizon_mpc = 4.
+    we_mpc = 50.
+    controller = TOMPCCController(T_mpc, time_horizon_mpc, Lx, Ly, we=we_mpc).setup(planx, planu, wx=[100., 100., 100., 0.], wu=[0.0, 0.0, 0., 0.])
 
     # Compute initial goal position for kuka
-    pg0 = optas.DM(box_position0) + rotz(box_theta0)@optas.vec([0.5*Lx+eff_ball_radius, 0, 0.])
-    error_tol = 1e-4
+    pg0 = optas.DM(box_position0) + rotz(box_theta0)@optas.vec([0.5*Lx+eff_ball_radius, 0, -0.03])
+    error_tol = 1e-7
 
     # Start pybullet
     pb.start()
@@ -408,27 +538,54 @@ def main():
         error = optas.np.linalg.norm(ik.eff_pos(q) - pg0)
         if error < error_tol:
             done = True
-        pb.step(pb_dt)
+        pb.step()
 
     # Start pushing
+    pg = pg0
     delay = 10.
     t = 0.
     done = False
     while not done:
-        x_plan = plan(t)
-        print(t, x_plan, sep=',')
-        b = x_plan[:2].tolist() + [0.05]
+
+        # Update plan
+        x_plan = planx(t)
+
+        # Get position goal for robot
+        if use_mpc:
+
+            # Get current state
+            xc = get_state(box, kuka, Lx, x_plan, pg)
+
+            # Get target state
+            xtarget = controller.compute_next_state(t, xc, pb_dt)
+
+            # Get position goal from MPC
+            pg = optas.vertcat(xtarget[:2], 0.05) + rotz(xtarget[2])@(optas.vertcat(planner.phi2xy(xtarget[3]), 0.) + optas.DM([eff_ball_radius, 0., -0.03]))
+
+        else:
+
+            # Get position goal from plan
+            pg = optas.vertcat(x_plan[:2], 0.05) + rotz(x_plan[2])@(optas.vertcat(planner.phi2xy(x_plan[3]), 0.) + optas.DM([eff_ball_radius, 0., -0.03]))
+
+        # Reset visual box/sphere
+        b = optas.DM(x_plan[:2].tolist() + [0.05])
         visual_box.reset(
-            base_position=b,
+            base_position=b.toarray().flatten().tolist(),
             base_orientation=[0., 0., x_plan[2]],
         )
-        sphere.reset(optas.vec(b) + rotz(x_plan[2])@optas.vertcat(planner.phi2xy(x_plan[3]), 0.))
-        pb.step(pb_dt)
+        # visual_sphere.reset(pg)
 
+        # Update kuka
+        q = ik.next_joint_state(q, pg)
+        kuka.cmd(q)
+
+        # Step PyBullet and update time
+        pb.step(sleep=not use_mpc)
+        t += pb_dt
+
+        # Check if need to close
         if (not use_mpc) and t > time_horizon_plan + delay:
             done = True
-
-        t += pb_dt
 
     pb.stop()
     pb.close()
