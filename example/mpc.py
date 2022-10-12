@@ -104,7 +104,7 @@ class TOMPCC(abc.ABC):
 
     def f(self, x, u):
         _, _, theta, phi = optas.vertsplit(x)
-        R = rotz(theta)  # >>>>>>>>>why does .T make it succeed with sort of the right plan?<<<<<<<<<<<
+        R = rotz(theta).T  # >>>>>>>>>why does .T make it succeed with sort of the right plan?<<<<<<<<<<<
         xc, yc = optas.vertsplit(self.phi2xy(phi))
         J = optas.horzcat(optas.DM.eye(2), optas.vertcat(-yc, xc))
         K = optas.vertcat(
