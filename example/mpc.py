@@ -388,7 +388,6 @@ def main():
 
     # Plan trajectory
     plan = planner.plan()
-    # sys.exit(0)
 
     # Compute initial goal position for kuka
     pg0 = optas.DM(box_position0) + rotz(box_theta0)@optas.vec([0.5*Lx+eff_ball_radius, 0, 0.])
@@ -408,6 +407,7 @@ def main():
         pb.step(pb_dt)
 
     # Start pushing
+    delay = 10.
     t = 0.
     done = False
     while not done:
@@ -421,10 +421,13 @@ def main():
         sphere.reset(optas.vec(b) + rotz(x_plan[2])@optas.vertcat(planner.phi2xy(x_plan[3]), 0.))
         pb.step(pb_dt)
 
-        # if (not use_mpc) and t > time_horizon_plan:
-        #     done = True
+        if (not use_mpc) and t > time_horizon_plan + delay:
+            done = True
 
         t += pb_dt
+
+    pb.stop()
+    pb.close()
 
 if __name__ == '__main__':
     main()
