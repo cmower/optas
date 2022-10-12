@@ -104,7 +104,7 @@ class TOMPCC(abc.ABC):
 
     def f(self, x, u):
         _, _, theta, phi = optas.vertsplit(x)
-        R = rotz(theta).T  # >>>>>>>>>why does .T make it succeed with sort of the right plan?<<<<<<<<<<<
+        R = rotz(theta)
         xc, yc = optas.vertsplit(self.phi2xy(phi))
         J = optas.horzcat(optas.DM.eye(2), optas.vertcat(-yc, xc))
         K = optas.vertcat(
@@ -129,14 +129,15 @@ class TOMPCC(abc.ABC):
         u = self.U[:, i]
 
         fn, ft, dphi_plus, dphi_minus = optas.vertsplit(u)
+
         lambda_minus = self.mu*fn - ft
         lambda_plus = self.mu*fn + ft
 
-        self.builder.add_geq_inequality_constraint(f'positive_fn_{i}', fn)
-        self.builder.add_geq_inequality_constraint(f'positive_dphi_plus_{i}', dphi_plus)
-        self.builder.add_geq_inequality_constraint(f'positive_dphi_minus_{i}', dphi_minus)
-        self.builder.add_geq_inequality_constraint(f'positive_lambda_minus_{i}', lambda_minus)
-        self.builder.add_geq_inequality_constraint(f'positive_lambda_plus_{i}', lambda_plus)
+        self.builder.add_geq_inequality_constraint(f'positive_fn_{i}', -fn)
+        self.builder.add_geq_inequality_constraint(f'positive_dphi_plus_{i}', -dphi_plus)
+        self.builder.add_geq_inequality_constraint(f'positive_dphi_minus_{i}', -dphi_minus)
+        self.builder.add_geq_inequality_constraint(f'positive_lambda_minus_{i}', -lambda_minus)
+        self.builder.add_geq_inequality_constraint(f'positive_lambda_plus_{i}', -lambda_plus)
 
         lambda_v = optas.vertcat(lambda_minus, lambda_plus)
         dphi_v = optas.vertcat(dphi_plus, dphi_minus)
