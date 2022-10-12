@@ -1,3 +1,4 @@
+import time
 import osqp
 import cvxopt
 import numpy as np
@@ -58,6 +59,7 @@ class Solver(ABC):
         self.opt = optimization
         self.x0 = cs.DM.zeros(optimization.nx)
         self.p = cs.DM.zeros(optimization.np)
+        self._solve_duration = None
 
     @property
     def opt_type(self):
@@ -100,7 +102,13 @@ class Solver(ABC):
 
     def solve(self):
         """Solve the optimization problem."""
-        return self.opt.decision_variables.vec2dict(self._solve())
+
+        t0 = time.perf_counter()
+        sol = self._solve()
+        t1 = time.perf_counter()
+        self._solve_duration = t1 - t0
+
+        return self.opt.decision_variables.vec2dict(sol)
 
     @abstractmethod
     def stats(self):
@@ -123,6 +131,9 @@ class Solver(ABC):
     def number_of_iterations(self):
         """Returns the number of iterations required to solve the problem."""
         pass
+
+    def get_solve_duration(self):
+        return self._solve_duration
 
     def evaluate_cost(self, x, p):
         """Evaluates the cost function for given decision variables x and parameters p."""
