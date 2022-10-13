@@ -524,9 +524,9 @@ def main():
 
     # Setup controller
     T_mpc = 10
-    time_horizon_mpc = 4.
+    time_horizon_mpc = 1.
     we_mpc = 50.
-    controller = TOMPCCController(T_mpc, time_horizon_mpc, Lx, Ly, we=we_mpc).setup(planx, planu, wx=[100., 100., 100., 0.], wu=[0.0, 0.0, 0., 0.])
+    controller = TOMPCCController(T_mpc, time_horizon_mpc, Lx, Ly, we=we_mpc).setup(planx, planu, wx=[1., 1., 1., 0.], wu=[0.0, 0.0, 0., 0.])
 
     # Compute initial goal position for kuka
     pg0 = optas.DM(box_position0) + rotz(box_theta0)@optas.vec([0.5*Lx+eff_ball_radius, 0, -0.03])
