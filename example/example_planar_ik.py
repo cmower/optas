@@ -1,10 +1,11 @@
+# Example of an Inverse Kinematic (IK) solver applied to a 3 dof planar robot
+
 # Python standard lib
 import os
 import pathlib
 
 # OpTaS
 import optas
-from optas import optimization
 
 cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
 
@@ -30,6 +31,7 @@ fk = robot.get_global_link_position_function(link=link_ee)
 quat = robot.get_global_link_quaternion_function(link=link_ee)
 phi = lambda q: 2.0*optas.atan2(quat(q)[2],quat(q)[3])
 
+# Setting optimization - cost term and constraints
 builder.add_cost_term('cost', optas.sumsqr(q_T-q_0))
 
 builder.add_equality_constraint('FK', fk(q_T)[0:2], x_T)
@@ -40,12 +42,9 @@ builder.add_bound_inequality_constraint('joint', q_min, q_T, q_max)
 builder.add_bound_inequality_constraint('task', -70.*(optas.pi/180.), phi(q_T), 0.)
 
 # setup solver
-optimization = builder.build()
-solver = optas.CasADiSolver(optimization).setup('ipopt')
+solver = optas.CasADiSolver(builder.build()).setup('ipopt')
 # set initial seed
 solver.reset_initial_seed({f'{robot_name}/q': q_0})
 # solve problem
 solution = solver.solve()
 print(solution[f'{robot_name}/q']*(180./optas.pi))
-print(solution[f'{robot_name}/q'])
-print(optimization.decision_variables)

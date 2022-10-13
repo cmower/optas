@@ -1,3 +1,6 @@
+# Example of an Inverse Differential Kinematic (IK) solver 
+# written as an Quadratic Program (QP) applied to a 3 dof planar robot
+
 # Python standard lib
 import sys
 import os
@@ -32,6 +35,7 @@ dt = 0.01; lim = 0.1
 dq_min = [-lim, -lim, -lim]
 dq_max = [lim, lim, lim]
 
+# Setting optimization - cost term and constraints
 builder.add_cost_term('cost', optas.sumsqr(dq))
 
 builder.add_equality_constraint('FDK', (J(q_t)[0:2,:])@dq, dx)
@@ -51,6 +55,7 @@ solver.reset_parameters({'q': q_t})
 solution = solver.solve()
 print(solution[f'{robot_name}/dq'])
 
-# 
+# solution using the pseudo-inverse approach
+# it should give the same result as the QP for the case that the 
+# solution is completely inside all the boundary constraints
 print(optas.pinv(J(q_t)[0:2,:])@dx)
-print(robot.get_limits(1))
