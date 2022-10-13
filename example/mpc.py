@@ -39,6 +39,8 @@ class TOMPCC(abc.ABC):
     m = 0.5 # mass of box
     mu = 0.5  # cooeficient of friction between slider and surface
 
+    set_cc_constraints = True
+
     def __init__(self, T, time_horizon, Lx, Ly, we):
 
         # Setup constants
@@ -79,8 +81,9 @@ class TOMPCC(abc.ABC):
         )
 
         # Constraint: complementary constraints
-        for i in range(self.T-1):
-            self.cc(i)
+        if self.set_cc_constraints:
+            for i in range(self.T-1):
+                self.cc(i)
 
         # Constraint: bound phi
         _, _, _, Phi = optas.vertsplit(self.X)
@@ -242,6 +245,8 @@ class TOMPCCPlanner(TOMPCC):
         return Plan(X, self.time_horizon), Plan(U, self.time_horizon)
 
 class TOMPCCController(TOMPCC):
+
+    set_cc_constraints = False
 
     def setup(self, planx, planu, wx, wu):
 
