@@ -42,7 +42,9 @@ builder.add_bound_inequality_constraint('joint', q_min, q_T, q_max)
 builder.add_bound_inequality_constraint('task', -70.*(optas.pi/180.), phi(q_T), 0.)
 
 # setup solver
-solver = optas.CasADiSolver(builder.build()).setup('ipopt')
+# solver = optas.CasADiSolver(builder.build()).setup('ipopt')
+# solver = optas.ScipyMinimizeSolver(builder.build()).setup('SLSQP')
+solver = optas.ScipyMinimizeSolver(builder.build()).setup('COBYLA')
 # set initial seed
 solver.reset_initial_seed({f'{robot_name}/q': q_0})
 # solve problem

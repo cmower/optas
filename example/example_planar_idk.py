@@ -26,11 +26,13 @@ q = builder.add_parameter('q', robot.ndof)
 # Forward Differential Kinematics
 J = robot.get_global_linear_geometric_jacobian_function(link=link_ee)
 quat = robot.get_global_link_quaternion_function(link=link_ee)
+# End-effector orientation
 phi = lambda q: 2.0*optas.atan2(quat(q)[2],quat(q)[3])
+# Jacobian of the end-effector orientation
 J_phi = robot.get_global_angular_geometric_jacobian_function(link=link_ee)
 
 q_t = [2.39, -2.55, -0.46]
-dx = [0.01, 0.] # target end-effector position
+dx = [0.01, 0.] # target end-effector displacement/velocity
 dt = 0.01; lim = 0.1
 dq_min = [-lim, -lim, -lim]
 dq_max = [lim, lim, lim]
@@ -38,7 +40,7 @@ dq_max = [lim, lim, lim]
 # Setting optimization - cost term and constraints
 builder.add_cost_term('cost', optas.sumsqr(dq))
 
-builder.add_equality_constraint('FDK', (J(q_t)[0:2,:])@dq, dx)
+builder.add_equality_constraint('FDK', (J(q)[0:2,:])@dq, dx)
 
 builder.add_bound_inequality_constraint('joint', dq_min, dq, dq_max)
 
@@ -47,7 +49,9 @@ builder.add_bound_inequality_constraint('task', -70*(optas.pi/180.), phi(q)+dt*(
 
 # setup solver
 optimization = builder.build()
-solver = optas.CasADiSolver(optimization).setup('qpoases')
+# solver = optas.CasADiSolver(optimization).setup('qpoases')
+# solver = optas.OSQPSolver(optimization).setup(use_warm_start=True) # not working
+solver = optas.CVXOPTSolver(optimization).setup()
 # set initial seed
 solver.reset_initial_seed({f'{robot_name}/dq': [0., 0., 0.]})
 solver.reset_parameters({'q': q_t})
