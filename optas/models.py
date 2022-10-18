@@ -434,6 +434,26 @@ class RobotModel(Model):
         return self._make_function('quat', link, self.get_link_quaternion, n=n, base_link=base_link)
 
 
+    def get_global_link_rpy(self, link, q):
+        """Get the Roll-Pitch-Yaw angles in the global frame."""
+        return Quaternion(self.get_global_link_quaternion(link, q)).getrpy()
+
+
+    def get_global_link_rpy_function(self, link, n=1):
+        """Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
+        return self._make_function('quat', link, self.get_global_link_rpy, n=n)
+
+
+    def get_link_rpy(self, link, q, base_link):
+        """Get the the Roll-Pitch-Yaw angles defined in a given base frame."""
+        return Quaternion(self.get_link_quaternion(link, q, base_link)).getrpy()
+
+
+    def get_link_rpy_function(self, link, base_link, n=1):
+        """Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame."""
+        return self._make_function('quat', link, self.get_link_rpy, n=n, base_link=base_link)
+
+
     def get_global_geometric_jacobian(self, link, q):
         """Compute the geometric Jacobian matrix in the global frame."""
 
