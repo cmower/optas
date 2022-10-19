@@ -518,15 +518,9 @@ class RobotModel(Model):
     @vectorize_args
     def get_global_analytical_jacobian(self, link, q):
         """Compute the analytical Jacobian matrix in the global frame."""
-
-        J = self.get_global_geometric_jacobian(link, q)
-        q_sym = cs.SX.sym('q_sym', q.size())
-        # Roll-Pitch-Yaw
-        rpy = self.get_global_link_rpy(link, q_sym)
-        # Transform jacobian to analytical version
         return cs. vertcat(
-            J[:3, :],
-            cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+            self.get_global_linear_geometric_jacobian(link, q),
+            self.get_global_angular_analytical_jacobian(link, q),
         )
 
 
@@ -561,15 +555,9 @@ class RobotModel(Model):
     @vectorize_args
     def get_analytical_jacobian(self, link, q, base_link):
         """Compute the analytical Jacobian matrix in a given base link."""
-
-        J = self.get_geometric_jacobian(link, q, base_link)
-        q_sym = cs.SX.sym('q_sym', q.size())
-        # Roll-Pitch-Yaw
-        rpy = self.get_link_rpy(link, q_sym, base_link)
-        # Transform jacobian to analytical version
-        return cs. vertcat(
-            J[:3, :],
-            cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        return cs.vertcat(
+            self.get_linear_geometric_jacobian(link, q, base_link),
+            self.get_angular_analytical_jacobian(link, q, base_link),
         )
 
 
@@ -614,8 +602,7 @@ class RobotModel(Model):
     @vectorize_args
     def get_global_angular_analytical_jacobian(self, link, q):
         """Compute the angular part of the analytical Jacobian matrix in the global frame."""
-
-        q_sym = cs.SX.sym('q_sym', q.size())
+        q_sym = cs.SX.sym('q_sym', self.ndof)
         # Roll-Pitch-Yaw
         rpy = self.get_global_link_rpy(link, q_sym)
         # Transform jacobian to analytical version
@@ -640,9 +627,8 @@ class RobotModel(Model):
 
     def get_angular_analytical_jacobian(self, link, q, base_link):
         """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
-
         # Roll-Pitch-Yaw
-        q_sym = cs.SX.sym('q_sym', q.size())
+        q_sym = cs.SX.sym('q_sym', self.ndof)
         rpy = self.get_link_rpy(link, q_sym, base_link)
         # Transform jacobian to analytical version
         return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
