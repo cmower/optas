@@ -49,7 +49,7 @@ def main():
     qd = builder.get_joint_state('kuka', 0, time_deriv=1)
 
     # Cost: match end-effector velocity
-    J = robot.get_linear_geometric_jacobian(eff_link_name, qcurr)
+    J = robot.get_linear_jacobian(eff_link_name, qcurr)
     builder.add_cost_term('match_eff_vel', pyinvk.cs.sumsqr(J@qd - vg))
 
     # Cost: minimize joint velocity

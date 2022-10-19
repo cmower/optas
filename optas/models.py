@@ -519,7 +519,7 @@ class RobotModel(Model):
     def get_global_analytical_jacobian(self, link, q):
         """Compute the analytical Jacobian matrix in the global frame."""
         return cs. vertcat(
-            self.get_global_linear_geometric_jacobian(link, q),
+            self.get_global_linear_jacobian(link, q),
             self.get_global_angular_analytical_jacobian(link, q),
         )
 
@@ -556,7 +556,7 @@ class RobotModel(Model):
     def get_analytical_jacobian(self, link, q, base_link):
         """Compute the analytical Jacobian matrix in a given base link."""
         return cs.vertcat(
-            self.get_linear_geometric_jacobian(link, q, base_link),
+            self.get_linear_jacobian(link, q, base_link),
             self.get_angular_analytical_jacobian(link, q, base_link),
         )
 
@@ -566,26 +566,26 @@ class RobotModel(Model):
         return self._make_function('J_a', link, self.get_analytical_jacobian, base_link=base_link)
 
 
-    def get_global_linear_geometric_jacobian(self, link, q):
+    def get_global_linear_jacobian(self, link, q):
         """Compute the linear part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
         return J[:3, :]
 
 
-    def get_global_linear_geometric_jacobian_function(self, link):
+    def get_global_linear_jacobian_function(self, link):
         """Get the function that computes the linear part of the geometric jacobian in the global frame."""
-        return self._make_function('Jl', link, self.get_global_linear_geometric_jacobian)
+        return self._make_function('Jl', link, self.get_global_linear_jacobian)
 
 
-    def get_linear_geometric_jacobian(self, link, q, base_link):
+    def get_linear_jacobian(self, link, q, base_link):
         """Get the linear part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
         return J[:3, :]
 
 
-    def get_linear_geometric_jacobian_function(self, link, base_link):
+    def get_linear_jacobian_function(self, link, base_link):
         """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
-        return self._make_function('Jl', link, self.get_linear_geometric_jacobian, base_link=base_link)
+        return self._make_function('Jl', link, self.get_linear_jacobian, base_link=base_link)
 
 
     def get_global_angular_geometric_jacobian(self, link, q):
@@ -668,7 +668,7 @@ class RobotModel(Model):
 
     def get_global_linear_manipulability(self, link, q):
         """Get the manipulability measure for the linear dimensions in the global frame."""
-        Jl = self.get_global_linear_geometric_jacobian(link, q)
+        Jl = self.get_global_linear_jacobian(link, q)
         return self._manipulability(Jl)
 
 
@@ -679,7 +679,7 @@ class RobotModel(Model):
 
     def get_linear_manipulability(self, link, q, base_link):
         """Get the linear part of the manipulability measure in a given base frame"""
-        Jl = self.get_linear_geometric_jacobian(link, q, base_link)
+        Jl = self.get_linear_jacobian(link, q, base_link)
         return self._manipulability(Jl)
 
 
