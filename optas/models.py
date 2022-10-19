@@ -516,6 +516,26 @@ class RobotModel(Model):
 
 
     @vectorize_args
+    def get_global_analytical_jacobian(self, link, q):
+        """Compute the analytical Jacobian matrix in the global frame."""
+
+        J = self.get_global_geometric_jacobian(link, q)
+        q_sym = cs.SX.sym('q_sym', q.size())
+        # Roll-Pitch-Yaw
+        rpy = self.get_global_link_rpy(link, q_sym)
+        # Transform jacobian to analytical version
+        return cs. vertcat(
+            J[:3, :],
+            cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        )
+
+
+    def get_global_analytical_jacobian_function(self, link):
+        """Get the function that computes the analytical jacobian in the global frame."""
+        return self._make_function('J_a', link, self.get_global_analytical_jacobian)
+
+
+    @vectorize_args
     def get_geometric_jacobian(self, link, q, base_link):
         """Get the geometric jacobian in a given base link."""
 
@@ -536,6 +556,26 @@ class RobotModel(Model):
     def get_geometric_jacobian_function(self, link, base_link):
         """Get the function that computes the geometric jacobian in a given base frame"""
         return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link)
+
+
+    @vectorize_args
+    def get_analytical_jacobian(self, link, q, base_link):
+        """Compute the analytical Jacobian matrix in a given base link."""
+
+        J = self.get_geometric_jacobian(link, q, base_link)
+        q_sym = cs.SX.sym('q_sym', q.size())
+        # Roll-Pitch-Yaw
+        rpy = self.get_link_rpy(link, q_sym, base_link)
+        # Transform jacobian to analytical version
+        return cs. vertcat(
+            J[:3, :],
+            cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        )
+
+
+    def get_analytical_jacobian_function(self, link, base_link):
+        """Get the function that computes the analytical jacobian in a given base frame."""
+        return self._make_function('J_a', link, self.get_analytical_jacobian, base_link=base_link)
 
 
     def get_global_linear_geometric_jacobian(self, link, q):
@@ -571,6 +611,22 @@ class RobotModel(Model):
         return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian)
 
 
+    @vectorize_args
+    def get_global_angular_analytical_jacobian(self, link, q):
+        """Compute the angular part of the analytical Jacobian matrix in the global frame."""
+
+        q_sym = cs.SX.sym('q_sym', q.size())
+        # Roll-Pitch-Yaw
+        rpy = self.get_global_link_rpy(link, q_sym)
+        # Transform jacobian to analytical version
+        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+
+
+    def get_global_angular_analytical_jacobian_function(self, link):
+        """Get the function that computes the angular part of the analytical jacobian in the global frame."""
+        return self._make_function('J_a', link, self.get_global_angular_analytical_jacobian)
+
+
     def get_angular_geometric_jacobian(self, link, q, base_link):
         """Get the angular part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
@@ -580,6 +636,21 @@ class RobotModel(Model):
     def get_angular_geometric_jacobian_function(self, link, base_link):
         """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
         return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link)
+
+
+    def get_angular_analytical_jacobian(self, link, q, base_link):
+        """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
+
+        # Roll-Pitch-Yaw
+        q_sym = cs.SX.sym('q_sym', q.size())
+        rpy = self.get_link_rpy(link, q_sym, base_link)
+        # Transform jacobian to analytical version
+        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+
+
+    def get_angular_analytical_jacobian_function(self, link, base_link):
+        """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
+        return self._make_function('J_a', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
 
     def _manipulability(self, J):
