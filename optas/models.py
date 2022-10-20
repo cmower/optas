@@ -689,7 +689,7 @@ class RobotModel(Model):
 
     def get_linear_manipulability_function(self, link, base_link, n=1):
         """Get the function that computes the linear part of the manipulability measure in a given base frame"""
-        return self._make_function('Jl', link, self.get_linear_manipulability, n=n, base_link=base_link)
+        return self._make_function('ml', link, self.get_linear_manipulability, n=n, base_link=base_link)
 
     @arrayify_args
     def get_global_angular_manipulability(self, link, q):
@@ -711,4 +711,4 @@ class RobotModel(Model):
 
     def get_angular_manipulability_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the manipulability measure in a given base frame"""
-        return self._make_function('Ja', link, self.get_angular_manipulability, n=n, base_link=base_link)
+        return self._make_function('ma', link, self.get_angular_manipulability, n=n, base_link=base_link)
