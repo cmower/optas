@@ -392,7 +392,7 @@ class RobotModel(Model):
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
         root = self._urdf.get_root()
         quat = Quaternion(0., 0., 0., 1.)
-        if link == root: return quat
+        if link == root: return quat.getquat()
 
         # Iterate over joints in chain
         for joint_name in self._urdf.get_chain(root, link, links=False):
