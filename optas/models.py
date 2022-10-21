@@ -611,7 +611,7 @@ class RobotModel(Model):
 
     def get_global_angular_analytical_jacobian_function(self, link):
         """Get the function that computes the angular part of the analytical jacobian in the global frame."""
-        return self._make_function('J_a', link, self.get_global_angular_analytical_jacobian)
+        return self._make_function('Ja', link, self.get_global_angular_analytical_jacobian)
 
 
     def get_angular_geometric_jacobian(self, link, q, base_link):
@@ -636,7 +636,7 @@ class RobotModel(Model):
 
     def get_angular_analytical_jacobian_function(self, link, base_link):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
-        return self._make_function('J_a', link, self.get_angular_analytical_jacobian, base_link=base_link)
+        return self._make_function('Ja', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
 
     def _manipulability(self, J):
