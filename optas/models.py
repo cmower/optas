@@ -602,11 +602,7 @@ class RobotModel(Model):
     @vectorize_args
     def get_global_angular_analytical_jacobian(self, link, q):
         """Compute the angular part of the analytical Jacobian matrix in the global frame."""
-        q_sym = cs.SX.sym('q_sym', self.ndof)
-        # Roll-Pitch-Yaw
-        rpy = self.get_global_link_rpy(link, q_sym)
-        # Transform jacobian to analytical version
-        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        return self.get_angular_analytical_jacobian(link, q, self.get_root_link())
 
 
     def get_global_angular_analytical_jacobian_function(self, link):
@@ -627,11 +623,16 @@ class RobotModel(Model):
 
     def get_angular_analytical_jacobian(self, link, q, base_link):
         """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
-        # Roll-Pitch-Yaw
+
+        # Compute rpy derivative Ja
         q_sym = cs.SX.sym('q_sym', self.ndof)
         rpy = self.get_link_rpy(link, q_sym, base_link)
-        # Transform jacobian to analytical version
-        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        Ja = cs.jacobian(rpy, q_sym)
+
+        # Functionize Ja
+        Ja = cs.Function('Ja', [q_sym], [Ja])
+
+        return Ja(q)
 
 
     def get_angular_analytical_jacobian_function(self, link, base_link):
