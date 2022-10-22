@@ -215,8 +215,6 @@ class TestSpatialMath(unittest.TestCase):
             t_cmp = optas.transl2(T)
             self.assertTrue(isclose(t_exp, t_cmp))
 
-    def test_trexp(self):
-        pass
 
     def test_trlog(self):
         pass
