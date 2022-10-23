@@ -337,9 +337,34 @@ class RobotModel(Model):
                     self.F = F
                     self.n = n
 
+                @arrayify_args
                 def __call__(self, Q):
                     assert Q.shape[1] == self.n, f"expected input to have shape {self.ndof}-by-{n}, got {Q.shape[0]}-by-{Q.shape[1]}"
                     return [self.F(q) for q in cs.horzsplit(Q)]
+
+                def size_in(self, i):
+                    return self.F.size_in(i)
+
+                def size_out(self, i):
+                    return self.F.size_out(i)
+
+                def size1_in(self, i):
+                    return self.F.size1_in(i)
+
+                def size1_out(self, i):
+                    return self.F.size1_out(i)
+
+                def size2_in(self, i):
+                    return self.F.size2_in(i)
+
+                def size2_out(self, i):
+                    return self.F.size2_out(i)
+
+                def numel_in(self):
+                    return self.F.numel_in()
+
+                def numel_out(self):
+                    return self.F.numel_out()
 
             F = ListFunction(F, n)
 
