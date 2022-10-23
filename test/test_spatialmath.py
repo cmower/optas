@@ -1,25 +1,10 @@
-import unittest
-import optas
-import numpy as np
-from scipy.spatial.transform import Rotation as R
+from test_utils import *
 
-
-np.random.seed(10)  # ensure random numbers are consistent
-pi = np.pi
-
-@optas.arrayify_args
-def isclose(A, B):
-    """Returns a boolean array where two arrays are element-wise equal within a tolerance."""
-    A = A.toarray().flatten()
-    B = B.toarray().flatten()
-    return np.allclose(A, B)
-
-
-class TestSpatialMath(unittest.TestCase):
+class Test_spatialmath_py(unittest.TestCase):
 
 
     def _rand_ang(self):
-        return np.random.uniform(-2*pi, 2*pi, size=(3,))
+        return np.random.uniform(-pi, pi, size=(3,))
 
 
     def test_is_2x2(self):
@@ -57,9 +42,6 @@ class TestSpatialMath(unittest.TestCase):
     def test_delta2tr(self):
         pass
 
-    def test_e2h(self):
-        pass
-
     def test_eul2jac(self):
         pass
 
@@ -70,6 +52,9 @@ class TestSpatialMath(unittest.TestCase):
             R_exp = R.from_euler('ZYZ', eul).as_matrix()
             R_cmp = optas.eul2r(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(R_cmp, R_exp))
+            self.assertIsInstance(R_cmp, optas.DM)
+        eul_sym = optas.SX.sym('eul', 3)
+        self.assertIsInstance(optas.eul2r(eul_sym[0], eul_sym[1], eul_sym[2]), optas.SX)
 
     def test_eul2tr(self):
         num_test = 20
@@ -79,6 +64,9 @@ class TestSpatialMath(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.eul2tr(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(T_cmp, T_exp))
+            self.assertIsInstance(T_cmp, optas.DM)
+        eul_sym = optas.SX.sym('eul', 3)
+        self.assertIsInstance(optas.eul2tr(eul_sym[0], eul_sym[1], eul_sym[2]), optas.SX)
 
     def test_h2e(self):
         pass
@@ -97,6 +85,9 @@ class TestSpatialMath(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.r2t(Rot)
             self.assertTrue(isclose(T_cmp, T_exp))
+            self.assertIsInstance(T_cmp, optas.DM)
+        Rot_sym = optas.SX.sym('R', 3, 3)
+        self.assertIsInstance(optas.r2t(Rot_sym), optas.SX)
 
     def test_rot2(self):
         n_test = 20
@@ -105,6 +96,10 @@ class TestSpatialMath(unittest.TestCase):
             R_exp = R.from_euler('Z', theta).as_matrix()[:2, :2]
             R_cmp = optas.rot2(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
+            self.assertIsInstance(R_cmp, optas.DM)
+        theta = optas.SX.sym('theta')
+        self.assertIsInstance(optas.rot2(theta), optas.SX)
+
 
     def _test_rotd(self, dim_label, num_test=20):
         optas_rotd = getattr(optas, f'rot{dim_label}')
@@ -113,6 +108,9 @@ class TestSpatialMath(unittest.TestCase):
             R_exp = R.from_euler(dim_label.upper(), theta).as_matrix()
             R_cmp = optas_rotd(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
+            self.assertIsInstance(R_cmp, optas.DM)
+        theta = optas.SX.sym('theta')
+        self.assertIsInstance(optas_rotd(theta), optas.SX)
 
     def test_rotx(self):
         self._test_rotd('x')
@@ -129,17 +127,20 @@ class TestSpatialMath(unittest.TestCase):
     def test_rpy2r(self):
         num_test = 20
         opt_test = ['zyx', 'xyz', 'yxz']
+        rpy_sym = optas.SX.sym('rpy', 3)
         for opt in opt_test:
             for _ in range(num_test):
                 rpy = self._rand_ang()
                 R_exp = R.from_euler(opt.upper(), rpy[::-1]).as_matrix()
                 R_cmp = optas.rpy2r(rpy, opt=opt)
                 self.assertTrue(isclose(R_cmp, R_exp))
-
+                self.assertIsInstance(R_cmp, optas.DM)
+            self.assertIsInstance(optas.rpy2r(rpy_sym, opt=opt), optas.SX)
 
     def test_rpy2tr(self):
         num_test = 20
         opt_test = ['zyx', 'xyz', 'yxz']
+        rpy_sym = optas.SX.sym('rpy', 3)
         for opt in opt_test:
             for _ in range(num_test):
                 rpy = self._rand_ang()
@@ -147,6 +148,8 @@ class TestSpatialMath(unittest.TestCase):
                 T_exp = self._homogeneous_transform(R=Rot)
                 T_cmp = optas.rpy2tr(rpy, opt=opt)
                 self.assertTrue(isclose(T_cmp, T_exp))
+                self.assertIsInstance(T_cmp, optas.DM)
+            self.assertIsInstance(optas.rpy2tr(rpy_sym, opt=opt), optas.SX)
 
     def test_rt2tr(self):
         num_test = 20
@@ -157,12 +160,53 @@ class TestSpatialMath(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot, t=t)
             T_cmp = optas.rt2tr(Rot, t)
             self.assertTrue(isclose(T_cmp, T_exp))
+            self.assertIsInstance(T_cmp, optas.DM)
+            self.assertIsInstance(optas.rt2tr(optas.DM(Rot), optas.DM(t)), optas.DM)
+            self.assertIsInstance(optas.rt2tr(optas.DM(Rot), optas.DM(t)), optas.DM)
+            self.assertIsInstance(optas.rt2tr(Rot, t.tolist()), optas.DM)
+        Rot_sym = optas.SX.sym('R', 3, 3)
+        t_sym = optas.SX.sym('t', 3)
+        self.assertIsInstance(optas.rt2tr(Rot_sym, t_sym), optas.SX)
+
+    @staticmethod
+    def _skew(x):
+        """https://stackoverflow.com/a/36916261"""
+        return np.array([[0, -x[2], x[1]],
+                         [x[2], 0, -x[0]],
+                         [-x[1], x[0], 0]])
 
     def test_skew(self):
-        pass
+        num_test = 20
+        for _ in range(num_test):
 
-    def skewa(self):
-        pass
+            # Check 2-vector
+            v = np.random.uniform(-10, 10)
+            S = optas.skew(v)
+            self.assertTrue(S.shape == (2, 2))
+            self.assertTrue(isclose(np.diag(S.toarray()), np.zeros(2)))
+            self.assertTrue(isclose(S, -S.T))
+            self.assertIsInstance(S, optas.DM)
+
+            # Check 3-vector
+            v = np.random.uniform(-10, 10, size=(3,))
+            S_exp = self._skew(v)
+            S_cmp = optas.skew(v)
+            self.assertTrue(S_cmp.shape == (3, 3))
+            self.assertTrue(isclose(S_cmp, S_exp))
+            self.assertTrue(isclose(S_cmp, -S_cmp.T))
+            self.assertIsInstance(S_cmp, optas.DM)
+
+            # Check raises Value error
+            n = np.random.randint(4, 100)
+            v = np.random.uniform(-10, 10, size=(n,))
+            self.assertRaises(ValueError, optas.skew, v)
+
+        v = optas.SX.sym('v')
+        self.assertIsInstance(optas.skew(v), optas.SX)
+
+        v = optas.SX.sym('v', 3)
+        self.assertIsInstance(optas.skew(v), optas.SX)
+
 
     def test_t2r(self):
         num_test = 20
@@ -172,6 +216,10 @@ class TestSpatialMath(unittest.TestCase):
             T = self._homogeneous_transform(R=R_exp)
             R_cmp = optas.t2r(T)
             self.assertTrue(isclose(R_cmp, R_exp))
+            self.assertIsInstance(R_cmp, optas.DM)
+            self.assertIsInstance(optas.t2r(optas.DM(T)), optas.DM)
+        T_sym = optas.SX.sym('T', 4, 4)
+        self.assertIsInstance(optas.t2r(T_sym), optas.SX)
 
     def test_invt(self):
         num_test = 20
@@ -183,6 +231,10 @@ class TestSpatialMath(unittest.TestCase):
             T_exp = np.linalg.inv(T)
             T_cmp = optas.invt(T)
             self.assertTrue(isclose(T_cmp, T_exp))
+            self.assertIsInstance(T_cmp, optas.DM)
+            self.assertIsInstance(optas.invt(optas.DM(T)), optas.DM)
+        T = optas.SX.sym('T', 4, 4)
+        self.assertIsInstance(optas.invt(T), optas.SX)
 
     def test_tr2angvec(self):
         pass
@@ -197,7 +249,15 @@ class TestSpatialMath(unittest.TestCase):
         pass
 
     def test_tr2rt(self):
-        pass
+        num_test = 20
+        for _ in range(num_test):
+            R_exp = R.from_euler('ZYZ', self._rand_ang()).as_matrix()
+            t_exp = np.random.uniform(-10, 10, size=(3,))
+            T = self._homogeneous_transform(R=R_exp, t=t_exp)
+            R_cmp, t_cmp = optas.tr2rt(T)
+            self.assertTrue(isclose(R_cmp, R_exp))
+            self.assertTrue(isclose(t_cmp, t_exp))
+            # TODO: check output types
 
     def test_transl(self):
         num_test = 20
@@ -206,6 +266,7 @@ class TestSpatialMath(unittest.TestCase):
             T = self._homogeneous_transform(t=t_exp)
             t_cmp = optas.transl(T)
             self.assertTrue(isclose(t_exp, t_cmp))
+            # TODO: check output types
 
     def test_transl2(self):
         num_test = 20
@@ -214,10 +275,18 @@ class TestSpatialMath(unittest.TestCase):
             T = self._homogeneous_transform2(t=t_exp)
             t_cmp = optas.transl2(T)
             self.assertTrue(isclose(t_exp, t_cmp))
-
+            # TODO: check output types
 
     def test_trlog(self):
-        pass
+        from scipy.linalg import logm
+        num_test = 20
+        for _ in range(num_test):
+            eul = self._rand_ang()
+            Rot = R.from_euler('ZYZ', eul).as_matrix()
+            LR_exp = logm(Rot)
+            LR_cmp = optas.trlog(Rot, rmat=True)
+            self.assertTrue(isclose(LR_cmp, LR_exp))
+            # TODO: check output types
 
     def _homogeneous_transform(self, R=None, t=None):
         T = np.eye(4)
@@ -243,6 +312,7 @@ class TestSpatialMath(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=R.from_euler(dim_label.upper(), theta).as_matrix())
             T_cmp = optas_trotd(theta)
             self.assertTrue(isclose(T_cmp, T_exp))
+            # TODO: check output types
 
     def test_trotx(self):
         self._test_trotd('x')
@@ -261,15 +331,65 @@ class TestSpatialMath(unittest.TestCase):
             v_cmp = optas.unit(v)
             self.assertTrue(isclose(v_cmp, v_exp))
             self.assertTrue(isclose(np.linalg.norm(v_cmp.toarray().flatten()), 1))
+            # TODO: check output types
 
     def test_vex(self):
-        pass
+        num_test = 20
+        for _ in range(num_test):
 
-    def test_vexa(self):
-        pass
+            # Check 2-by-2
+            v = np.random.uniform(-10, 10)
+            S = np.array([[0, -v], [v, 0]])
+            self.assertTrue(isclose(optas.vex(S), v))
+
+            # Check 3-by-3
+            v = np.random.uniform(-10, 10, size=(3,))
+            S = self._skew(v)
+            self.assertTrue(isclose(optas.vex(S), v))
+
+            # Check ValueError raised
+            n = np.random.randint(4, 100)
+            S = np.random.uniform(-10, 10, size=(n,))
+            self.assertRaises(ValueError, optas.vex, S)
+            # TODO: check output types
 
     def test_Quaternion(self):
-        pass
+        num_test = 20
+        for _ in range(num_test):
+
+            # Setup
+            eul = self._rand_ang()
+            rot = R.from_euler('ZYZ', eul)
+            quat_exp = rot.as_quat()
+            quat = optas.Quaternion(quat_exp)
+
+            # Check Quaternion.split
+            for q, qe in zip(quat.split(), quat_exp):
+                self.assertEqual(q, qe)
+
+            # Check Quaternion.sumsqr
+            self.assertTrue(isclose(np.linalg.norm(quat_exp)**2, quat.sumsqr()))
+
+            # Check Quaternion.inv
+            rot_inv = R.from_quat(quat.inv().getquat().toarray().flatten())
+            A = (rot_inv * rot).as_matrix()
+            self.assertTrue(isclose(A, np.eye(3)))
+
+            # Check Quaternion.fromrpy
+
+            # Check Quaternion.fromangvec
+
+            # Check Quaternion.getquat
+            self.assertTrue(isclose(optas.Quaternion(quat_exp).getquat(), quat_exp))
+            self.assertTrue(isclose(
+                optas.Quaternion(quat_exp[0], quat_exp[1], quat_exp[2], quat_exp[3]).getquat(),
+                quat_exp,
+            ))
+
+            # Check Quaternion.getrpy
+
+            # TODO: check output types
+
 
 if __name__ == '__main__':
     unittest.main()
