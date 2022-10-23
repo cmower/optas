@@ -1,6 +1,6 @@
 import casadi as cs
 from .sx_container import SXContainer
-from .spatialmath import vectorize_args, arrayify_args
+from .spatialmath import arrayify_args
 from .optimization import *
 
 class OptimizationBuilder:
@@ -313,7 +313,7 @@ class OptimizationBuilder:
         return p
 
 
-    @vectorize_args
+    @arrayify_args
     def add_cost_term(self, name, cost_term):
         """Add cost term to the optimization problem.
 
@@ -332,6 +332,7 @@ class OptimizationBuilder:
             Cost term, must be an array with shape 1-by-1.
 
         """
+        cost_term = cs.vec(cost_term)
         m, n = cost_term.shape
         assert m==1 and n==1, "cost term must be scalar"
         self._cost_terms[name] = cost_term

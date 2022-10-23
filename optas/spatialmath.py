@@ -35,15 +35,6 @@ def arrayify_args(fun):
 
     return wrap
 
-def vectorize_args(fun):
-    """Decorator that vectorizes all input arguments."""
-
-    def wrap(*args, **kwargs):
-        args_use = _handle_arraylike_args(args, vec)
-        return fun(*args_use, **kwargs)
-
-    return wrap
-
 def _is_shape(M, s1, s2):
     """Abstract method for checking if an array has a given shape."""
     return M.shape[0] == s1 and M.shape[1] == s2
@@ -64,19 +55,19 @@ def I4():
     """4-by-4 identity matrix"""
     return cs.DM.eye(4)
 
-@vectorize_args
+@arrayify_args
 def angvec2r(theta, v):
     """Convert angle and vector orientation to a rotation matrix"""
     sk = skew(unit(v))
     R = I3() + sin(theta)*sk + (1.-cos(theta))*sk@sk # Rodrigue's equation
     return R
 
-@vectorize_args
+@arrayify_args
 def angvec2tr(theta, v):
     """Convert angle and vector orientation to a homogeneous transform"""
     return r2t(angvec2r(theta, v))
 
-@vectorize_args
+@arrayify_args
 def delta2tr(d):
     """Convert differential motion  to SE(3) homogeneous transform"""
     up = cs.horzcat(skew(d[3:6]), d[:3])
@@ -89,7 +80,7 @@ def e2h(e):
     ones = cs.DM.ones(1, e.shape[1])
     return cs.vertcat(e, ones)
 
-@vectorize_args
+@arrayify_args
 def eul2jac(phi, theta, psi):
     """Euler angle rate Jacobian"""
     sphi, cphi = sin(phi), cos(phi)
@@ -100,12 +91,12 @@ def eul2jac(phi, theta, psi):
         cs.horzcat(1.,    0.,      ctheta),
     )
 
-@vectorize_args
+@arrayify_args
 def eul2r(phi, theta, psi):
     """Convert Euler angles to rotation matrix"""
     return rotz(phi) @ roty(theta) @ rotz(psi)
 
-@vectorize_args
+@arrayify_args
 def eul2tr(phi, theta, psi):
     """Convert Euler angles to homogeneous transform"""
     return r2t(eul2r(phi, theta, psi))
@@ -115,7 +106,7 @@ def h2e(h):
     """Homogeneous to Euclidean"""
     return h[:-1, :] / cs.repmat(h[-1, :], h.shape[0]-1, 1)
 
-@vectorize_args
+@arrayify_args
 def oa2r(o, a):
     """Convert orientation and approach vectors to rotation matrix"""
     n = cs.cross(o, a)
@@ -140,7 +131,7 @@ def r2t(R):
         cs.DM([[0., 0., 0., 1]]),
     )
 
-@vectorize_args
+@arrayify_args
 def rot2(theta):
     """SO(2) rotation matrix"""
     ct, st = cos(theta), sin(theta)
@@ -149,7 +140,7 @@ def rot2(theta):
         cs.horzcat(st,  ct),
     )
 
-@vectorize_args
+@arrayify_args
 def rotx(theta):
     """SO(3) rotation about X axis"""
     ct, st = cos(theta), sin(theta)
@@ -159,7 +150,7 @@ def rotx(theta):
         cs.horzcat(0,  st,  ct),
     )
 
-@vectorize_args
+@arrayify_args
 def roty(theta):
     """SO(3) rotation about Y axis"""
     ct, st = cos(theta), sin(theta)
@@ -169,7 +160,7 @@ def roty(theta):
         cs.horzcat(-st, 0., ct),
     )
 
-@vectorize_args
+@arrayify_args
 def rotz(theta):
     """SO(3) rotation about Z axis"""
     ct, st = cos(theta), sin(theta)
@@ -179,7 +170,7 @@ def rotz(theta):
         cs.DM([[0., 0., 1.]]),
     )
 
-@vectorize_args
+@arrayify_args
 def rpy2jac(rpy, opt='zyx'):
     """Jacobian from RPY angle rates to angular velocity"""
 
@@ -211,7 +202,7 @@ def rpy2jac(rpy, opt='zyx'):
     else:
         raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
 
-@vectorize_args
+@arrayify_args
 def rpy2r(rpy, opt='zyx'):
     """Roll-pitch-yaw angles to SO(3) rotation matrix"""
 
@@ -227,7 +218,7 @@ def rpy2r(rpy, opt='zyx'):
     else:
         raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
 
-@vectorize_args
+@arrayify_args
 def rpy2tr(rpy, opt='zyx'):
     """Roll-pitch-yaw angles to SE(3) homogeneous transform"""
     return r2t(rpy2r(rpy, opt=opt))
@@ -240,7 +231,7 @@ def rt2tr(R, t):
         cs.DM([[0., 0., 0., 1.]]),
     )
 
-@vectorize_args
+@arrayify_args
 def skew(v):
     """Create skew-symmetric matrix"""
     if v.shape[0] == 1:
@@ -257,7 +248,7 @@ def skew(v):
     else:
         raise ValueError(f"expecting a scalar or 3-vector")
 
-@vectorize_args
+@arrayify_args
 def skewa(v):
     """Create augmented skew-symmetric matrix"""
     if v.shape[0] == 3:
@@ -285,7 +276,7 @@ def invt(T):
     t = transl(T)
     return rt2tr(R.T, -R.T@t)
 
-@vectorize_args
+@arrayify_args
 def tr2angvec(T):
     """Convert rotation matrix to angle-vector form"""
     return trlog(t2r(T))
@@ -360,7 +351,7 @@ def transl2(T):
     """SE(2) translational homogeneous transform"""
     return T[:2, 2]
 
-@vectorize_args
+@arrayify_args
 def trexp(S, theta):
     """Matrix exponential for so(3) and se(3)"""
     raise NotImplementedError()
@@ -386,7 +377,7 @@ def trotz(theta):
     """SE(3) rotation about Z axis"""
     return r2t(rotz(theta))
 
-@vectorize_args
+@arrayify_args
 def unit(v):
     """Unitize a vector"""
     return v/cs.norm_fro(v)
