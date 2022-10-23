@@ -392,7 +392,7 @@ class RobotModel(Model):
         assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
         root = self._urdf.get_root()
         quat = Quaternion(0., 0., 0., 1.)
-        if link == root: return quat
+        if link == root: return quat.getquat()
 
         # Iterate over joints in chain
         for joint_name in self._urdf.get_chain(root, link, links=False):
@@ -602,16 +602,12 @@ class RobotModel(Model):
     @vectorize_args
     def get_global_angular_analytical_jacobian(self, link, q):
         """Compute the angular part of the analytical Jacobian matrix in the global frame."""
-        q_sym = cs.SX.sym('q_sym', self.ndof)
-        # Roll-Pitch-Yaw
-        rpy = self.get_global_link_rpy(link, q_sym)
-        # Transform jacobian to analytical version
-        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        return self.get_angular_analytical_jacobian(link, q, self.get_root_link())
 
 
     def get_global_angular_analytical_jacobian_function(self, link):
         """Get the function that computes the angular part of the analytical jacobian in the global frame."""
-        return self._make_function('J_a', link, self.get_global_angular_analytical_jacobian)
+        return self._make_function('Ja', link, self.get_global_angular_analytical_jacobian)
 
 
     def get_angular_geometric_jacobian(self, link, q, base_link):
@@ -627,16 +623,21 @@ class RobotModel(Model):
 
     def get_angular_analytical_jacobian(self, link, q, base_link):
         """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
-        # Roll-Pitch-Yaw
+
+        # Compute rpy derivative Ja
         q_sym = cs.SX.sym('q_sym', self.ndof)
         rpy = self.get_link_rpy(link, q_sym, base_link)
-        # Transform jacobian to analytical version
-        return cs.substitute(cs.jacobian(rpy, q_sym), q_sym, q)
+        Ja = cs.jacobian(rpy, q_sym)
+
+        # Functionize Ja
+        Ja = cs.Function('Ja', [q_sym], [Ja])
+
+        return Ja(q)
 
 
     def get_angular_analytical_jacobian_function(self, link, base_link):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
-        return self._make_function('J_a', link, self.get_angular_analytical_jacobian, base_link=base_link)
+        return self._make_function('Ja', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
 
     def _manipulability(self, J):
