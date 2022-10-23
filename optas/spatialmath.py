@@ -407,15 +407,6 @@ def vex(S):
             f"input must be a 2-by-2 or 3-by-3 matrix, not {S.shape[0]}-by-{S.shape[1]}"
         )
 
-@arrayify_args
-def vexa(S):
-    """Convert augmented skew-symmetric matrix to vector"""
-    if S.shape == [3, 3]:
-        return cs.vertcat(transl(S), vex(S[:3, :3]))
-    elif S.shape == [4, 4]:
-        return cs.vertcat(trasnl2(S), vex(S[:2, :2]))
-    else:
-        raise ValueError("input must be a 3-by-3 or 4-by-4 matrix")
 
 
 class Quaternion:
