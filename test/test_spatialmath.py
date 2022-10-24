@@ -1,6 +1,10 @@
 from test_utils import *
+from scipy.linalg import logm
 
 class Test_spatialmath_py(unittest.TestCase):
+
+
+    num_test = 30
 
 
     def _rand_ang(self):
@@ -13,6 +17,78 @@ class Test_spatialmath_py(unittest.TestCase):
         return v
 
 
+    def _homogeneous_transform(self, R=None, t=None):
+        T = np.eye(4)
+        if R is not None:
+            T[:3,:3] = R
+        if t is not None:
+            T[:3, 3] = t
+        return T
+
+
+    def _homogeneous_transform2(self, R=None, t=None):
+        T = np.eye(3)
+        if R is not None:
+            T[:2,:2] = R
+        if t is not None:
+            T[:2, 2] = t
+        return T
+
+
+    @optas.arrayify_args
+    def _isrot(self, R):
+
+        # Check: square
+        n = R.shape[0]
+        if n != R.shape[1]:
+            return False
+
+        # Check: orthogonality
+        if not isclose(R.T @ R, optas.DM.eye(n)):
+            return False
+
+        # Check: unit determinant
+        if not isclose(optas.det(R), 1):
+            return False
+
+        return True
+
+
+    @optas.arrayify_args
+    def _ishomog(self, T):
+
+        # Check: size
+        n = T.shape[0]
+        if n != T.shape[1]:
+            return False
+
+        if not (n == 3 or n == 4):
+            return False
+
+        # Check: rotation
+        if n == 3:
+            R = T[:2, :2]
+            bottom_row = optas.DM([0, 0, 1])
+        else:
+            R = T[:3, :3]
+            bottom_row = optas.DM([0, 0, 0, 1])
+
+        if not self._isrot(R):
+            return False
+
+        # Check bottom row
+        if not isclose(T[-1, :], bottom_row):
+            return False
+
+        return True
+
+
+    def _assertIsRot(self, R):
+        self.assertTrue(self._isrot(R))
+
+    def _assertIsHomog(self, T):
+        self.assertTrue(self._ishomog(T))
+
     def _assertIsDM(self, obj):
         self.assertIsInstance(obj, optas.DM)
 
@@ -22,7 +98,6 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_is_2x2(self):
-
         M1 = optas.DM.eye(2)
         self.assertTrue(optas.is_2x2(M1))
 
@@ -31,7 +106,6 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_is_3x3(self):
-
         M1 = optas.DM.eye(2)
         self.assertFalse(optas.is_3x3(M1))
 
@@ -48,98 +122,103 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_angvec2r(self):
-        num_test = 20
-        for _ in range(20):
+        for _ in range(self.num_test):
             theta = np.random.uniform(-pi, pi)
             v = self._rand_unit_vec()
             R_exp = R.from_rotvec(theta*v).as_matrix()
             R_cmp = optas.angvec2r(theta, v)
             self.assertTrue(isclose(R_cmp, R_exp))
             self._assertIsDM(R_cmp)
+            self._assertIsRot(R_cmp)
         theta_sym = optas.SX.sym('theta')
         v_sym = optas.SX.sym('v', 3)
         self._assertIsSX(optas.angvec2r(theta_sym, v_sym))
 
 
     def test_angvec2tr(self):
-        num_test = 20
-        for _ in range(20):
+        for _ in range(self.num_test):
             theta = np.random.uniform(-pi, pi)
             v = self._rand_unit_vec()
             T_exp = self._homogeneous_transform(R=R.from_rotvec(theta*v).as_matrix())
             T_cmp = optas.angvec2tr(theta, v)
             self.assertTrue(isclose(T_cmp, T_exp))
             self._assertIsDM(T_cmp)
+            self._assertIsHomog(T_cmp)
         theta_sym = optas.SX.sym('theta')
         v_sym = optas.SX.sym('v', 3)
         self._assertIsSX(optas.angvec2tr(theta_sym, v_sym))
 
 
     def test_eul2r(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             R_exp = R.from_euler('ZYZ', eul).as_matrix()
             R_cmp = optas.eul2r(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(R_cmp, R_exp))
             self._assertIsDM(R_cmp)
+            self._assertIsRot(R_cmp)
         eul_sym = optas.SX.sym('eul', 3)
         self._assertIsSX(optas.eul2r(eul_sym[0], eul_sym[1], eul_sym[2]))
 
+
     def test_eul2tr(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             Rot = R.from_euler('ZYZ', eul).as_matrix()
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.eul2tr(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(T_cmp, T_exp))
             self._assertIsDM(T_cmp)
+            self._assertIsHomog(T_cmp)
         eul_sym = optas.SX.sym('eul', 3)
         self._assertIsSX(optas.eul2tr(eul_sym[0], eul_sym[1], eul_sym[2]))
 
 
     def test_oa2r(self):
-        pass
-
+        o_sym = optas.SX.sym('o', 3)
+        a_sym = optas.SX.sym('a', 3)
+        self._assertIsSX(optas.oa2r(o_sym, a_sym))
 
     def test_oa2tr(self):
-        pass
+        o_sym = optas.SX.sym('o', 3)
+        a_sym = optas.SX.sym('a', 3)
+        self._assertIsSX(optas.oa2tr(o_sym, a_sym))
 
 
     def test_r2t(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             Rot = R.from_euler('ZYZ', eul).as_matrix()
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.r2t(Rot)
             self.assertTrue(isclose(T_cmp, T_exp))
             self._assertIsDM(T_cmp)
+            self._assertIsHomog(T_cmp)
         Rot_sym = optas.SX.sym('R', 3, 3)
         self._assertIsSX(optas.r2t(Rot_sym))
 
 
     def test_rot2(self):
-        n_test = 20
-        test_theta = np.random.uniform(-2*pi, 2*pi, size=(n_test,)).tolist()
+        test_theta = np.random.uniform(-2*pi, 2*pi, size=(self.num_test,)).tolist()
         for theta in test_theta:
             R_exp = R.from_euler('Z', theta).as_matrix()[:2, :2]
             R_cmp = optas.rot2(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
             self._assertIsDM(R_cmp)
+            self._assertIsRot(R_cmp)
         theta = optas.SX.sym('theta')
         self._assertIsSX(optas.rot2(theta))
 
 
-    def _test_rotd(self, dim_label, num_test=20):
+    def _test_rotd(self, dim_label):
         optas_rotd = getattr(optas, f'rot{dim_label}')
-        theta_test = np.random.uniform(-2*pi, 2*pi, size=(num_test,)).tolist()
+        theta_test = np.random.uniform(-2*pi, 2*pi, size=(self.num_test,)).tolist()
         for theta in theta_test:
             R_exp = R.from_euler(dim_label.upper(), theta).as_matrix()
             R_cmp = optas_rotd(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
             self._assertIsDM(R_cmp)
+            self._assertIsRot(R_cmp)
         theta = optas.SX.sym('theta')
         self._assertIsSX(optas_rotd(theta))
 
@@ -157,37 +236,37 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_rpy2r(self):
-        num_test = 20
         opt_test = ['zyx', 'xyz', 'yxz']
         rpy_sym = optas.SX.sym('rpy', 3)
         for opt in opt_test:
-            for _ in range(num_test):
+            for _ in range(self.num_test):
                 rpy = self._rand_ang()
                 R_exp = R.from_euler(opt.upper(), rpy[::-1]).as_matrix()
                 R_cmp = optas.rpy2r(rpy, opt=opt)
                 self.assertTrue(isclose(R_cmp, R_exp))
                 self._assertIsDM(R_cmp)
+                self._assertIsRot(R_cmp)
             self._assertIsSX(optas.rpy2r(rpy_sym, opt=opt))
 
 
     def test_rpy2tr(self):
-        num_test = 20
         opt_test = ['zyx', 'xyz', 'yxz']
         rpy_sym = optas.SX.sym('rpy', 3)
         for opt in opt_test:
-            for _ in range(num_test):
+            for _ in range(self.num_test):
                 rpy = self._rand_ang()
                 Rot = R.from_euler(opt.upper(), rpy[::-1]).as_matrix()
                 T_exp = self._homogeneous_transform(R=Rot)
                 T_cmp = optas.rpy2tr(rpy, opt=opt)
                 self.assertTrue(isclose(T_cmp, T_exp))
                 self._assertIsDM(T_cmp)
+                self._assertIsDM(optas.rpy2tr(optas.DM(rpy), opt=opt))
+                self._assertIsHomog(T_cmp)
             self._assertIsSX(optas.rpy2tr(rpy_sym, opt=opt))
 
 
     def test_rt2tr(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             Rot = R.from_euler('ZYZ', eul).as_matrix()
             t = np.random.uniform(-10, 10, size=(3,))
@@ -198,6 +277,7 @@ class Test_spatialmath_py(unittest.TestCase):
             self._assertIsDM(optas.rt2tr(optas.DM(Rot), optas.DM(t)))
             self._assertIsDM(optas.rt2tr(optas.DM(Rot), optas.DM(t)))
             self._assertIsDM(optas.rt2tr(Rot, t.tolist()))
+            self._assertIsHomog(T_cmp)
         Rot_sym = optas.SX.sym('R', 3, 3)
         t_sym = optas.SX.sym('t', 3)
         self._assertIsSX(optas.rt2tr(Rot_sym, t_sym))
@@ -212,8 +292,7 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_skew(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
 
             # Check 2-vector
             v = np.random.uniform(-10, 10)
@@ -245,8 +324,7 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_t2r(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             R_exp = R.from_euler('ZYZ', eul).as_matrix()
             T = self._homogeneous_transform(R=R_exp)
@@ -254,13 +332,13 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(isclose(R_cmp, R_exp))
             self._assertIsDM(R_cmp)
             self._assertIsDM(optas.t2r(optas.DM(T)))
+            self._assertIsRot(R_cmp)
         T_sym = optas.SX.sym('T', 4, 4)
         self._assertIsSX(optas.t2r(T_sym))
 
 
     def test_invt(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             Rot = R.from_euler('ZYZ', eul).as_matrix()
             t = np.random.uniform(-10, 10, size=(3,))
@@ -270,6 +348,7 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(isclose(T_cmp, T_exp))
             self._assertIsDM(T_cmp)
             self._assertIsDM(optas.invt(optas.DM(T)))
+            self._assertIsHomog(T_cmp)
         T = optas.SX.sym('T', 4, 4)
         self._assertIsSX(optas.invt(T))
 
@@ -279,8 +358,7 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_tr2rt(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             R_exp = R.from_euler('ZYZ', self._rand_ang()).as_matrix()
             t_exp = np.random.uniform(-10, 10, size=(3,))
             T = self._homogeneous_transform(R=R_exp, t=t_exp)
@@ -289,25 +367,26 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(isclose(t_cmp, t_exp))
             self._assertIsDM(R_cmp)
             self._assertIsDM(t_cmp)
+            self._assertIsRot(R_cmp)
             R_cmp, t_cmp = optas.tr2rt(optas.DM(T))
             self._assertIsDM(R_cmp)
             self._assertIsDM(t_cmp)
+            self._assertIsRot(R_cmp)
         R_sym, t_sym = optas.tr2rt(optas.SX.sym('T', 4, 4))
         self._assertIsSX(R_sym)
         self._assertIsSX(t_sym)
 
 
     def test_transl(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             t_exp = np.random.uniform(-10, 10, size=(3,))
             T = self._homogeneous_transform(t=t_exp)
             t_cmp = optas.transl(T)
             self.assertTrue(isclose(t_exp, t_cmp))
+            # TODO: check output types
 
     def test_transl2(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             t_exp = np.random.uniform(-10, 10, size=(2,))
             T = self._homogeneous_transform2(t=t_exp)
             t_cmp = optas.transl2(T)
@@ -315,9 +394,7 @@ class Test_spatialmath_py(unittest.TestCase):
             # TODO: check output types
 
     def test_trlog(self):
-        from scipy.linalg import logm
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             eul = self._rand_ang()
             Rot = R.from_euler('ZYZ', eul).as_matrix()
             LR_exp = logm(Rot)
@@ -325,30 +402,15 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(isclose(LR_cmp, LR_exp))
             # TODO: check output types
 
-    def _homogeneous_transform(self, R=None, t=None):
-        T = np.eye(4)
-        if R is not None:
-            T[:3,:3] = R
-        if t is not None:
-            T[:3, 3] = t
-        return T
-
-    def _homogeneous_transform2(self, R=None, t=None):
-        T = np.eye(3)
-        if R is not None:
-            T[:2,:2] = R
-        if t is not None:
-            T[:2, 2] = t
-        return T
 
     def _test_trotd(self, dim_label):
         optas_trotd = getattr(optas, f'trot{dim_label}')
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             theta = np.random.uniform(-2*pi, 2*pi)
             T_exp = self._homogeneous_transform(R=R.from_euler(dim_label.upper(), theta).as_matrix())
             T_cmp = optas_trotd(theta)
             self.assertTrue(isclose(T_cmp, T_exp))
+            self._assertIsHomog(T_cmp)
             # TODO: check output types
 
     def test_trotx(self):
@@ -361,8 +423,7 @@ class Test_spatialmath_py(unittest.TestCase):
         self._test_trotd('z')
 
     def test_unit(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
             v = np.random.uniform(-1, 1, size=(2,))
             v_exp = v/np.linalg.norm(v)
             v_cmp = optas.unit(v)
@@ -371,8 +432,7 @@ class Test_spatialmath_py(unittest.TestCase):
             # TODO: check output types
 
     def test_vex(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
 
             # Check 2-by-2
             v = np.random.uniform(-10, 10)
@@ -391,8 +451,7 @@ class Test_spatialmath_py(unittest.TestCase):
             # TODO: check output types
 
     def test_Quaternion(self):
-        num_test = 20
-        for _ in range(num_test):
+        for _ in range(self.num_test):
 
             # Setup
             eul = self._rand_ang()
