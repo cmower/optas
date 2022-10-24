@@ -175,11 +175,31 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_oa2r(self):
+        for _ in range(self.num_test):
+            o = np.random.uniform(0.1, 10)*self._rand_unit_vec()
+            a = np.random.uniform(0.1, 10)*self._rand_unit_vec()
+            R_cmp = optas.oa2r(o, a)
+            self._assertIsRot(R_cmp)
+            self._assertIsDM(R_cmp)
+            R_cmp = optas.oa2r(optas.DM(o), optas.DM(a))
+            self._assertIsDM(R_cmp)
+            R_cmp = optas.oa2r(o.tolist(), a.tolist())
+            self._assertIsDM(R_cmp)
         o_sym = optas.SX.sym('o', 3)
         a_sym = optas.SX.sym('a', 3)
         self._assertIsSX(optas.oa2r(o_sym, a_sym))
 
     def test_oa2tr(self):
+        for _ in range(self.num_test):
+            o = np.random.uniform(0.1, 10)*self._rand_unit_vec()
+            a = np.random.uniform(0.1, 10)*self._rand_unit_vec()
+            T_cmp = optas.oa2tr(o, a)
+            self._assertIsHomog(T_cmp)
+            self._assertIsDM(T_cmp)
+            T_cmp = optas.oa2tr(optas.DM(o), optas.DM(a))
+            self._assertIsDM(T_cmp)
+            T_cmp = optas.oa2tr(o.tolist(), a.tolist())
+            self._assertIsDM(T_cmp)
         o_sym = optas.SX.sym('o', 3)
         a_sym = optas.SX.sym('a', 3)
         self._assertIsSX(optas.oa2tr(o_sym, a_sym))
@@ -383,7 +403,9 @@ class Test_spatialmath_py(unittest.TestCase):
             T = self._homogeneous_transform(t=t_exp)
             t_cmp = optas.transl(T)
             self.assertTrue(isclose(t_exp, t_cmp))
-            # TODO: check output types
+            self._assertIsDM(t_cmp)
+            t_cmp = optas.transl(optas.DM(T))
+            self._assertIsDM(t_cmp)
 
     def test_transl2(self):
         for _ in range(self.num_test):
@@ -391,7 +413,9 @@ class Test_spatialmath_py(unittest.TestCase):
             T = self._homogeneous_transform2(t=t_exp)
             t_cmp = optas.transl2(T)
             self.assertTrue(isclose(t_exp, t_cmp))
-            # TODO: check output types
+            self._assertIsDM(t_cmp)
+            t_cmp = optas.transl2(optas.DM(T))
+            self._assertIsDM(t_cmp)
 
     def test_trlog(self):
         for _ in range(self.num_test):
@@ -411,16 +435,22 @@ class Test_spatialmath_py(unittest.TestCase):
             T_cmp = optas_trotd(theta)
             self.assertTrue(isclose(T_cmp, T_exp))
             self._assertIsHomog(T_cmp)
-            # TODO: check output types
+            self._assertIsDM(T_cmp)
+            T_cmp = optas_trotd(optas.DM(theta))
+            self._assertIsDM(T_cmp)
+
 
     def test_trotx(self):
         self._test_trotd('x')
 
+
     def test_troty(self):
         self._test_trotd('y')
 
+
     def test_trotz(self):
         self._test_trotd('z')
+
 
     def test_unit(self):
         for _ in range(self.num_test):
@@ -429,7 +459,9 @@ class Test_spatialmath_py(unittest.TestCase):
             v_cmp = optas.unit(v)
             self.assertTrue(isclose(v_cmp, v_exp))
             self.assertTrue(isclose(np.linalg.norm(v_cmp.toarray().flatten()), 1))
-            # TODO: check output types
+            self._assertIsDM(v_cmp)
+        v = optas.SX.sym('v', 3)
+        self._assertIsSX(optas.unit(v))
 
     def test_vex(self):
         for _ in range(self.num_test):
@@ -438,17 +470,24 @@ class Test_spatialmath_py(unittest.TestCase):
             v = np.random.uniform(-10, 10)
             S = np.array([[0, -v], [v, 0]])
             self.assertTrue(isclose(optas.vex(S), v))
+            self._assertIsDM(optas.vex(S))
 
             # Check 3-by-3
             v = np.random.uniform(-10, 10, size=(3,))
             S = self._skew(v)
             self.assertTrue(isclose(optas.vex(S), v))
+            self._assertIsDM(optas.vex(S))
 
             # Check ValueError raised
             n = np.random.randint(4, 100)
             S = np.random.uniform(-10, 10, size=(n,))
             self.assertRaises(ValueError, optas.vex, S)
-            # TODO: check output types
+
+        S = optas.SX.sym('S', 2, 2)
+        self._assertIsSX(optas.vex(S))
+
+        S = optas.SX.sym('S', 3, 3)
+        self._assertIsSX(optas.vex(S))
 
     def test_Quaternion(self):
         for _ in range(self.num_test):
