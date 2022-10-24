@@ -7,6 +7,20 @@ class Test_spatialmath_py(unittest.TestCase):
         return np.random.uniform(-pi, pi, size=(3,))
 
 
+    def _rand_unit_vec(self):
+        v = np.random.uniform(-1, 1, size=(3,))
+        v /= np.linalg.norm(v)
+        return v
+
+
+    def _assertIsDM(self, obj):
+        self.assertIsInstance(obj, optas.DM)
+
+
+    def _assertIsSX(self, obj):
+        self.assertIsInstance(obj, optas.SX)
+
+
     def test_is_2x2(self):
 
         M1 = optas.DM.eye(2)
@@ -34,16 +48,32 @@ class Test_spatialmath_py(unittest.TestCase):
 
 
     def test_angvec2r(self):
-        pass
+        num_test = 20
+        for _ in range(20):
+            theta = np.random.uniform(-pi, pi)
+            v = self._rand_unit_vec()
+            R_exp = R.from_rotvec(theta*v).as_matrix()
+            R_cmp = optas.angvec2r(theta, v)
+            self.assertTrue(isclose(R_cmp, R_exp))
+            self._assertIsDM(R_cmp)
+        theta_sym = optas.SX.sym('theta')
+        v_sym = optas.SX.sym('v', 3)
+        self._assertIsSX(optas.angvec2r(theta_sym, v_sym))
+
 
     def test_angvec2tr(self):
-        pass
+        num_test = 20
+        for _ in range(20):
+            theta = np.random.uniform(-pi, pi)
+            v = self._rand_unit_vec()
+            T_exp = self._homogeneous_transform(R=R.from_rotvec(theta*v).as_matrix())
+            T_cmp = optas.angvec2tr(theta, v)
+            self.assertTrue(isclose(T_cmp, T_exp))
+            self._assertIsDM(T_cmp)
+        theta_sym = optas.SX.sym('theta')
+        v_sym = optas.SX.sym('v', 3)
+        self._assertIsSX(optas.angvec2tr(theta_sym, v_sym))
 
-    def test_delta2tr(self):
-        pass
-
-    def test_eul2jac(self):
-        pass
 
     def test_eul2r(self):
         num_test = 20
@@ -52,9 +82,9 @@ class Test_spatialmath_py(unittest.TestCase):
             R_exp = R.from_euler('ZYZ', eul).as_matrix()
             R_cmp = optas.eul2r(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(R_cmp, R_exp))
-            self.assertIsInstance(R_cmp, optas.DM)
+            self._assertIsDM(R_cmp)
         eul_sym = optas.SX.sym('eul', 3)
-        self.assertIsInstance(optas.eul2r(eul_sym[0], eul_sym[1], eul_sym[2]), optas.SX)
+        self._assertIsSX(optas.eul2r(eul_sym[0], eul_sym[1], eul_sym[2]))
 
     def test_eul2tr(self):
         num_test = 20
@@ -64,18 +94,18 @@ class Test_spatialmath_py(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.eul2tr(eul[0], eul[1], eul[2])
             self.assertTrue(isclose(T_cmp, T_exp))
-            self.assertIsInstance(T_cmp, optas.DM)
+            self._assertIsDM(T_cmp)
         eul_sym = optas.SX.sym('eul', 3)
-        self.assertIsInstance(optas.eul2tr(eul_sym[0], eul_sym[1], eul_sym[2]), optas.SX)
+        self._assertIsSX(optas.eul2tr(eul_sym[0], eul_sym[1], eul_sym[2]))
 
-    def test_h2e(self):
-        pass
 
     def test_oa2r(self):
         pass
 
+
     def test_oa2tr(self):
         pass
+
 
     def test_r2t(self):
         num_test = 20
@@ -85,9 +115,10 @@ class Test_spatialmath_py(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot)
             T_cmp = optas.r2t(Rot)
             self.assertTrue(isclose(T_cmp, T_exp))
-            self.assertIsInstance(T_cmp, optas.DM)
+            self._assertIsDM(T_cmp)
         Rot_sym = optas.SX.sym('R', 3, 3)
-        self.assertIsInstance(optas.r2t(Rot_sym), optas.SX)
+        self._assertIsSX(optas.r2t(Rot_sym))
+
 
     def test_rot2(self):
         n_test = 20
@@ -96,9 +127,9 @@ class Test_spatialmath_py(unittest.TestCase):
             R_exp = R.from_euler('Z', theta).as_matrix()[:2, :2]
             R_cmp = optas.rot2(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
-            self.assertIsInstance(R_cmp, optas.DM)
+            self._assertIsDM(R_cmp)
         theta = optas.SX.sym('theta')
-        self.assertIsInstance(optas.rot2(theta), optas.SX)
+        self._assertIsSX(optas.rot2(theta))
 
 
     def _test_rotd(self, dim_label, num_test=20):
@@ -108,21 +139,22 @@ class Test_spatialmath_py(unittest.TestCase):
             R_exp = R.from_euler(dim_label.upper(), theta).as_matrix()
             R_cmp = optas_rotd(theta)
             self.assertTrue(isclose(R_cmp, R_exp))
-            self.assertIsInstance(R_cmp, optas.DM)
+            self._assertIsDM(R_cmp)
         theta = optas.SX.sym('theta')
-        self.assertIsInstance(optas_rotd(theta), optas.SX)
+        self._assertIsSX(optas_rotd(theta))
+
 
     def test_rotx(self):
         self._test_rotd('x')
 
+
     def test_roty(self):
         self._test_rotd('y')
+
 
     def test_rotz(self):
         self._test_rotd('z')
 
-    def test_rpy2jac(self):
-        pass
 
     def test_rpy2r(self):
         num_test = 20
@@ -134,8 +166,9 @@ class Test_spatialmath_py(unittest.TestCase):
                 R_exp = R.from_euler(opt.upper(), rpy[::-1]).as_matrix()
                 R_cmp = optas.rpy2r(rpy, opt=opt)
                 self.assertTrue(isclose(R_cmp, R_exp))
-                self.assertIsInstance(R_cmp, optas.DM)
-            self.assertIsInstance(optas.rpy2r(rpy_sym, opt=opt), optas.SX)
+                self._assertIsDM(R_cmp)
+            self._assertIsSX(optas.rpy2r(rpy_sym, opt=opt))
+
 
     def test_rpy2tr(self):
         num_test = 20
@@ -148,8 +181,9 @@ class Test_spatialmath_py(unittest.TestCase):
                 T_exp = self._homogeneous_transform(R=Rot)
                 T_cmp = optas.rpy2tr(rpy, opt=opt)
                 self.assertTrue(isclose(T_cmp, T_exp))
-                self.assertIsInstance(T_cmp, optas.DM)
-            self.assertIsInstance(optas.rpy2tr(rpy_sym, opt=opt), optas.SX)
+                self._assertIsDM(T_cmp)
+            self._assertIsSX(optas.rpy2tr(rpy_sym, opt=opt))
+
 
     def test_rt2tr(self):
         num_test = 20
@@ -160,13 +194,14 @@ class Test_spatialmath_py(unittest.TestCase):
             T_exp = self._homogeneous_transform(R=Rot, t=t)
             T_cmp = optas.rt2tr(Rot, t)
             self.assertTrue(isclose(T_cmp, T_exp))
-            self.assertIsInstance(T_cmp, optas.DM)
-            self.assertIsInstance(optas.rt2tr(optas.DM(Rot), optas.DM(t)), optas.DM)
-            self.assertIsInstance(optas.rt2tr(optas.DM(Rot), optas.DM(t)), optas.DM)
-            self.assertIsInstance(optas.rt2tr(Rot, t.tolist()), optas.DM)
+            self._assertIsDM(T_cmp)
+            self._assertIsDM(optas.rt2tr(optas.DM(Rot), optas.DM(t)))
+            self._assertIsDM(optas.rt2tr(optas.DM(Rot), optas.DM(t)))
+            self._assertIsDM(optas.rt2tr(Rot, t.tolist()))
         Rot_sym = optas.SX.sym('R', 3, 3)
         t_sym = optas.SX.sym('t', 3)
-        self.assertIsInstance(optas.rt2tr(Rot_sym, t_sym), optas.SX)
+        self._assertIsSX(optas.rt2tr(Rot_sym, t_sym))
+
 
     @staticmethod
     def _skew(x):
@@ -174,6 +209,7 @@ class Test_spatialmath_py(unittest.TestCase):
         return np.array([[0, -x[2], x[1]],
                          [x[2], 0, -x[0]],
                          [-x[1], x[0], 0]])
+
 
     def test_skew(self):
         num_test = 20
@@ -185,7 +221,7 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(S.shape == (2, 2))
             self.assertTrue(isclose(np.diag(S.toarray()), np.zeros(2)))
             self.assertTrue(isclose(S, -S.T))
-            self.assertIsInstance(S, optas.DM)
+            self._assertIsDM(S)
 
             # Check 3-vector
             v = np.random.uniform(-10, 10, size=(3,))
@@ -194,7 +230,7 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertTrue(S_cmp.shape == (3, 3))
             self.assertTrue(isclose(S_cmp, S_exp))
             self.assertTrue(isclose(S_cmp, -S_cmp.T))
-            self.assertIsInstance(S_cmp, optas.DM)
+            self._assertIsDM(S_cmp)
 
             # Check raises Value error
             n = np.random.randint(4, 100)
@@ -202,10 +238,10 @@ class Test_spatialmath_py(unittest.TestCase):
             self.assertRaises(ValueError, optas.skew, v)
 
         v = optas.SX.sym('v')
-        self.assertIsInstance(optas.skew(v), optas.SX)
+        self._assertIsSX(optas.skew(v))
 
         v = optas.SX.sym('v', 3)
-        self.assertIsInstance(optas.skew(v), optas.SX)
+        self._assertIsSX(optas.skew(v))
 
 
     def test_t2r(self):
@@ -216,10 +252,11 @@ class Test_spatialmath_py(unittest.TestCase):
             T = self._homogeneous_transform(R=R_exp)
             R_cmp = optas.t2r(T)
             self.assertTrue(isclose(R_cmp, R_exp))
-            self.assertIsInstance(R_cmp, optas.DM)
-            self.assertIsInstance(optas.t2r(optas.DM(T)), optas.DM)
+            self._assertIsDM(R_cmp)
+            self._assertIsDM(optas.t2r(optas.DM(T)))
         T_sym = optas.SX.sym('T', 4, 4)
-        self.assertIsInstance(optas.t2r(T_sym), optas.SX)
+        self._assertIsSX(optas.t2r(T_sym))
+
 
     def test_invt(self):
         num_test = 20
@@ -231,22 +268,15 @@ class Test_spatialmath_py(unittest.TestCase):
             T_exp = np.linalg.inv(T)
             T_cmp = optas.invt(T)
             self.assertTrue(isclose(T_cmp, T_exp))
-            self.assertIsInstance(T_cmp, optas.DM)
-            self.assertIsInstance(optas.invt(optas.DM(T)), optas.DM)
+            self._assertIsDM(T_cmp)
+            self._assertIsDM(optas.invt(optas.DM(T)))
         T = optas.SX.sym('T', 4, 4)
-        self.assertIsInstance(optas.invt(T), optas.SX)
+        self._assertIsSX(optas.invt(T))
 
-    def test_tr2angvec(self):
-        pass
-
-    def test_tr2delta(self):
-        pass
 
     def test_tr2eul(self):
         pass
 
-    def test_tr2jac(self):
-        pass
 
     def test_tr2rt(self):
         num_test = 20
@@ -257,7 +287,15 @@ class Test_spatialmath_py(unittest.TestCase):
             R_cmp, t_cmp = optas.tr2rt(T)
             self.assertTrue(isclose(R_cmp, R_exp))
             self.assertTrue(isclose(t_cmp, t_exp))
-            # TODO: check output types
+            self._assertIsDM(R_cmp)
+            self._assertIsDM(t_cmp)
+            R_cmp, t_cmp = optas.tr2rt(optas.DM(T))
+            self._assertIsDM(R_cmp)
+            self._assertIsDM(t_cmp)
+        R_sym, t_sym = optas.tr2rt(optas.SX.sym('T', 4, 4))
+        self._assertIsSX(R_sym)
+        self._assertIsSX(t_sym)
+
 
     def test_transl(self):
         num_test = 20
@@ -266,7 +304,6 @@ class Test_spatialmath_py(unittest.TestCase):
             T = self._homogeneous_transform(t=t_exp)
             t_cmp = optas.transl(T)
             self.assertTrue(isclose(t_exp, t_cmp))
-            # TODO: check output types
 
     def test_transl2(self):
         num_test = 20
