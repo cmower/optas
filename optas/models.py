@@ -293,7 +293,7 @@ class RobotModel(Model):
         return F
 
 
-    @vectorize_args
+    @arrayify_args
     def get_global_link_transform(self, link, q):
         """Get the link transform in the global frame for a given joint state q"""
 
@@ -331,7 +331,7 @@ class RobotModel(Model):
         return self._make_function('T', link, self.get_global_link_transform)
 
 
-    @vectorize_args
+    @arrayify_args
     def get_link_transform(self, link, q, base_link):
         """Get the link transform in a given base frame."""
         T_L_W = self.get_global_link_transform(link, q)
@@ -384,7 +384,7 @@ class RobotModel(Model):
         return self._make_function('R', link, self.get_link_rotation, base_link=base_link)
 
 
-    @vectorize_args
+    @arrayify_args
     def get_global_link_quaternion(self, link, q):
         """Get a quaternion in the global frame."""
 
@@ -529,7 +529,7 @@ class RobotModel(Model):
         return self._make_function('J_a', link, self.get_global_analytical_jacobian)
 
 
-    @vectorize_args
+    @arrayify_args
     def get_geometric_jacobian(self, link, q, base_link):
         """Get the geometric jacobian in a given base link."""
 
@@ -566,6 +566,7 @@ class RobotModel(Model):
         return self._make_function('J_a', link, self.get_analytical_jacobian, base_link=base_link)
 
 
+    @arrayify_args
     def get_global_linear_jacobian(self, link, q):
         """Compute the linear part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
@@ -577,6 +578,7 @@ class RobotModel(Model):
         return self._make_function('Jl', link, self.get_global_linear_jacobian)
 
 
+    @arrayify_args
     def get_linear_jacobian(self, link, q, base_link):
         """Get the linear part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
@@ -587,7 +589,7 @@ class RobotModel(Model):
         """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
         return self._make_function('Jl', link, self.get_linear_jacobian, base_link=base_link)
 
-
+    @arrayify_args
     def get_global_angular_geometric_jacobian(self, link, q):
         """Compute the angular part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
@@ -599,7 +601,7 @@ class RobotModel(Model):
         return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian)
 
 
-    @vectorize_args
+    @arrayify_args
     def get_global_angular_analytical_jacobian(self, link, q):
         """Compute the angular part of the analytical Jacobian matrix in the global frame."""
         return self.get_angular_analytical_jacobian(link, q, self.get_root_link())
@@ -610,6 +612,7 @@ class RobotModel(Model):
         return self._make_function('Ja', link, self.get_global_angular_analytical_jacobian)
 
 
+    @arrayify_args
     def get_angular_geometric_jacobian(self, link, q, base_link):
         """Get the angular part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
@@ -644,7 +647,7 @@ class RobotModel(Model):
         """Computes the manipulability given a jacobian array."""
         return cs.sqrt(cs.det(J @ J.T))
 
-
+    @arrayify_args
     def get_global_manipulability(self, link, q):
         """Get the manipulability measure in the global frame"""
         J = self.get_global_geometric_jacobian(link, q)
@@ -655,7 +658,7 @@ class RobotModel(Model):
         """Get the function that computes the manipulability measure in the global frame."""
         return self._make_function('m', link, self.get_global_manipulability, n=n)
 
-
+    @arrayify_args
     def get_manipulability(self, link, q, base_link):
         """Get the manipulability measure in a given base frame"""
         J = self.get_geometric_jacobian(link, q, base_link)
@@ -666,7 +669,7 @@ class RobotModel(Model):
         """Get the function that computes the manipulability measure in a given base frame"""
         return self._make_function('m', link, self.get_manipulability, n=n, base_link=base_link)
 
-
+    @arrayify_args
     def get_global_linear_manipulability(self, link, q):
         """Get the manipulability measure for the linear dimensions in the global frame."""
         Jl = self.get_global_linear_jacobian(link, q)
@@ -677,7 +680,7 @@ class RobotModel(Model):
         """Get the function that computes the manipulability measrure for the linear dimension in the global frame."""
         return self._make_function('ml', link, self.get_global_linear_manipulability, n=n)
 
-
+    @arrayify_args
     def get_linear_manipulability(self, link, q, base_link):
         """Get the linear part of the manipulability measure in a given base frame"""
         Jl = self.get_linear_jacobian(link, q, base_link)
@@ -688,7 +691,7 @@ class RobotModel(Model):
         """Get the function that computes the linear part of the manipulability measure in a given base frame"""
         return self._make_function('Jl', link, self.get_linear_manipulability, n=n, base_link=base_link)
 
-
+    @arrayify_args
     def get_global_angular_manipulability(self, link, q):
         """Get the angular part of the manipulability measure in the global frame"""
         Ja = self.get_global_angular_geometric_jacobian(link, q)
@@ -699,7 +702,7 @@ class RobotModel(Model):
         """Get the function that computes the angular part of the manipulability measure in a given base frame"""
         return self._make_function('ma', link, self.get_global_angular_manipulability, n=n)
 
-
+    @arrayify_args
     def get_angular_manipulability(self, link, q, base_link):
         """Get the angular part of the manipulability measure in a given base frame"""
         Ja = self.get_angular_geometric_jacobian(link, q, base_link)
