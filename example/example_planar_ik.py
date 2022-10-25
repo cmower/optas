@@ -42,11 +42,21 @@ builder.add_bound_inequality_constraint('joint', q_min, q_T, q_max)
 builder.add_bound_inequality_constraint('task', -70.*(optas.pi/180.), phi(q_T), 0.)
 
 # setup solver
-# solver = optas.CasADiSolver(builder.build()).setup('ipopt')
-# solver = optas.ScipyMinimizeSolver(builder.build()).setup('SLSQP')
-solver = optas.ScipyMinimizeSolver(builder.build()).setup('COBYLA')
+solver_casadi = optas.CasADiSolver(builder.build()).setup('ipopt')
 # set initial seed
-solver.reset_initial_seed({f'{robot_name}/q': q_0})
+solver_casadi.reset_initial_seed({f'{robot_name}/q': q_0})
 # solve problem
-solution = solver.solve()
-print(solution[f'{robot_name}/q']*(180./optas.pi))
+solution_casadi = solver_casadi.solve()
+print('***********************************')
+print('Casadi solution:')
+print(solution_casadi[f'{robot_name}/q']*(180./optas.pi))
+print(fk(solution_casadi[f'{robot_name}/q']))
+
+solver_slsqp = optas.ScipyMinimizeSolver(builder.build()).setup('SLSQP')
+solver_slsqp.reset_initial_seed(solution_casadi)
+# solve problem
+solution_slsqp = solver_slsqp.solve()
+print('***********************************')
+print('SLSQP solution:')
+print(solution_slsqp[f'{robot_name}/q']*(180./optas.pi))
+print(fk(solution_slsqp[f'{robot_name}/q']))
