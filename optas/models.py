@@ -325,8 +325,24 @@ class RobotModel(Model):
             kwargs['base_link'] = base_link
         out = method(*args, **kwargs)
         F = cs.Function(label, [q], [out])
-        if n > 1:
+
+        if n > 1 and out.shape[1] == 1:
             F = F.map(n)
+
+        elif n > 1 and out.shape[1] > 1:
+
+            class ListFunction:
+
+                def __init__(self, F, n):
+                    self.F = F
+                    self.n = n
+
+                def __call__(self, Q):
+                    assert Q.shape[1] == self.n, f"expected input to have shape {self.ndof}-by-{n}, got {Q.shape[0]}-by-{Q.shape[1]}"
+                    return [self.F(q) for q in cs.horzsplit(Q)]
+
+            F = ListFunction(F, n)
+
         return F
 
 
@@ -364,9 +380,9 @@ class RobotModel(Model):
         return T
 
 
-    def get_global_link_transform_function(self, link):
+    def get_global_link_transform_function(self, link, n=1):
         """Get the function which computes the link transform in the global frame"""
-        return self._make_function('T', link, self.get_global_link_transform)
+        return self._make_function('T', link, self.get_global_link_transform, n=n)
 
 
     @arrayify_args
@@ -378,9 +394,9 @@ class RobotModel(Model):
         return T_L_W @ invt(T_B_W)
 
 
-    def get_link_transform_function(self, link, base_link):
+    def get_link_transform_function(self, link, base_link, n=1):
         """Get the function that computes the transform in a given base frame"""
-        return self._make_function('T', link, self.get_link_transform, base_link=base_link)
+        return self._make_function('T', link, self.get_link_transform, base_link=base_link, n=n)
 
     @arrayify_args
     @listify_output
@@ -411,9 +427,9 @@ class RobotModel(Model):
         return t2r(self.get_global_link_transform(link, q))
 
 
-    def get_global_link_rotation_function(self, link):
+    def get_global_link_rotation_function(self, link, n=1):
         """Get the function that computes a rotation matrix in the global link"""
-        return self._make_function('R', link, self.get_global_link_rotation)
+        return self._make_function('R', link, self.get_global_link_rotation, n=n)
 
     @arrayify_args
     @listify_output
@@ -422,9 +438,9 @@ class RobotModel(Model):
         return t2r(self.get_link_transform(link, q, base_link))
 
 
-    def get_link_rotation_function(self, link, base_link):
+    def get_link_rotation_function(self, link, base_link, n=1):
         """Get the function that computes the rotation matrix for a link in a given base frame."""
-        return self._make_function('R', link, self.get_link_rotation, base_link=base_link)
+        return self._make_function('R', link, self.get_link_rotation, base_link=base_link, n=n)
 
 
     @arrayify_args
@@ -557,9 +573,9 @@ class RobotModel(Model):
         return J
 
 
-    def get_global_geometric_jacobian_function(self, link):
+    def get_global_geometric_jacobian_function(self, link, n=1):
         """Get the function that computes the geometric jacobian in the global frame."""
-        return self._make_function('J', link, self.get_global_geometric_jacobian)
+        return self._make_function('J', link, self.get_global_geometric_jacobian, n=n)
 
 
     @vectorize_args
@@ -595,9 +611,9 @@ class RobotModel(Model):
         return J
 
 
-    def get_geometric_jacobian_function(self, link, base_link):
+    def get_geometric_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the geometric jacobian in a given base frame"""
-        return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link)
+        return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link, n=n)
 
     
     @arrayify_args
@@ -622,10 +638,9 @@ class RobotModel(Model):
         return J[:3, :]
 
 
-    def get_global_linear_jacobian_function(self, link):
+    def get_global_linear_jacobian_function(self, link, , n=1):
         """Get the function that computes the linear part of the geometric jacobian in the global frame."""
-        return self._make_function('Jl', link, self.get_global_linear_jacobian)
-
+        return self._make_function('Jl', link, self.get_global_linear_jacobian, n=n)
 
 
     @arrayify_args
@@ -636,10 +651,10 @@ class RobotModel(Model):
         return J[:3, :]
 
 
-    def get_linear_jacobian_function(self, link, base_link):
+    def get_linear_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
-        return self._make_function('Jl', link, self.get_linear_jacobian, base_link=base_link)
-
+        return self._make_function('Jl', link, self.get_linear_jacobian, base_link=base_link, n=n)
+    
 
     @arrayify_args
     @listify_output
@@ -649,9 +664,9 @@ class RobotModel(Model):
         return J[3:, :]
 
 
-    def get_global_angular_geometric_jacobian_function(self, link):
+    def get_global_angular_geometric_jacobian_function(self, link, n=1):
         """Get the function that computes the angular part of the geometric jacobian in the global frame."""
-        return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian)
+        return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian, n=n)
 
 
 
@@ -674,9 +689,9 @@ class RobotModel(Model):
         return J[3:, :]
 
 
-    def get_angular_geometric_jacobian_function(self, link, base_link):
+    def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
-        return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link)
+        return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link, n=n)
 
 
     def get_angular_analytical_jacobian(self, link, q, base_link):
