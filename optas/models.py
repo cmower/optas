@@ -603,7 +603,7 @@ class RobotModel(Model):
         return self._make_function('J', link, self.get_global_geometric_jacobian, n=n)
 
 
-    @vectorize_args
+    @arrayify_args
     def get_global_analytical_jacobian(self, link, q):
         """Compute the analytical Jacobian matrix in the global frame."""
         return cs. vertcat(
@@ -663,7 +663,7 @@ class RobotModel(Model):
         return J[:3, :]
 
 
-    def get_global_linear_jacobian_function(self, link, , n=1):
+    def get_global_linear_jacobian_function(self, link, n=1):
         """Get the function that computes the linear part of the geometric jacobian in the global frame."""
         return self._make_function('Jl', link, self.get_global_linear_jacobian, n=n)
 
