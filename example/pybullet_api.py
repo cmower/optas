@@ -113,11 +113,10 @@ class VisualBox:
             base_orientation,
         )
 
+class FixedBaseRobot:
 
-class Kuka:
-
-    def __init__(self, base_position=[0.]*3):
-        self._id = p.loadURDF(fileName="robots/kuka_lwr.urdf", useFixedBase=1, basePosition=base_position)
+    def __init__(self, urdf_filename, base_position=[0.]*3):
+        self._id = p.loadURDF(fileName=urdf_filename, useFixedBase=1, basePosition=base_position)
         self.num_joints = p.getNumJoints(self._id)
         self._actuated_joints = []
         for j in range(self.num_joints):
@@ -125,8 +124,6 @@ class Kuka:
             if info[2] in {p.JOINT_REVOLUTE, p.JOINT_PRISMATIC}:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
-        cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
         self.kuka = optas.RobotModel(urdf_filename, time_derivs=[0])
 
 
@@ -145,6 +142,11 @@ class Kuka:
 
     def q(self):
         return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
+
+class Kuka(FixedBaseRobot):
+
+    def __init__(self, base_position=[0.0]*3):
+        super().__init__("robots/kuka_lwr.urdf", base_position=base_position)
 
 def main():
 
