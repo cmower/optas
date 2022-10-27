@@ -143,6 +143,8 @@ class Kuka:
             targetPositions=np.asarray(q).tolist(),
         )
 
+    def q(self):
+        return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
 
 def main():
 
