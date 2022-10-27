@@ -300,13 +300,36 @@ class RobotModel(Model):
     def _get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
 
-    def get_random_joint_positions(self, n=1):
+    def get_random_joint_positions(self, n=1, xlim=None, ylim=None, zlim=None, base_link=None):
         """Return a random array with joint positions within the actuator limits."""
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
 
+        pos = None
+        if isinstance(base_link, str):
+            pos = {self.get_link_position_function(link, base_link) for link in self.link_names}
+
+        def _in_limit(q):
+            if pos is not None:
+                for p in pos.values():
+                    pp = p(q)
+                    if xlim is not None:
+                        if not (xlim[0] <= pp[0] <= xlim[1]):
+                            return False
+                    if ylim is not None:
+                        if not (ylim[0] <= pp[1] <= ylim[1]):
+                            return False
+                    if zlim is not None:
+                        if not (zlim[0] <= pp[2] <= zlim[1]):
+                            return False
+            return True
+
+
         def randq():
-            return cs.vec(cs.np.random.uniform(lo, hi))
+            qr = cs.vec(cs.np.random.uniform(lo, hi))
+            while not _in_limit(qr):
+                qr = cs.vec(cs.np.random.uniform(lo, hi))
+            return qr
 
         return cs.horzcat(*[randq() for _ in range(n)])
 
