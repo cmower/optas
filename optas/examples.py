@@ -3,28 +3,35 @@ from . import *
 class SimpleJointMotionPlanner:
 
     """
-    Simple motion planner in the joint space.
 
-    t          - time
-    q(t)       - joint position
-    q*(t)      - ideal joint position
-    T          - final time
-    dq(t)/dt   - joint velocity
-    d2q(t)/dt2 - joint acceleration
-    q0         - initial joint state
-    qT         - target joint state at time T
-    q-, q+     - lower, upper joint position limits
-    dq-, dq+   - lower, upper joint velocity limits
+      Simple motion planner in the joint space
+      ----------------------------------------
 
-    q*(t) = arg min ||q(T) - qT||^2 + integrate_0^T  ||dq(t)/dt||^2 + ||d2q(t)/dt2||^2  dt
-              q(t)
+      This method plans a joint space trajectory from a initial
+      configuration to a target configuration. Optionally, joint
+      velocity/acceleration can be minimized.
 
-        subject to
+      t          - time
+      q(t)       - joint position
+      q*(t)      - ideal joint position
+      T          - final time
+      dq(t)/dt   - joint velocity
+      d2q(t)/dt2 - joint acceleration
+      q0         - initial joint state
+      qT         - target joint state at time T
+      q-, q+     - lower, upper joint position limits
+      dq-, dq+   - lower, upper joint velocity limits
+
+        q*(t) = arg min ||q(T) - qT||^2 + integrate_0^T  ||dq(t)/dt||^2 + ||d2q(t)/dt2||^2  dt
+                  q(t)
+
+            subject to
 
                                 q(0) = q0
                                 q(T) = qT        (optional)
                         q-  <=  q(t)    <= q+    (optional)
                         dq- <= dq(t)/dt <= dq+   (optional)
+
     """
 
     def __init__(self,
