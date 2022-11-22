@@ -98,6 +98,9 @@ class Model:
         T (int)
             Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
+        param_joints (list[int]):
+            joints to be recorded as parameterizable instead of optimizable
+
         """
         self.name = name
         self.dim = dim
@@ -106,6 +109,7 @@ class Model:
         self.symbol_param = symbol_param
         self.dlim = dlim
         self.T = T
+        self.param_joints = param_joints
 
     def get_name(self):
         """Return the name of the model."""
@@ -307,6 +311,22 @@ class RobotModel(Model):
     @property
     def optimized_joint_indexes(self):
         return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
+
+    @property
+    def param_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
+    
+    @property
+    def param_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.param_joint_names]
+
+    @property
+    def opt_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint not in self.param_joint_names]
+
+    @property
+    def opt_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.opt_joint_names]
 
     @property
     def ndof(self):
