@@ -273,6 +273,43 @@ class OptimizationBuilder:
         return parameters[:, t]
 
 
+    def get_model_states_and_parameters(self, name, time_deriv=0):
+        """Get the vector of states and parameters for a given model.
+
+        Syntax
+        ------
+
+        parameters = builder.get_model_states_and_parameters(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        states and parameters (casadi.SX, with shape dim-by-T)
+            The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
+
+        """
+        states = self.get_model_states(name, time_deriv=time_deriv)
+        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
+
+        model = self.get_model(name)
+
+        states_and_params = cs.SX.zeros(model.dim, self.T)
+        for idx in range(0, len(model.param_joint_indexes)):
+            states_and_params[model.param_joint_indexes[idx], :] = parameters[idx, :]
+        for idx in range(0, len(model.opt_joint_indexes)):
+            states_and_params[model.opt_joint_indexes[idx], :] = states[idx, :]
+        return states_and_params
+
+
     def get_dt(self):
         """When optimizing time, then this method returns the trajectory of dt variables."""
         assert self.optimize_time, "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
