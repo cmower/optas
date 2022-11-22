@@ -269,7 +269,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T)
+        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T, param_joints)
 
     def get_urdf(self):
         return self._urdf
@@ -359,16 +359,16 @@ class RobotModel(Model):
         )
 
     @property
-    def lower_opt_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+    def lower_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
 
     @property
-    def upper_opt_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+    def upper_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
 
     @property
-    def velocity_opt_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+    def velocity_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
