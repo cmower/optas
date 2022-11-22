@@ -75,7 +75,12 @@ class Model:
 
     """
 
+<<<<<<< HEAD
     def __init__(self, name, dim, time_derivs, symbol, dlim, T):
+=======
+
+    def __init__(self, name, dim, time_derivs, symbol, dlim, T, param_joints):
+>>>>>>> Add selection of opt and param joints
         """
         name (str):
             Name of model.
@@ -95,6 +100,9 @@ class Model:
         T (int)
             Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
+        param_joints (list[int]):
+            joints to be recorded as parameterizable instead of optimizable
+
         """
         self.name = name
         self.dim = dim
@@ -102,6 +110,7 @@ class Model:
         self.symbol = symbol
         self.dlim = dlim
         self.T = T
+        self.param_joints = param_joints
 
     def get_name(self):
         """Return the name of the model."""
@@ -191,7 +200,10 @@ class RobotModel(Model):
         time_derivs=[0],
         qddlim=None,
         T=None,
+        param_joints=[],
     ):
+
+
         # If xacro is passed then convert to urdf string
         self._xacro_filename = xacro_filename
         if xacro_filename is not None:
@@ -233,7 +245,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, "q", dlim, T)
+        super().__init__(name, self.ndof, time_derivs, 'q', dlim, T, param_joints)
 
     def get_urdf(self):
         return self._urdf
@@ -255,6 +267,22 @@ class RobotModel(Model):
     @property
     def actuated_joint_names(self):
         return [jnt.name for jnt in self._urdf.joints if jnt.type != "fixed"]
+
+    @property
+    def parameter_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
+    
+    @property
+    def parameter_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.parameter_joint_names]
+
+    @property
+    def optimized_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint not in self.parameter_joint_names]
+
+    @property
+    def optimized_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
 
     @property
     def ndof(self):
