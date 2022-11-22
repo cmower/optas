@@ -75,20 +75,22 @@ class OptimizationBuilder:
 
         # Setup decision variables
         self._decision_variables = SXContainer()
+        self._parameters = SXContainer()
         for model in self._models:
             for d in model.time_derivs:
-                n = model.state_name(d)
+                n_s = model.state_name(d)
+                n_p = model.parameter_name(d)
                 if model.T is None:
                     t = T - d if not derivs_align else T
                 else:
                     t = model.T
-                self.add_decision_variables(n, model.dim, t)
+                self.add_decision_variables(n_s, len(model.opt_joint_names), t)
+                self.add_parameter(n_p, len(model.param_joint_names), t)
 
         if optimize_time:
             self.add_decision_variables("dt", T - 1)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
-        self._parameters = SXContainer()
         self._cost_terms = SXContainer()
         self._lin_eq_constraints = SXContainer()
         self._lin_ineq_constraints = SXContainer()
@@ -206,6 +208,71 @@ class OptimizationBuilder:
         name = model.state_name(time_deriv)
         return self._decision_variables[name]
 
+<<<<<<< HEAD
+=======
+
+    def get_model_parameters(self, name, time_deriv=0):
+        """Get the vector of parameters for a given model.
+
+        Syntax
+        ------
+
+        parameters = builder.get_model_parameters(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        parameters (casadi.SX, with shape dim-by-T)
+            The vector of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
+
+        """
+        model = self.get_model(name)
+        assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        name = model.parameter_name(time_deriv)
+        return self._parameters[name]
+
+
+    def get_model_parameter(self, name, t, time_deriv=0):
+        """Get the model parameter at a given time.
+
+        Syntax
+        ------
+
+        parameter = builder.get_model_parameter(name, t, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        t (int)
+            Index of the desired parameter.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        parameter (casadi.SX, with shape dim-by-1)
+            The parameter vector where dim is the model number of parameters
+
+        """
+        parameters = self.get_model_parameters(name, time_deriv)
+        return parameters[:, t]
+
+
+>>>>>>> Add model parameters to the builder
     def get_dt(self):
         """When optimizing time, then this method returns the trajectory of dt variables."""
         assert (
