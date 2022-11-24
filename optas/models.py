@@ -229,7 +229,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T, param_joints)
+        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T)
 
     def get_urdf(self):
         return self._urdf
