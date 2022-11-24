@@ -48,7 +48,7 @@ class Model:
     """
 
 
-    def __init__(self, name, dim, time_derivs, symbol_state, symbol_param, dlim, T, param_joints):
+    def __init__(self, name, dim, time_derivs, symbol_state, symbol_param, dlim, T):
         """
         name (str):
             Name of model.
@@ -71,9 +71,6 @@ class Model:
         T (int)
             Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
-        param_joints (list[int]):
-            joints to be recorded as parameterizable instead of optimizable
-
         """
         self.name = name
         self.dim = dim
@@ -82,7 +79,6 @@ class Model:
         self.symbol_param = symbol_param
         self.dlim = dlim
         self.T = T
-        self.param_joints = param_joints
 
 
     def get_name(self):
@@ -202,9 +198,10 @@ class RobotModel(Model):
         assert self._urdf is not None, "You need to supply a urdf, either through filename or as a string"
 
         # Setup joint limits, joint position/velocity limits
+        self.param_joints = param_joints
         dlim = {
-            0: (self.lower_actuated_joint_limits, self.upper_actuated_joint_limits),
-            1: (-self.velocity_actuated_joint_limits, self.velocity_actuated_joint_limits),
+            0: (self.lower_opt_joint_limits, self.upper_opt_joint_limits),
+            1: (-self.velocity_opt_joint_limits, self.velocity_opt_joint_limits),
         }
 
         # Handle potential acceleration limit
@@ -219,7 +216,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T, param_joints)
+        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T)
 
     @property
     def joint_names(self):
@@ -265,6 +262,18 @@ class RobotModel(Model):
     @property
     def velocity_actuated_joint_limits(self):
         return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+
+    @property
+    def lower_opt_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+
+    @property
+    def upper_opt_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+
+    @property
+    def velocity_opt_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
