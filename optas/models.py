@@ -98,9 +98,6 @@ class Model:
         T (int)
             Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
-        param_joints (list[int]):
-            joints to be recorded as parameterizable instead of optimizable
-
         """
         self.name = name
         self.dim = dim
@@ -109,7 +106,6 @@ class Model:
         self.symbol_param = symbol_param
         self.dlim = dlim
         self.T = T
-        self.param_joints = param_joints
 
     def get_name(self):
         """Return the name of the model."""
@@ -389,6 +385,18 @@ class RobotModel(Model):
     @property
     def velocity_optimized_joint_limits(self):
         return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+
+    @property
+    def lower_opt_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+
+    @property
+    def upper_opt_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
+
+    @property
+    def velocity_opt_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.opt_joint_names])
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
