@@ -9,7 +9,7 @@ OpTaS is an OPtimization-based TAsk Specification library for task and motion pl
 # Install
 
 ## Via pip
-1. `python -m pip install 'optas @ git+https://github.com/cmower/optas.git'
+1. `$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'`
 
 ## From source
 1. `$ git clone git@github.com:cmower/optas.git`
