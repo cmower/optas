@@ -12,3 +12,7 @@ def deg2rad(x):
 @arrayify_args
 def rad2deg(x):
     return (180.0/pi)*x
+
+@arrayify_args
+def clip(x, lo, hi):
+    return cs.fmax(cs.fmin(x, hi), lo)
