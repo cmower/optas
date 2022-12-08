@@ -302,7 +302,7 @@ class OptimizationBuilder:
 
         model = self.get_model(name)
 
-        states_and_params = cs.SX.zeros(model.dim, self.T)
+        states_and_params = cs.SX.zeros(model.dim, self.T-time_deriv)
         for idx in range(0, len(model.param_joint_indexes)):
             states_and_params[model.param_joint_indexes[idx], :] = parameters[idx, :]
         for idx in range(0, len(model.opt_joint_indexes)):
@@ -620,7 +620,7 @@ class OptimizationBuilder:
                 dt = dt*cs.DM.ones(n-1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(model.dim, n-1)
+        integr = self._integr(len(model.opt_joint_indexes), n-1)
         name = f'__integrate_model_states_{name}_{time_deriv}__'
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
