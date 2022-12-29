@@ -118,6 +118,28 @@ class VisualBox:
             base_orientation,
         )
 
+class VisualSphere:
+
+    def __init__(self, base_position, radius, rgba_color=[0, 1, 0, 1.]):
+        visid = p.createVisualShape(
+            p.GEOM_SPHERE,
+            rgbaColor=rgba_color,
+            radius=radius,
+        )
+
+        self._id = p.createMultiBody(
+            baseMass=0.,
+            basePosition=base_position,
+            baseVisualShapeIndex=visid
+        )
+
+    def reset(self, base_position):
+        p.resetBasePositionAndOrientation(
+            self._id,
+            optas.vec(base_position).toarray().flatten().tolist(),
+            [0, 0, 0, 1],
+        )
+
 class FixedBaseRobot:
 
     def __init__(self, urdf_filename, base_position=[0.]*3):
