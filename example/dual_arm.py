@@ -125,7 +125,7 @@ class DualKukaPlanner:
 
     def _setup_kuka_model(self, name, base_position):
         cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
         model = optas.RobotModel(
             urdf_filename=urdf_filename,
             name=name,
@@ -163,8 +163,8 @@ def main():
 
     box = pybullet_api.DynamicBox(base_position=[0.75, 0, 0.15], half_extents=[0.15, 0.15, 0.15])
 
-    kukal = pybullet_api.Kuka(base_position=kukal_base_position)
-    kukar = pybullet_api.Kuka(base_position=kukar_base_position)
+    kukal = pybullet_api.KukaLWR(base_position=kukal_base_position)
+    kukar = pybullet_api.KukaLWR(base_position=kukar_base_position)
 
     qc = optas.np.deg2rad([0, -30, 0, 90, 0, 30, 0])
     kukal.reset(qc)

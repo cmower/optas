@@ -208,7 +208,7 @@ class IK:
         link_ee = 'end_effector_ball'  # end-effector link name
 
         # Setup robot
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
         kuka = optas.RobotModel(
             urdf_filename=urdf_filename,
             time_derivs=[1],  # i.e. joint velocity

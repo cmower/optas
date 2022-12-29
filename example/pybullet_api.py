@@ -143,17 +143,36 @@ class FixedBaseRobot:
     def q(self):
         return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
 
-class Kuka(FixedBaseRobot):
+class KukaLWR(FixedBaseRobot):
 
     def __init__(self, base_position=[0.0]*3):
-        super().__init__("robots/kuka_lwr.urdf", base_position=base_position)
+        super().__init__("robots/kuka_lwr/kuka_lwr.urdf", base_position=base_position)
+
+class KukaLBR(FixedBaseRobot):
+
+    def __init__(self, base_position=[0.0]*3):
+
+        # Process xacro
+        import xacro
+        xacro_filename = "robots/kuka_lbr/med7.urdf.xacro"
+        urdf_string = xacro.process(xacro_filename)
+        urdf_filename = 'robots/kuka_lbr/kuka_lbr.urdf'
+        with open(urdf_filename, 'w') as f:
+            f.write(urdf_string)
+
+        # Load Kuka LBR
+        super().__init__(urdf_filename, base_position=base_position)
+
+        # Remove urdf file
+        os.remove(urdf_filename)
 
 def main():
 
     hz = 250
     dt = 1.0/float(hz)
     pb = PyBullet(dt)
-    kuka = Kuka()
+    kuka = KukaLWR()
+    # kuka = KukaLBR()
 
     q0 = np.zeros(7)
     qF = np.random.uniform(-np.pi, np.pi, size=(7,))

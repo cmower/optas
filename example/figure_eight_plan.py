@@ -13,27 +13,46 @@ import pybullet_api
 # OpTaS
 import optas
 
+cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
 
 class Planner:
 
 
     def __init__(self):
 
-        cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
+        # Setup robot  ========================
+
+        # Kuka LWR
+        # link_ee = 'end_effector_ball'  # end-effector link name
+        # filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
+        # use_xacro = False
+
+        # Kuka LBR
+        link_ee = 'lbr_link_ee'
+        filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'med7.urdf.xacro')
+        use_xacro = True
+
+        # =====================================
+
+
+        # Setup        
         pi = optas.np.pi  # 3.141...
         self.T = 50 # no. time steps in trajectory
-        link_ee = 'end_effector_ball'  # end-effector link name
         self.Tmax = 10.  # trajectory of 5 secs
         t = optas.linspace(0, self.Tmax, self.T)
         self.dt = float((t[1] - t[0]).toarray()[0, 0])  # time step
 
         # Setup robot
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
-        self.kuka = optas.RobotModel(
-            urdf_filename=urdf_filename,
-            time_derivs=[0, 1],  # i.e. joint position/velocity trajectory
-        )
+        robot_model_input = {}
+        robot_model_input['time_derivs'] = [0, 1] # i.e. joint position/velocity trajectory
+        if use_xacro:
+            robot_model_input['xacro_filename'] = filename
+        else:
+            robot_model_input['urdf_filename'] = filename
+
+        self.kuka = optas.RobotModel(**robot_model_input)
         self.kuka_name = self.kuka.get_name()
+        print("Using robot named", self.kuka_name)
 
         # Setup optimization builder
         builder = optas.OptimizationBuilder(T=self.T, robots=[self.kuka])
@@ -131,7 +150,10 @@ def main():
     hz = 50
     dt = 1.0/float(hz)
     pb = pybullet_api.PyBullet(dt)
-    kuka = pybullet_api.Kuka()
+    if planner.kuka_name == 'med7':
+        kuka = pybullet_api.KukaLBR()
+    else:
+        kuka = pybullet_api.KukaLWR()
     kuka.reset(plan(0.))
     pb.start()
 
