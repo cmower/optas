@@ -508,7 +508,6 @@ class OptimizationBuilder:
         x = self.get_model_states(name, time_deriv-1)
         n = x.shape[1]
         if self.derivs_align:
-            n -= 1
             xd = xd[:, :-1]
 
         if self.optimize_time:
