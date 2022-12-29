@@ -208,7 +208,7 @@ class IK:
         link_ee = 'end_effector_ball'  # end-effector link name
 
         # Setup robot
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
         kuka = optas.RobotModel(
             urdf_filename=urdf_filename,
             time_derivs=[1],  # i.e. joint velocity
@@ -287,7 +287,7 @@ def main():
         camera_target_position=[0.3, 0.2, 0.],
         camera_yaw=135,
     )
-    kuka = pybullet_api.Kuka()
+    kuka = pybullet_api.KukaLWR()
     kuka.reset(qc)
     GxS0 = 0.4
     GyS0 = 0.065

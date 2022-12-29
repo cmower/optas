@@ -1,5 +1,8 @@
 import casadi as cs
 
+# https://wiki.ros.org/xacro
+import xacro
+
 # https://pypi.org/project/urdf-parser-py
 from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 
@@ -158,13 +161,17 @@ class JointTypeNotSupported(NotImplementedError):
 class RobotModel(Model):
 
 
-    def __init__(self, urdf_filename=None, urdf_string=None, name=None, time_derivs=[0], qddlim=None, T=None):
+    def __init__(self, urdf_filename=None, urdf_string=None, xacro_filename=None, name=None, time_derivs=[0], qddlim=None, T=None):
+
+        # If xacro is passed then convert to urdf string
+        if (xacro_filename is not None):
+            urdf_string = xacro.process(xacro_filename)
 
         # Load URDF
         self._urdf = None
-        if(urdf_filename!=None):
+        if urdf_filename is not None:
             self._urdf = URDF.from_xml_file(urdf_filename)
-        if(urdf_string!=None):
+        if urdf_string is not None:
             self._urdf = URDF.from_xml_string(urdf_string)
         assert self._urdf is not None, "You need to supply a urdf, either through filename or as a string"
 

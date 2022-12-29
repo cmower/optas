@@ -24,5 +24,6 @@ setup(
         'urdf-parser-py',
         'osqp',
         'cvxopt',
+        'xacro',
     ]
 )
