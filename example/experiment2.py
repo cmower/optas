@@ -2,8 +2,10 @@ import os
 import abc
 import time
 
+import pybullet_api
+
 import optas
-from optas.spatialmath import vectorize_args
+from optas.spatialmath import arrayify_args
 import tf_conversions
 
 import exotica_scipy_solver
@@ -37,7 +39,7 @@ eul0 = tf_conversions.transformations.euler_from_matrix(Tr(q0).toarray())
 p0 = pos(q0)
 N = 2000
 dt = 0.01
-use_rpbi = True
+use_pb = True
 
 
 def figure_eight(t):
@@ -102,7 +104,7 @@ class OpTaSIK(ExprIK):
         # Setup solver
         self._solver = optas.ScipyMinimizeSolver(builder.build()).setup('SLSQP')
 
-    @vectorize_args
+    @arrayify_args
     def reset(self, t, qc):
         self._solver.reset_initial_seed({f'{self.name}/q': qc})
         self._solver.reset_parameters({'pg': figure_eight(t), 'qc': qc})
@@ -119,7 +121,7 @@ class EXOTicaIK(ExprIK):
     def __init__(self):
 
         super().__init__()
-        xml = 'exo.xml'
+        xml = os.path.join(path, 'robots', 'kuka_lwr', 'exo.xml')
         self.problem = exo.Setup.load_problem(xml)
         self.solver = exotica_scipy_solver.end_pose_solver.SciPyEndPoseSolver(
             problem=self.problem, method='SLSQP', debug=False,
@@ -178,39 +180,26 @@ class Experiment:
         self.trac_ik = TracIK()
         self.exo_ik = EXOTicaIK()
 
-        if use_rpbi:
-            self.setup_rpbi()
+        if use_pb:
+            self.setup_pb()
 
-    def setup_rpbi(self):
-        import rospy
-        from sensor_msgs.msg import JointState
-        self.rospy = rospy
-        self.JointState = JointState
-        rospy.init_node('optas_expr2_node')
-        self._pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
+    def setup_pb(self):
+        self.pb = pybullet_api.PyBullet(dt)
+        self.kuka = pybullet_api.KukaLWR()
+        self.pb.start()                
 
-
-    def reset_rpbi(self):
-        self.publish_rpbi(q0)
+    def reset_pb(self):
+        self.kuka.reset(q0)
         time.sleep(1.)
 
-
-    def publish_rpbi(self, q):
-        msg = self.JointState(
-            name=robot.actuated_joint_names, position=q.flatten().tolist()
-        )
-        msg.header.stamp = self.rospy.Time.now()
-        self._pub.publish(msg)
-
-
-    def update_rpbi(self, q):
-        self.publish_rpbi(q)
+    def update_pb(self, q):
+        self.kuka.cmd(q)
         # time.sleep(dt)
 
     def _run(self, ik):
 
-        if use_rpbi:
-            self.reset_rpbi()
+        if use_pb:
+            self.reset_pb()
 
         t = 0.0
         q = optas.vec(q0)
@@ -234,8 +223,8 @@ class Experiment:
             
             t += dt
 
-            if use_rpbi:
-                self.update_rpbi(q)
+            if use_pb:
+                self.update_pb(q)
 
         return [
             T.toarray().flatten(),

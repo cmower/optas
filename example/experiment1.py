@@ -6,8 +6,10 @@ from typing import List
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
+import pybullet_api
+
 import optas
-from optas.spatialmath import vectorize_args
+from optas.spatialmath import arrayify_args
 from optas.templates import DifferentialIK
 
 path = os.path.dirname(os.path.realpath(__file__))
@@ -29,7 +31,7 @@ if not os.path.exists(exprdir):
 class ExprIK(DifferentialIK):
 
 
-    @vectorize_args
+    @arrayify_args
     def _setup_problem(self, xydir, dt):
 
         # Cost function
@@ -68,7 +70,7 @@ class ExprIK(DifferentialIK):
 
 
     def _solver_setup_args(self):
-        return []
+        return [True]  # i.e. use_warm_start
 
 
 class IK1(ExprIK):
@@ -129,7 +131,7 @@ class Config:
     eff_link: str
     q0: List[float]
     xydir: List[float]
-    rpbi: bool
+    pb: bool
 
 
 class Experiment:
@@ -145,41 +147,29 @@ class Experiment:
         self.q0 = optas.vec(optas.np.deg2rad(config.q0))
         self.ik1 = IK1(self.robot, config.eff_link).setup_problem(config.xydir, self.dt).setup_solver()
         self.ik2 = IK2(self.robot, config.eff_link).setup_problem(config.xydir, self.dt).setup_solver()
-        self.use_rpbi = config.rpbi
-        if self.use_rpbi:
-            self.setup_rpbi()
+        self.use_pb = config.pb
+        if self.use_pb:
+            self.setup_pb()
 
 
-    def setup_rpbi(self):
-        import rospy
-        from sensor_msgs.msg import JointState
-        self.rospy = rospy
-        self.JointState = JointState
-        rospy.init_node('optas_expr_node')
-        self._pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
+    def setup_pb(self):
+        self.pb = pybullet_api.PyBullet(self.dt)
+        self.kuka = pybullet_api.KukaLWR()
+        self.pb.start()        
 
-    def reset_rpbi(self):
-        self.publish_rpbi(self.q0)
+    def reset_pb(self):
+        self.kuka.reset(self.q0)
         time.sleep(1.)
 
 
-    def publish_rpbi(self, q):
-        msg = self.JointState(
-            name=self.robot.actuated_joint_names, position=q.toarray().flatten().tolist()
-        )
-        msg.header.stamp = self.rospy.Time.now()
-        self._pub.publish(msg)
-
-
-    def update_rpbi(self, q):
-        self.publish_rpbi(q)
+    def update_pb(self, q):
+        self.kuka.cmd(q)
         time.sleep(self.dt)
-
 
     def _run(self, label, ik):
 
-        if self.use_rpbi:
-            self.reset_rpbi()
+        if self.use_pb:
+            self.reset_pb()
 
         t = 0.0
         q = optas.vec(self.q0)
@@ -205,8 +195,8 @@ class Experiment:
             Q[:, i+1] = q
             DQ[:, i+1] = dq
 
-            if self.use_rpbi:
-                self.update_rpbi(q)
+            if self.use_pb:
+                self.update_pb(q.toarray().flatten().tolist())
 
         stamp = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S_')+str(time.time_ns())
         return Data(T, Q, DQ, self.eff_pos(Q), solver_duration).save(
@@ -220,7 +210,7 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    rpbi = True
+    pb = True
 
     # Setup config
     xydir = optas.np.array([0.70710678, 0.70710678])
@@ -229,7 +219,7 @@ if __name__ == '__main__':
         "end_effector_ball",
         [0, 30, 0, -90, 0, 60, 0],
         xydir,
-        rpbi,
+        pb,
     )
 
     # Setup and run experiment
@@ -263,13 +253,13 @@ if __name__ == '__main__':
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(14)
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(14)        
+        tick.label.set_fontsize(14)
 
     fig_filename = os.path.join(exprdir, 'plot_position_trajectory.pdf')
     fig.savefig(fig_filename)
 
-    expr.reset_rpbi()
-
+    if pb:
+        expr.reset_pb()
 
     # Show plot
     plt.show()
