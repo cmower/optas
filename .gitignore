@@ -134,3 +134,6 @@ dmypy.json
 # Documentation
 doc/html/
 doc/latex/
+
+# Data
+example/data/
