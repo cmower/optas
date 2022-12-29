@@ -18,6 +18,7 @@ class PyBullet:
                  camera_pitch=-40,
                  camera_target_position=[0, 0, 0.5],
                  record_video=False,
+                 real_time=True,
     ):
 
         connect_kwargs = {}
@@ -41,6 +42,8 @@ class PyBullet:
         )
         if add_floor:
             self.add_floor()
+        self.real_time = real_time
+        self.dt = dt
 
     def add_floor(self, base_position=[0.0]*3):
         colid = p.createCollisionShape(p.GEOM_PLANE)
@@ -48,13 +51,18 @@ class PyBullet:
         p.createMultiBody(baseMass=0.0, basePosition=base_position, baseCollisionShapeIndex=colid, baseVisualShapeIndex=visid)
 
     def start(self):
-        p.setRealTimeSimulation(1)
+        if self.real_time:
+            p.setRealTimeSimulation(1)
 
     def stop(self):
-        p.setRealTimeSimulation(0)
+        if self.real_time:
+            p.setRealTimeSimulation(0)
 
-    def step(self, dt):
-        time.sleep(dt)
+    def step(self, sleep=True):
+        if not self.real_time:
+            p.stepSimulation()
+        if sleep:
+            time.sleep(self.dt)
 
     def close(self):
         p.disconnect(self.client_id)
