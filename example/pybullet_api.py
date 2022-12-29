@@ -6,6 +6,8 @@ import pybullet as p
 import pybullet_data
 import numpy as np
 
+cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
+
 class PyBullet:
 
     def __init__(self,
@@ -146,7 +148,8 @@ class FixedBaseRobot:
 class KukaLWR(FixedBaseRobot):
 
     def __init__(self, base_position=[0.0]*3):
-        super().__init__("robots/kuka_lwr/kuka_lwr.urdf", base_position=base_position)
+        f = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
+        super().__init__(f, base_position=base_position)
 
 class KukaLBR(FixedBaseRobot):
 
@@ -154,9 +157,9 @@ class KukaLBR(FixedBaseRobot):
 
         # Process xacro
         import xacro
-        xacro_filename = "robots/kuka_lbr/med7.urdf.xacro"
+        xacro_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'med7.urdf.xacro')
         urdf_string = xacro.process(xacro_filename)
-        urdf_filename = 'robots/kuka_lbr/kuka_lbr.urdf'
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'kuka_lbr.urdf')
         with open(urdf_filename, 'w') as f:
             f.write(urdf_string)
 

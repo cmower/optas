@@ -287,7 +287,7 @@ def main():
         camera_target_position=[0.3, 0.2, 0.],
         camera_yaw=135,
     )
-    kuka = pybullet_api.Kuka()
+    kuka = pybullet_api.KukaLWR()
     kuka.reset(qc)
     GxS0 = 0.4
     GyS0 = 0.065
