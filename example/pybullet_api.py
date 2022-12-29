@@ -191,6 +191,12 @@ class FixedBaseRobot:
     def q(self):
         return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
 
+    def dq(self):
+        return [state[1] for state in p.getJointStates(self._id, self._actuated_joints)]
+
+    def t(self):
+        return [state[3] for state in p.getJointStates(self._id, self._actuated_joints)]
+
 class KukaLWR(FixedBaseRobot):
 
     def __init__(self, base_position=[0.0]*3):
