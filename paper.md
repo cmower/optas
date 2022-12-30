@@ -37,7 +37,16 @@ bibliography: paper.bib
 
 # Summary
 
-This is a draft of the paper, and will cite [@exotica].
+This paper presents OpTaS and OpTaS-ROS:
+OpTaS is a task specification Python library for Trajectory Optimization (TO), Task and Motion Planning (TAMP), and Model Predictive Control (MPC) in robotics;
+and OpTaS-ROS is an interface layer to the Robot Operating System [@Quigley09].
+Both TO and MPC are increasingly receiving interest in optimal control and in particular handling dynamic environments.
+
+While a flurry of software libraries exists to handle such problems, they either provide interfaces that are limited to a specific problem formulation (e.g. TracIK, CHOMP), or are large and statically specify the problem  in configuration files (e.g. EXOTica, eTaSL).
+OpTaS, on the other hand, allows a user to specify custom nonlinear and even discrete constrained problem formulations in a single Python script allowing the controller parameters to be modified during execution.
+The library provides interface to several open source and commercial solvers (e.g. IPOPT, SNOPT, KNITRO, SciPy, OSQP, among others) to facilitate integration with established workflows in robotics.
+Further benefits of OpTaS are highlighted through a thorough comparison with common libraries.
+An additional key advantage of OpTaS is the ability to define optimal control tasks in the joint space, task space, or indeed simultaneously.
 
 # Acknowledgments
 
