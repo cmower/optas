@@ -241,8 +241,10 @@ class OSQPSolver(Solver):
     def _reset_parameters(self):
         self._setup_input = {'P': csc_matrix(2.0*self.opt.P(self.p).toarray()), 'q': self.opt.q(self.p).toarray().flatten()}
         if self.opt_type in CONSTRAINED_OPT:
-            self._setup_input['A'] = csc_matrix(cs.vertcat(self.opt.M(self.p), self.opt.A(self.p)).toarray())
-            self._setup_input['l'] = cs.vertcat(-self.opt.c(self.p), -self.opt.b(self.p)).toarray().flatten()
+            A = self.opt.A(self.p)
+            b = self.opt.b(self.p)
+            self._setup_input['A'] = csc_matrix(cs.vertcat(self.opt.M(self.p), A, -A).toarray())
+            self._setup_input['l'] = cs.vertcat(-self.opt.c(self.p), -b, b).toarray().flatten()
 
     def _solve(self):
 
