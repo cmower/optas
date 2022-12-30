@@ -10,16 +10,17 @@ authors:
 - name: Christopher E. Mower
   orcid: 0000-0002-3929-9391
   affiliation: 1
-- name: Joao Moura
+- name: João Moura
   affiliation: 2
 - name: Martin Huber
   affiliation: 1
 - name: Nazanin Zamani Behabadi
+  affiliation:
 - name: Sethu Vijayakumar
   affiliation: 2
-- name: Christos Bergeles
-  affiliation: 1
 - name: Tom Vercauteren
+  affiliation: 1
+- name: Christos Bergeles
   affiliation: 1
 affiliations:
 - name: King's College London
@@ -33,5 +34,12 @@ bibliography: paper.bib
 # Summary
 
 This is a draft of the paper, and will cite [@exotica].
+
+# Acknowledgments
+
+This project has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No 101016985 (FAROS project).
+This work was supported by core funding from the Wellcome/EPSRC [WT203148/Z/16/Z; NS/A000049/1].
+Tom Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\textbackslash7\textbackslash34].
+For the purpose of open access, the authors have applied a CC BY public copyright licence to any Author Accepted Manuscript version arising from this submission.
 
 # References
