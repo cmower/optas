@@ -23,13 +23,13 @@ authors:
 - name: Christos Bergeles
   affiliation: 1
 affiliations:
-- name: King's College London, UK
+- name: King's College London, United Kingdom
   index: 1
-- name: University of Edinburgh, UK
+- name: University of Edinburgh, United Kingdom
   index: 2
-- name: Unaffiliated
+- name: Unaffiliated, United Kingdom
   index: 3
-- name: The Alan Turing Institute, UK
+- name: The Alan Turing Institute, United Kingdom
   index: 4
 date: 30 December 2022
 bibliography: paper.bib
