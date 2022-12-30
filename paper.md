@@ -48,6 +48,12 @@ The library provides interface to several open source and commercial solvers (e.
 Further benefits of OpTaS are highlighted through a thorough comparison with common libraries.
 An additional key advantage of OpTaS is the ability to define optimal control tasks in the joint space, task space, or indeed simultaneously.
 
+## OpTaS-ROS
+
+The OpTaS-ROS package is contained in the `optas_ros` repository.
+
+![OpTaS-ROS System Overview. \label{fig:optas_ros}](doc/image/optas_ros.png){ width=80% }
+
 # Acknowledgments
 
 This project has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No 101016985 (FAROS project).
