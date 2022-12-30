@@ -1,5 +1,5 @@
 ---
-title: "OpTaS: An Optimization-based Task Specification Python Library For Robot Control and Planning"
+title: "OpTaS: An Optimization-based Task Specification Python Framework For Robot Control and Planning"
 tags:
 - robotics
 - control
@@ -29,7 +29,7 @@ affiliations:
   index: 2
 - name: Unaffiliated
   index: 3
-- name: The Alan Turing Insistute
+- name: The Alan Turing Institute, UK
   index: 4
 date: 30 December 2022
 bibliography: paper.bib
