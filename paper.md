@@ -15,18 +15,22 @@ authors:
 - name: Martin Huber
   affiliation: 1
 - name: Nazanin Zamani Behabadi
-  affiliation:
+  affiliation: 3
 - name: Sethu Vijayakumar
-  affiliation: 2
+  affiliation: 2, 4
 - name: Tom Vercauteren
   affiliation: 1
 - name: Christos Bergeles
   affiliation: 1
 affiliations:
-- name: King's College London
+- name: King's College London, UK
   index: 1
-- name: University of Edinburgh
+- name: University of Edinburgh, UK
   index: 2
+- name: Unaffiliated
+  index: 3
+- name: The Alan Turing Insistute
+  index: 4
 date: 30 December 2022
 bibliography: paper.bib
 ---
