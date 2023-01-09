@@ -302,7 +302,7 @@ class OptimizationBuilder:
 
         model = self.get_model(name)
 
-        states_and_params = cs.SX.zeros(model.dim, self.T-time_deriv)
+        states_and_params = cs.SX.zeros(model.dim, max(1, self.T-time_deriv))
         for idx in range(0, len(model.param_joint_indexes)):
             states_and_params[model.param_joint_indexes[idx], :] = parameters[idx, :]
         for idx in range(0, len(model.opt_joint_indexes)):
