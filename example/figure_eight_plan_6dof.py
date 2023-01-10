@@ -43,7 +43,7 @@ class Planner:
         qc = builder.add_parameter('qc', self.kuka.ndof)  # current robot joint configuration
 
         # Constraint: initial configuration
-        builder.initial_configuration(self.kuka_name, qc[self.kuka.opt_joint_indexes])
+        builder.initial_configuration(self.kuka_name, qc[self.kuka.optimized_joint_indexes])
         builder.initial_configuration(self.kuka_name, time_deriv=1) # initial joint vel is zero
 
         # Constraint: dynamics
@@ -54,7 +54,7 @@ class Planner:
         )
 
         # Get joint trajectory
-        Q = builder.get_model_states_and_parameters(self.kuka_name)  # ndof-by-T symbolic array for robot trajectory
+        Q = builder.get_robot_states_and_parameters(self.kuka_name)  # ndof-by-T symbolic array for robot trajectory
 
         # End effector position trajectory
         pos = self.kuka.get_global_link_position_function(link_ee, n=self.T)
@@ -78,7 +78,7 @@ class Planner:
         builder.add_cost_term('ee_path', 1000.*optas.sumsqr(path - pos_ee))
 
         # Cost: minimize joint velocity
-        dQ = builder.get_model_states_and_parameters(self.kuka_name, time_deriv=1)
+        dQ = builder.get_robot_states_and_parameters(self.kuka_name, time_deriv=1)
         builder.add_cost_term('min_join_vel', 0.01*optas.sumsqr(dQ))
 
         # Prevent rotation in end-effector
@@ -94,13 +94,13 @@ class Planner:
 
         # Set initial seed, note joint velocity will be set to zero
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
-        self.solver.reset_initial_seed({f'{self.kuka_name}/q': Q0[self.kuka.opt_joint_indexes, :]})
+        self.solver.reset_initial_seed({f'{self.kuka_name}/q': Q0[self.kuka.optimized_joint_indexes, :]})
 
         # Set parameters
         self.solver.reset_parameters({
             'qc': optas.DM(qc),
-            f'{self.kuka_name}/P': Q0[self.kuka.param_joint_indexes, :],
-            f'{self.kuka_name}/dP': optas.DM.zeros(len(self.kuka.param_joint_indexes), self.T-1)
+            f'{self.kuka_name}/P': Q0[self.kuka.parameter_joint_indexes, :],
+            f'{self.kuka_name}/dP': optas.DM.zeros(len(self.kuka.parameter_joint_indexes), self.T-1)
         })
 
         # Solve problem
@@ -108,8 +108,8 @@ class Planner:
 
         # Merge solution with parameterized joint values
         Q = optas.DM.zeros(self.kuka.ndof, self.T)
-        Q[self.kuka.opt_joint_indexes, :] = solution[f'{self.kuka_name}/q']
-        Q[self.kuka.param_joint_indexes, :] = Q0[self.kuka.param_joint_indexes, :]
+        Q[self.kuka.optimized_joint_indexes, :] = solution[f'{self.kuka_name}/q']
+        Q[self.kuka.parameter_joint_indexes, :] = Q0[self.kuka.parameter_joint_indexes, :]
 
         # Interpolate
         plan = self.solver.interpolate(Q, self.Tmax)

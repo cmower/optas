@@ -2,6 +2,7 @@ import casadi as cs
 from .sx_container import SXContainer
 from .spatialmath import arrayify_args
 from .optimization import *
+from .models import RobotModel, TaskModel
 
 class OptimizationBuilder:
 
@@ -73,29 +74,32 @@ class OptimizationBuilder:
         is_unique_names = len(model_names) == len(set(model_names))
         assert is_unique_names, "each model should have a unique name"
 
-        # Setup decision variables
+        # Setup containers for decision variables, parameters, cost terms, ineq/eq constraints
         self._decision_variables = SXContainer()
         self._parameters = SXContainer()
-        for model in self._models:
-            for d in model.time_derivs:
-                n_s = model.state_name(d)
-                n_p = model.parameter_name(d)
-                if model.T is None:
-                    t = T-d if not derivs_align else T
-                else:
-                    t = model.T
-                self.add_decision_variables(n_s, len(model.opt_joint_names), t)
-                self.add_parameter(n_p, len(model.param_joint_names), t)
-
-        if optimize_time:
-            self.add_decision_variables('dt', T-1)
-
-        # Setup containers for parameters, cost terms, ineq/eq constraints
         self._cost_terms = SXContainer()
         self._lin_eq_constraints = SXContainer()
         self._lin_ineq_constraints = SXContainer()
         self._ineq_constraints = SXContainer()
         self._eq_constraints = SXContainer()
+
+        # Setup decision variables and parameters
+        for model in self._models:
+            for d in model.time_derivs:
+                n_s = model.state_name(d)
+                if model.T is None:
+                    t = T-d if not derivs_align else T
+                else:
+                    t = model.T
+                if isinstance(model, RobotModel):
+                    self.add_decision_variables(n_s, len(model.optimized_joint_names), t)
+                    n_p = model.parameter_name(d)
+                    self.add_parameter(n_p, len(model.parameter_joint_names), t)
+                elif isinstance(model, TaskModel):
+                    self.add_decision_variables(n_s, model.dim, t)
+
+        if optimize_time:
+            self.add_decision_variables('dt', T-1)
 
 
     def get_model_names(self):
@@ -213,7 +217,7 @@ class OptimizationBuilder:
 
 
     def get_model_parameters(self, name, time_deriv=0):
-        """Get the vector of parameters for a given model.
+        """Get the array of parameters for a given model.
 
         Syntax
         ------
@@ -233,7 +237,7 @@ class OptimizationBuilder:
         -------
 
         parameters (casadi.SX, with shape dim-by-T)
-            The vector of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
+            The array of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
 
         """
         model = self.get_model(name)
@@ -273,13 +277,13 @@ class OptimizationBuilder:
         return parameters[:, t]
 
 
-    def get_model_states_and_parameters(self, name, time_deriv=0):
+    def get_robot_states_and_parameters(self, name, time_deriv=0):
         """Get the vector of states and parameters for a given model.
 
         Syntax
         ------
 
-        parameters = builder.get_model_states_and_parameters(name, time_deriv=0)
+        parameters = builder.get_robot_states_and_parameters(name, time_deriv=0)
 
         Parameters
         ----------
@@ -302,11 +306,13 @@ class OptimizationBuilder:
 
         model = self.get_model(name)
 
+        assert isinstance(model, RobotModel), "this method only applies to robot models"
+
         states_and_params = cs.SX.zeros(model.dim, max(1, self.T-time_deriv))
-        for idx in range(0, len(model.param_joint_indexes)):
-            states_and_params[model.param_joint_indexes[idx], :] = parameters[idx, :]
-        for idx in range(0, len(model.opt_joint_indexes)):
-            states_and_params[model.opt_joint_indexes[idx], :] = states[idx, :]
+        for idx in range(0, len(model.parameter_joint_indexes)):
+            states_and_params[model.parameter_joint_indexes[idx], :] = parameters[idx, :]
+        for idx in range(0, len(model.optimized_joint_indexes)):
+            states_and_params[model.optimized_joint_indexes[idx], :] = states[idx, :]
         return states_and_params
 
 
@@ -619,7 +625,7 @@ class OptimizationBuilder:
                 dt = dt*cs.DM.ones(n-1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(len(model.opt_joint_indexes), n-1)
+        integr = self._integr(len(model.optimized_joint_indexes), n-1)
         name = f'__integrate_model_states_{name}_{time_deriv}__'
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
