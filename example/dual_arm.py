@@ -39,8 +39,8 @@ class DualKukaPlanner:
         qcr = builder.add_parameter('qcr', kukar.ndof)
 
         # Constraint: initial configuration
-        builder.initial_configuration(kukal_name, qcl)
-        builder.initial_configuration(kukar_name, qcr)
+        builder.fix_configuration(kukal_name, qcl)
+        builder.fix_configuration(kukar_name, qcr)
 
         # Constraint: dynamics
         builder.integrate_model_states(
@@ -113,7 +113,7 @@ class DualKukaPlanner:
 
         builder.add_cost_term('ee_pos_pathl', optas.sumsqr(ee_pos_pathl - path_eel))
         builder.add_cost_term('ee_pos_pathr', optas.sumsqr(ee_pos_pathr - path_eer))
-        
+
         # Setup solver
         optimization = builder.build()
         self.solver = optas.CasADiSolver(optimization).setup('ipopt')
