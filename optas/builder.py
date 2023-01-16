@@ -584,6 +584,8 @@ class OptimizationBuilder:
             Index for the initial configuration in trajectory (typically this will be the first element but it could also be the last for example in moving horizon estimation).
 
         """
+        from warnings import warn
+        warn("'initial_configuration' will be deprecated in the first full release for OpTaS, please use 'fix_configuration' instead.", DeprecationWarning, stacklevel=2)
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
         n = f'__{name}_initial_configuration_{time_deriv}_{t0}__'
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
