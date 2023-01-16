@@ -591,6 +591,35 @@ class OptimizationBuilder:
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
 
 
+    def fix_configuration(self, name, config=None, time_deriv=0, t=0):
+        """Fix configuration.
+
+        Syntax
+        ------
+
+        builder.fix_configuration(name, config=None, time_deriv=0, t=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of model.
+
+        config (array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
+            The configuration.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        t (int)
+            Index for the configuration in trajectory (by default this is the first element but it could also be the last for example in moving horizon estimation).
+
+        """
+        x0 = self.get_model_state(name, t, time_deriv=time_deriv)
+        n = f'__{name}_fix_configuration_{time_deriv}_{t}__'
+        self.add_equality_constraint(n, lhs=x0, rhs=config)  # config will be zero when None
+
+
     #
     # Main build method
     #
