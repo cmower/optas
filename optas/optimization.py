@@ -28,9 +28,18 @@ class Optimization:
         self.parameters = parameters
         self.cost_terms = cost_terms
 
+        self.lin_eq_constraints = {}
+        self.lin_ineq_constraints = {}
+
+        self.eq_constraints = {}
+        self.ineq_constraints = {}
+
         # Get symbolic variables
         x = decision_variables.vec() # symbolic decision variables
         p = parameters.vec() # symbolic parameters
+
+        self.x = x
+        self.p = p
 
         # Setup objective function
         f = cs.sum1(cost_terms.vec())
@@ -301,6 +310,9 @@ class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
 
         x = decision_variables.vec() # symbolic decision variables
         p = parameters.vec() # symbolic parameters
+
+        self.eq_constraints = eq_constraints
+        self.ineq_constraints = ineq_constraints
 
         # Setup g
         self.g = cs.Function('g', [x, p], [ineq_constraints.vec()])
