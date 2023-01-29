@@ -2,6 +2,7 @@ import osqp
 import cvxopt
 import numpy as np
 import casadi as cs
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
@@ -106,6 +107,61 @@ class Solver(ABC):
     def stats(self):
         """Return stats from solver. The return type is specifc to the solver used."""
         pass
+
+    def violated_constraints(self, x, p):
+
+        x = self.opt.decision_variables.dict2vec(x)
+        p = self.opt.parameters.dict2vec(p)
+
+        @dataclass
+        class ViolatedConstraint:
+            label: str
+            ctype: str
+            diff: cs.DM
+            pattern: cs.DM
+
+            def __str__(self):
+                return f"\n{self.label} [{self.ctype}]:\n{self.pattern}\n"
+
+            def __repr__(self):
+                info = str(self)
+                max_width = max(len(line) for line in info.split('\n'))
+                return "="*max_width + info + '-'*max_width + '\n'
+
+            @property
+            def verbose_info(self):
+                info = str(self)
+                info += f'{self.diff}\n'
+                return info
+
+        lin_eq_violated_constraints = []
+        for label, sx_var in self.opt.lin_eq_constraints.items():
+            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            diff = fun(x, p)
+            lin_eq_violated_constraints.append(ViolatedConstraint(label, 'lin_eq', diff, diff>=0.))
+
+        eq_violated_constraints = []
+        for label, sx_var in self.opt.eq_constraints.items():
+            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            diff = fun(x, p)
+            eq_violated_constraints.append(ViolatedConstraint(label, 'eq', diff, diff>=0.))
+
+        lin_ineq_violated_constraints = []
+        for label, sx_var in self.opt.lin_ineq_constraints.items():
+            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            diff = fun(x, p)
+            lin_ineq_violated_constraints.append(ViolatedConstraint(label, 'lin_ineq', diff, diff>=0.))
+
+        ineq_violated_constraints = []
+        for label, sx_var in self.opt.ineq_constraints.items():
+            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            diff = fun(x, p)
+            ineq_violated_constraints.append(ViolatedConstraint(label, 'ineq', diff, diff>=0.))
+
+        return (lin_eq_violated_constraints,
+                eq_violated_constraints,
+                lin_ineq_violated_constraints,
+                ineq_violated_constraints)
 
     @staticmethod
     def interpolate(traj, T, **interp_args):
