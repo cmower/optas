@@ -17,5 +17,14 @@ OpTaS is an OPtimization-based TAsk Specification library for task and motion pl
 3. `$ pip install --upgrade pip`, ensure `pip` is up-to-date
 4. `$ pip install .`
 
+## Build documentation
+
+1. `$ cd /path/to/optas/doc`
+2. `$ sudo apt install doxygen`
+3. `$ doxygen`
+4. Open the documentation in either HTML or PDF:
+   - `html/index.html`
+   - `latex/refman.pdf`
+
 # Examples
 For examples, checkout the [example](example) folder.
