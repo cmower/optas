@@ -195,6 +195,9 @@ class RobotModel(Model):
 
         super().__init__(name, self.ndof, time_derivs, 'q', dlim, T)
 
+    def get_urdf(self):
+        return self._urdf
+
     @property
     def joint_names(self):
         return [jnt.name for jnt in self._urdf.joints]
