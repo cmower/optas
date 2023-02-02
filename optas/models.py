@@ -777,6 +777,20 @@ class RobotModel(Model):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
         return self._make_function('Ja', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
+    @arrayify_args
+    @listify_output
+    def get_global_link_approach_vector_jacobian(self, link, q):
+
+        # Compute transform
+        q_sym = cs.SX.sym('q_sym', self.ndof)
+        Tf = self.get_global_link_transform(link, q)
+        approach = Tf[:3, 0]
+        Ja = cs.jacobian(approach, q_sym)
+
+        # Functionize
+        Ja = cs.Function('Ja', [q_sym], [Ja])
+
+        return Ja(q)
 
     def _manipulability(self, J):
         """Computes the manipulability given a jacobian array."""
