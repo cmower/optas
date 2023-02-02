@@ -186,6 +186,12 @@ class Solver(ABC):
         p = self.opt.parameters.dict2vec(p)
         return self.opt.f(x, p)
 
+    def evaluate_cost_terms(self, x, p):
+        """Evaluates each cost term for given decision variables and parameters."""
+        x = self.opt.decision_variables.dict2vec(x)
+        p = self.opt.parameters.dict2vec(p)
+        
+
 
 ################################################################
 # CasADi solvers (https://web.casadi.org/)
