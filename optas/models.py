@@ -1,3 +1,5 @@
+import os
+
 import casadi as cs
 
 # https://wiki.ros.org/xacro
@@ -164,12 +166,16 @@ class RobotModel(Model):
     def __init__(self, urdf_filename=None, urdf_string=None, xacro_filename=None, name=None, time_derivs=[0], qddlim=None, T=None):
 
         # If xacro is passed then convert to urdf string
+        self._xacro_filename = None
         if (xacro_filename is not None):
             urdf_string = xacro.process(xacro_filename)
 
         # Load URDF
         self._urdf = None
+        self._urdf_filename = None
+        self._urdf_string = None
         if urdf_filename is not None:
+            self._urdf_filename = urdf_filename
             self._urdf = URDF.from_xml_file(urdf_filename)
         if urdf_string is not None:
             self._urdf = URDF.from_xml_string(urdf_string)
@@ -194,6 +200,15 @@ class RobotModel(Model):
             name = self._urdf.name
 
         super().__init__(name, self.ndof, time_derivs, 'q', dlim, T)
+
+    def get_urdf(self):
+        return self._urdf
+
+    def get_urdf_dirname(self):
+        if self._urdf_filename is not None:
+            return os.path.dirname(self._urdf_filename)
+        elif self._xacro_filename is not None:
+            return os.path.dirname(self._xacro_filename)
 
     @property
     def joint_names(self):
@@ -286,9 +301,16 @@ class RobotModel(Model):
         """Return the root link"""
         return self._urdf.get_root()
 
+    @staticmethod
+    def get_link_visual_origin(link):
+        xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
+        if link.visual.origin is not None:
+            origin = link.visual.origin
+            xyz, rpy = cs.DM(origin.xyz), cs.DM(origin.rpy)
+        return xyz, rpy
 
     @staticmethod
-    def _get_joint_origin(joint):
+    def get_joint_origin(joint):
         """Get the origin for the joint"""
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
@@ -297,7 +319,7 @@ class RobotModel(Model):
 
 
     @staticmethod
-    def _get_joint_axis(joint):
+    def get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
         if joint.type in {'revolute', 'continuous'}:
@@ -416,7 +438,7 @@ class RobotModel(Model):
         for joint_name in self._urdf.get_chain(root, link, links=False):
 
             joint = self._urdf.joint_map[joint_name]
-            xyz, rpy = self._get_joint_origin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
@@ -427,7 +449,7 @@ class RobotModel(Model):
 
             if joint.type in {'revolute', 'continuous'}:
                 T = T @ rt2tr(rpy2r(rpy), xyz)
-                T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
+                T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -513,7 +535,7 @@ class RobotModel(Model):
         for joint_name in self._urdf.get_chain(root, link, links=False):
 
             joint = self._urdf.joint_map[joint_name]
-            xyz, rpy = self._get_joint_origin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 quat = Quaternion.fromrpy(rpy) * quat
@@ -524,7 +546,7 @@ class RobotModel(Model):
 
             if joint.type in {'revolute', 'continuous'}:
                 quat = Quaternion.fromrpy(rpy) * quat
-                quat = Quaternion.fromangvec(qi, self._get_joint_axis(joint)) * quat
+                quat = Quaternion.fromangvec(qi, self.get_joint_axis(joint)) * quat
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -608,7 +630,7 @@ class RobotModel(Model):
 
             elif joint.type in {'revolute', 'continuous'}:
 
-                axis = self._get_joint_axis(joint)
+                axis = self.get_joint_axis(joint)
                 R = self.get_global_link_rotation(joint.child, q)
                 R = R @ angvec2r(qi, axis)
                 p = self.get_global_link_position(joint.child, q)
