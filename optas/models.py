@@ -800,6 +800,56 @@ class RobotModel(Model):
         return self._make_function('Ja', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
 
+    @arrayify_args
+    @listify_output
+    def get_link_axis_jacobian(self, link, q, axis, base_link):
+
+        q_sym = cs.SX.sym('q_sym', self.ndof)
+        Tf = self.get_link_transform(link, q, base_link)
+
+        axis2index = {'x': 0, 'y': 1, 'z': 2}
+        if isinstance(axis, str):
+
+            assert axis in axis2index, "axis must be either 'x', 'y', 'z' or a 3-array"
+            index = axis2index[axis]
+            vector = Tf[:3, index]
+
+        elif isinstance(axis, (cs.DM, cs.SX)):
+            a = axis / cs.norm_fro(axis)  # normalize
+
+            x = Tf[:3, 0]
+            y = Tf[:3, 1]
+            z = Tf[:3, 2]
+
+            vector = a[0]*x + a[1]*y + a[2]*z
+
+        else:
+
+            raise ValueError(f"did not recognize input for axis: {axis}")
+
+        # Compute jacobian
+        Jv = cs.jacobian(vector, q_sym)
+
+        # Functionize
+        J = cs.Function('Ja', [q_sym], [Jv])
+
+        return J(q)
+
+
+    def get_link_axis_jacobian_function(self, link, axis, base_link, n=1):
+        return self._make_function('Ja', link, self.get_link_axis_jacobian, n=n, base_link=base_link)
+
+
+    @arrayify_args
+    @listify_output
+    def get_global_link_axis_jacobian(self, link, q, axis):
+        return self.get_link_axis_jacobian(link, q, axis, self.get_root_link())
+
+
+    def get_global_link_axis_jacobian_function(self, link, axis, n=1):
+        return self._make_function('Ja', link, self.get_global_link_axis_jacobian, n=n)
+
+
     def _manipulability(self, J):
         """Computes the manipulability given a jacobian array."""
         return cs.sqrt(cs.det(J @ J.T))
