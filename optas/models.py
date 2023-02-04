@@ -310,7 +310,7 @@ class RobotModel(Model):
         return xyz, rpy
 
     @staticmethod
-    def _get_joint_origin(joint):
+    def get_joint_origin(joint):
         """Get the origin for the joint"""
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
@@ -319,7 +319,7 @@ class RobotModel(Model):
 
 
     @staticmethod
-    def _get_joint_axis(joint):
+    def get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
         if joint.type in {'revolute', 'continuous'}:
@@ -438,7 +438,7 @@ class RobotModel(Model):
         for joint_name in self._urdf.get_chain(root, link, links=False):
 
             joint = self._urdf.joint_map[joint_name]
-            xyz, rpy = self._get_joint_origin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 T  = T @ rt2tr(rpy2r(rpy), xyz)
@@ -449,7 +449,7 @@ class RobotModel(Model):
 
             if joint.type in {'revolute', 'continuous'}:
                 T = T @ rt2tr(rpy2r(rpy), xyz)
-                T = T @ r2t(angvec2r(qi, self._get_joint_axis(joint)))
+                T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -535,7 +535,7 @@ class RobotModel(Model):
         for joint_name in self._urdf.get_chain(root, link, links=False):
 
             joint = self._urdf.joint_map[joint_name]
-            xyz, rpy = self._get_joint_origin(joint)
+            xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == 'fixed':
                 quat = Quaternion.fromrpy(rpy) * quat
@@ -546,7 +546,7 @@ class RobotModel(Model):
 
             if joint.type in {'revolute', 'continuous'}:
                 quat = Quaternion.fromrpy(rpy) * quat
-                quat = Quaternion.fromangvec(qi, self._get_joint_axis(joint)) * quat
+                quat = Quaternion.fromangvec(qi, self.get_joint_axis(joint)) * quat
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -630,7 +630,7 @@ class RobotModel(Model):
 
             elif joint.type in {'revolute', 'continuous'}:
 
-                axis = self._get_joint_axis(joint)
+                axis = self.get_joint_axis(joint)
                 R = self.get_global_link_rotation(joint.child, q)
                 R = R @ angvec2r(qi, axis)
                 p = self.get_global_link_position(joint.child, q)
