@@ -6,7 +6,7 @@ from typing import List
 
 class Controller(abc.ABC):
 
-    """Controller base class."""
+    """Controller base class. This provides a structure for implementing controllers."""
 
     def __init__(self):
         self.solution = None
