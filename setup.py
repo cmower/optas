@@ -25,5 +25,6 @@ setup(
         'osqp',
         'cvxopt',
         'xacro',
+        'vtk',
     ]
 )

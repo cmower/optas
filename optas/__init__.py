@@ -4,6 +4,7 @@ from .spatialmath import *
 from .models import RobotModel, TaskModel
 from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver
+from .visualize import RobotVisualizer
 
 @arrayify_args
 def deg2rad(x):
