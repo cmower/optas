@@ -6,8 +6,9 @@ from typing import List
 
 class Controller(abc.ABC):
 
-    def __init__(self, node):
-        self.node = node
+    """Controller base class."""
+
+    def __init__(self):
         self.solution = None
         self._solver_duration = None
         self.solver = None  # this must be created during initialization
