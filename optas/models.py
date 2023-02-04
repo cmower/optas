@@ -301,6 +301,13 @@ class RobotModel(Model):
         """Return the root link"""
         return self._urdf.get_root()
 
+    @staticmethod
+    def get_link_visual_origin(link):
+        xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
+        if link.visual.origin is not None:
+            origin = link.visual.origin
+            xyz, rpy = cs.DM(origin.xyz), cs.DM(origin.rpy)
+        return xyz, rpy
 
     @staticmethod
     def _get_joint_origin(joint):
