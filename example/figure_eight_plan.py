@@ -61,8 +61,8 @@ class Planner:
         qc = builder.add_parameter('qc', self.kuka.ndof)  # current robot joint configuration
 
         # Constraint: initial configuration
-        builder.initial_configuration(self.kuka_name, qc)
-        builder.initial_configuration(self.kuka_name, time_deriv=1) # initial joint vel is zero
+        builder.fix_configuration(self.kuka_name, config=qc)
+        builder.fix_configuration(self.kuka_name, time_deriv=1) # initial joint vel is zero
 
         # Constraint: dynamics
         builder.integrate_model_states(
