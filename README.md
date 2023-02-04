@@ -36,7 +36,13 @@ If you use OpTaS in your work, please consider including the following citation.
 
 # Acknowledgement
 
-This research received funding from the European Union’s Horizon 2020 research and innovation program under grant agreement No. 101016985 (FAROS).
+This research received funding from the European Union’s Horizon 2020 research and innovation program under grant agreement No. 101016985 ([FAROS](https://h2020faros.eu/)).
 Further, this work was supported by core funding from the Wellcome/EPSRC [WT203148/Z/16/Z; NS/A000049/1].
-Tom Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\7\34], and Christos Bergeles by an ERC Starting Grant [714562].
-This research is supported by Kawada Robotics Corporation.
+T. Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\7\34], and C. Bergeles by an ERC Starting Grant [714562].
+This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 101017008, Enhancing Healthcare with Assistive Robotic Mobile Manipulation ([HARMONY](https://harmony-eu.org/)).
+This work was supported by core funding from the Wellcome/EPSRC [WT203148/Z/16/Z; NS/A000049/1].
+This research is supported by Kawada Robotics Corporation, Japan and the Alan Turing Institute, UK.
+
+<p align="center">
+  <img src="doc/image/eu.png" width="180" align="left">
+</p>
