@@ -83,7 +83,7 @@ class TOMPCCPlanner:
 
         # Constraint: initial configuration
         x0 = optas.vertcat(GpS0, GthetaS0, SphiC0)
-        builder.initial_configuration('state', x0)
+        builder.fix_configuration('state', config=x0)
 
         # Split X/U
         theta = X[2, :]

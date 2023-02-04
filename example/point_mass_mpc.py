@@ -34,8 +34,8 @@ class Planner:
         builder.integrate_model_states(pm_name, time_deriv=1, dt=dt)
 
         # Constraint: initial state
-        builder.initial_configuration(pm_name, init=init)
-        builder.initial_configuration(pm_name, time_deriv=1)
+        builder.fix_configuration(pm_name, config=init)
+        builder.fix_configuration(pm_name, time_deriv=1)
 
         # Constraint: final velocity
         dxF = builder.get_model_state(pm_name, -1, time_deriv=1)
@@ -114,8 +114,8 @@ class Controller:
         builder.integrate_model_states(pm_name, time_deriv=1, dt=dt)
 
         # Constraint: initial state
-        builder.initial_configuration(pm_name, init=curr)
-        builder.initial_configuration(pm_name, init=dcurr, time_deriv=1)
+        builder.fix_configuration(pm_name, config=curr)
+        builder.fix_configuration(pm_name, config=dcurr, time_deriv=1)
 
         # Constraint: obstacle avoidance
         X = builder.get_model_states(pm_name)
