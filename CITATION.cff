@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use OpTaS in your work, please consider including the following citation."
+authors:
+- family-names: "Mower"
+  given-names: "Christopher E."
+- family-names: "Moura"
+  given-names: "João"
+- family-names: "Zamani Behabadi"
+  given-names: "Nazanin"
+- family-names: "Vijayakumar"
+  given-names: "Sethu"
+- family-names: "Vercauteren"
+  given-names: "Tom"
+- family-names: "Bergeles"
+  given-names: "Christos"
+title: "OpTaS: An Optimization-based Task Specification Library for Trajectory Optimization and Model Predictive Control"
+url: "https://github.com/cmower/optas"
