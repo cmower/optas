@@ -188,9 +188,30 @@ class Solver(ABC):
 
     def evaluate_cost_terms(self, x, p):
         """Evaluates each cost term for given decision variables and parameters."""
+
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
-        
+
+        @dataclass
+        class CostTerm:
+            label: str
+            cost: float
+
+            def __str__(self):
+                return f"\n{self.label}: {self.cost}"
+
+            def __repr__(self):
+                info = str(self)
+                max_width = max(len(line) for line in info.split('\n'))
+                return "="*max_width + info + '-'*max_width + '\n'
+
+        cost_terms = []
+        for label, sx_var in self.opt.cost_terms.items():
+            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            c = fun(x, p)
+            cost_terms.append(c)
+
+        return cost_terms
 
 
 ################################################################
