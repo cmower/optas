@@ -1,3 +1,5 @@
+import os
+
 import casadi as cs
 
 # https://wiki.ros.org/xacro
@@ -164,12 +166,16 @@ class RobotModel(Model):
     def __init__(self, urdf_filename=None, urdf_string=None, xacro_filename=None, name=None, time_derivs=[0], qddlim=None, T=None):
 
         # If xacro is passed then convert to urdf string
+        self._xacro_filename = None
         if (xacro_filename is not None):
             urdf_string = xacro.process(xacro_filename)
 
         # Load URDF
         self._urdf = None
+        self._urdf_filename = None
+        self._urdf_string = None
         if urdf_filename is not None:
+            self._urdf_filename = urdf_filename
             self._urdf = URDF.from_xml_file(urdf_filename)
         if urdf_string is not None:
             self._urdf = URDF.from_xml_string(urdf_string)
@@ -197,6 +203,12 @@ class RobotModel(Model):
 
     def get_urdf(self):
         return self._urdf
+
+    def get_urdf_dirname(self):
+        if self._urdf_filename is not None:
+            return os.path.dirname(self._urdf_filename)
+        elif self._xacro_filename is not None:
+            return os.path.dirname(self._xacro_filename)
 
     @property
     def joint_names(self):
