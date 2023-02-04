@@ -1,4 +1,4 @@
-# Examples
+# OpTaS Examples and Experiments
 
 Several examples are contained in this directory.
 In addition, two experiments are also included.
@@ -6,6 +6,44 @@ In addition, two experiments are also included.
 The majority of these examples require [PyBullet](https://pybullet.org/wordpress/).
 If you installed OpTaS without modifying `setup.py` this should have been installed by default.
 Otherwise, you can install PyBullet using `$ pip install pybullet`.
+
+Note, the OpTaS visualizer requires [VTK](https://vtk.org/).
+If you installed OpTaS without modifying `setup.py` this should have been installed by default.
+Otherwise, you can install VTK using `$ pip install vtk`.
+
+## Examples
+
+### Figure of Eight Planning
+
+This script, `figure_eight_plan.py`, demonstrates how to implement a simple planner.
+A hand-crafted task space trajectory is given, and the planner finds the joint space trajectory.
+
+### Dual Arm
+
+The script that runs the dual arm example is `dual_arm.py`.
+The goal of this example is to demonstrate how multiple robots can be incorporated into a single optimization formulation.
+
+A task space trajectory is hand crafted, for a dual arm setup using two KUKA robot arms.
+A joint space plan is computed for both arms by solving an optimization problem in a single formulation.
+
+### Visualization
+
+This is a simple example that shows how to pass the robot model to the visualizer.
+The script that implements this example is `visualization.py`.
+
+### MPC
+
+A basic task space MPC controller is demonstrated in the `point_mass_mpc.py` script.
+The script implements a basic MPC controller, and plots the solution in a short animation.
+
+The demonstration first computes a task space plan.
+Then the robot (point mass) is tasked with tracking the plan whilst adapting to dynamic obstacles in the scene.
+An obstacle, at execution time, is given some motion that impedes the plan - the goal of the MPC is to avoid the obstacle.
+This is achieved via the MPC controller.
+
+### Point Mass Planning
+
+This example, in the script `point_mass_planner.py`, demonstrates how to plan a trajectory using a task model.
 
 ## Experiments
 
