@@ -15,7 +15,3 @@ authors:
   given-names: "Christos"
 title: "OpTaS: An Optimization-based Task Specification Library for Trajectory Optimization and Model Predictive Control"
 url: "https://github.com/cmower/optas"
-preferred-citation:
-  type: article
-  journal: "2023 International Conference on Robotics and Automation (ICRA)"
-  year: 2023

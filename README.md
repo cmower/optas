@@ -24,7 +24,7 @@ For examples, checkout the [example](example) folder.
 
 If you use OpTaS in your work, please consider including the following citation.
 
-```
+```bibtex
 @inproceedings{Mower2023,
   author={Mower, Christopher E. and Moura, João and Zamani Behabadi, Nazanin and Vijayakumar, Sethu and Vercauteren, Tom and Bergeles, Christos},
   booktitle={2023 International Conference on Robotics and Automation (ICRA)},
@@ -34,6 +34,8 @@ If you use OpTaS in your work, please consider including the following citation.
 }
 ```
 
+The preprint can be found on [arXiv](https://arxiv.org/abs/2301.13512).
+
 # Acknowledgement
 
 This research received funding from the European Union’s Horizon 2020 research and innovation program under grant agreement No. 101016985 ([FAROS](https://h2020faros.eu/)).
@@ -41,7 +43,6 @@ Further, this work was supported by core funding from the Wellcome/EPSRC [WT2031
 T. Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\7\34], and C. Bergeles by an ERC Starting Grant [714562].
 This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 101017008, Enhancing Healthcare with Assistive Robotic Mobile Manipulation ([HARMONY](https://harmony-eu.org/)).
 This work was supported by core funding from the Wellcome/EPSRC [WT203148/Z/16/Z; NS/A000049/1].
-This research is supported by Kawada Robotics Corporation, Japan and the Alan Turing Institute, UK.
 
 <p align="center">
   <img src="doc/image/eu.png" width="180" align="left">
