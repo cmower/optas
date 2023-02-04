@@ -45,5 +45,5 @@ class Controller(abc.ABC):
 
     @abc.abstractmethod
     def get_joint_state_solution(self) -> optas.DM:
-        """Returns the joint state solution for the previous call to solve."""
+        """Returns the joint state solution for the previous call to solve. This, for example, would be the joint states that are sent to the robot."""
         pass
