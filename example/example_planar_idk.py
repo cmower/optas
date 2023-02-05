@@ -24,7 +24,7 @@ dq = builder.get_model_states(robot_name, time_deriv=1)
 q = builder.add_parameter('q', robot.ndof)
 
 # Forward Differential Kinematics
-J = robot.get_global_linear_geometric_jacobian_function(link=link_ee)
+J = robot.get_global_linear_jacobian_function(link=link_ee)
 quat = robot.get_global_link_quaternion_function(link=link_ee)
 # End-effector orientation
 phi = lambda q: 2.0*optas.atan2(quat(q)[2],quat(q)[3])
