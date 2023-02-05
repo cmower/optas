@@ -1,4 +1,4 @@
-# Example of an Inverse Differential Kinematic (IK) solver 
+# Example of an Inverse Differential Kinematic (IK) solver
 # written as an Quadratic Program (QP) applied to a 3 dof planar robot
 
 # Python standard lib
@@ -59,6 +59,6 @@ solution = solver.solve()
 print(solution[f'{robot_name}/dq'])
 
 # solution using the pseudo-inverse approach
-# it should give the same result as the QP for the case that the 
+# it should give the same result as the QP for the case that the
 # solution is completely inside all the boundary constraints
 print(optas.pinv(J(q_t)[0:2,:])@dx)
