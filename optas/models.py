@@ -166,7 +166,7 @@ class RobotModel(Model):
     def __init__(self, urdf_filename=None, urdf_string=None, xacro_filename=None, name=None, time_derivs=[0], qddlim=None, T=None):
 
         # If xacro is passed then convert to urdf string
-        self._xacro_filename = None
+        self._xacro_filename = xacro_filename
         if (xacro_filename is not None):
             urdf_string = xacro.process(xacro_filename)
 
@@ -304,9 +304,10 @@ class RobotModel(Model):
     @staticmethod
     def get_link_visual_origin(link):
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
-        if link.visual.origin is not None:
-            origin = link.visual.origin
-            xyz, rpy = cs.DM(origin.xyz), cs.DM(origin.rpy)
+        if link.visual is not None:
+            if link.visual.origin is not None:
+                origin = link.visual.origin
+                xyz, rpy = cs.DM(origin.xyz), cs.DM(origin.rpy)
         return xyz, rpy
 
     @staticmethod
