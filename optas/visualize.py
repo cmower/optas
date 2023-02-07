@@ -64,7 +64,9 @@ class RobotVisualizer:
                 tf = Tf(q)
                 p = tf[:3, 3].toarray()
 
-                actor = self.create_text_actor(name, p, scale=[2*0.001, 2*0.001, 2*0.001])
+                text = f'{robot.get_name()}/{name}'
+
+                actor = self.create_text_actor(text, p, scale=[2*0.001, 2*0.001, 2*0.001])
                 self.ren.AddActor(actor)
 
         if self.params['show_links']:
