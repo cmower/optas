@@ -150,6 +150,35 @@ class RobotVisualizer:
 
         return actor
 
+    def draw_sphere(self, radius, rgba=None, position=None):
+
+        sphere = vtkSphereSource()
+        sphere.SetRadius(radius)
+        sphere.SetThetaResolution(20)
+        sphere.SetPhiResolution(20)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(sphere.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # Transform sphere
+        if position is not None:
+            transform = vtk.vtkTransform()
+            transform.Translate(position)
+            actor.SetUserTransform(transform)
+
+        # Set color
+        if rgba is not None:
+            rgb = rgba[:3]
+            alpha = rgba[3]
+
+            actor.GetProperty().SetColor(*rgb)
+            actor.GetProperty().SetOpacity(alpha)
+
+        self.ren.AddActor(actor)
+
     def draw_robot(self, q, alpha):
 
         for link in self.urdf.links:
