@@ -154,6 +154,9 @@ class RobotVisualizer:
 
         for link in self.urdf.links:
 
+            if link.visual is None:
+                continue
+
             geometry = link.visual.geometry
             tf = self.visual_tf[link.name](q)
 
