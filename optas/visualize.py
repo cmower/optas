@@ -5,9 +5,31 @@ from vtkmodules.vtkFiltersSources import vtkCylinderSource, vtkSphereSource
 from .spatialmath import *
 from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
+default_configurable_parameters = {
+    'show_global_link': True,
+    'alpha': 1.,
+    'show_link_names': False,
+    'show_links': False,
+    'link_axis_scale': 0.1,
+    'link_center_radius': 0.01,
+}
+
 class RobotVisualizer:
 
-    def __init__(self, robot, q=None, show_global_link=True, alpha=1., show_link_names=False):
+    def __init__(self, robot, q=None, params=None):
+
+
+        # Specify parameters
+        user_defined_parameters = params.copy()
+        parameters = default_configurable_parameters.copy()
+
+        if isinstance(user_defined_parameters, dict):
+
+            # Overwrite parameters
+            for key, value in user_defined_parameters.items():
+                parameters[key] = value
+
+        self.params = parameters
 
         self.init_robot(robot)
 
@@ -29,14 +51,14 @@ class RobotVisualizer:
         self.iren.SetInteractorStyle(style)
 
         self.draw_grid_floor()
-        if show_global_link:
+        if self.params['show_global_link']:
             self.draw_link(I4())  # global link
 
         if q is None:
             q = [0.]*self.robot.ndof
-        self.draw_robot(q, alpha)
+        self.draw_robot(q, self.params['alpha'])
 
-        if show_link_names:
+        if self.params['show_link_names']:
             for name, Tf in self.link_tf.items():
 
                 tf = Tf(q)
@@ -44,6 +66,11 @@ class RobotVisualizer:
 
                 actor = self.create_text_actor(name, p, scale=[2*0.001, 2*0.001, 2*0.001])
                 self.ren.AddActor(actor)
+
+        if self.params['show_links']:
+            for name, Tf in self.link_tf.items():
+                self.draw_link(Tf(q))
+
 
     def init_robot(self, robot):
 
@@ -270,11 +297,7 @@ class RobotVisualizer:
 
     def draw_link(self, T):
 
-        scale = 0.1
-
-        axis_scale = 1 * scale
-        center_radius = 0.075 * scale
-        axis_radius = 0.03 * scale
+        scale = self.params['link_axis_scale']
 
         # Extract data
         p = T[:3, 3].toarray().flatten()
@@ -284,7 +307,7 @@ class RobotVisualizer:
 
         # Draw a sphere to represent link center
         center = vtkSphereSource()
-        center.SetRadius(center_radius)
+        center.SetRadius(self.params['link_center_radius'])
         center.SetThetaResolution(20)
         center.SetPhiResolution(20)
         mapper = vtk.vtkPolyDataMapper()
@@ -297,17 +320,20 @@ class RobotVisualizer:
         self.ren.AddActor(actor)
 
         # Draw axes
-        xaxis = self.create_cylinder_actor(p, p+axis_scale*x, axis_radius)
-        xaxis.GetProperty().SetColor(1, 0, 0)
-        self.ren.AddActor(xaxis)
+        actor = self.create_line_actor(p, p+scale*x)
+        actor.GetProperty().SetColor(1, 0, 0)
+        actor.GetProperty().SetLineWidth(5.0)
+        self.ren.AddActor(actor)
 
-        yaxis = self.create_cylinder_actor(p, p+axis_scale*y, axis_radius)
-        yaxis.GetProperty().SetColor(0, 1, 0)
-        self.ren.AddActor(yaxis)
+        actor = self.create_line_actor(p, p+scale*y)
+        actor.GetProperty().SetColor(0, 1, 0)
+        actor.GetProperty().SetLineWidth(5.0)
+        self.ren.AddActor(actor)
 
-        zaxis = self.create_cylinder_actor(p, p+axis_scale*z, axis_radius)
-        zaxis.GetProperty().SetColor(0, 0, 1)
-        self.ren.AddActor(zaxis)
+        actor = self.create_line_actor(p, p+scale*z)
+        actor.GetProperty().SetColor(0, 0, 1)
+        actor.GetProperty().SetLineWidth(5.0)
+        self.ren.AddActor(actor)
 
     def start(self):
         # Enable user interface interactor
