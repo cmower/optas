@@ -1,7 +1,7 @@
 import os
 import vtk
 import casadi as cs
-from vtkmodules.vtkFiltersSources import vtkCylinderSource, vtkSphereSource
+from vtkmodules.vtkFiltersSources import vtkCylinderSource, vtkSphereSource, vtkCubeSource
 from .spatialmath import *
 from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
@@ -348,6 +348,43 @@ class RobotVisualizer:
         actor = self.create_line_actor(p, p+scale*z)
         actor.GetProperty().SetColor(0, 0, 1)
         actor.GetProperty().SetLineWidth(5.0)
+        self.ren.AddActor(actor)
+
+    def draw_box(self, L, W, H, rgba=None, T=None):
+
+        # Create a vtkCubeSource
+        cube = vtk.vtkCubeSource()
+        cube.SetBounds(-0.5*L, 0.5*L, -0.5*W, 0.5*W, -0.5*H, 0.5*H)
+
+        # Create a vtkPolyDataMapper
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(cube.GetOutputPort())
+
+        # Create a vtkActor
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # Transform cube
+        if T is not None:
+
+            if isinstance(T, cs.DM):
+                tf = T.toarray().flatten().tolist()
+            else:
+                # Assume numpy array
+                tf = T.flatten().tolist()
+
+            transform = vtk.vtkTransform()
+            transform.SetMatrix(tf)
+            actor.SetUserTransform(transform)
+
+        # Set color
+        if rgba is not None:
+            rgb = rgba[:3]
+            alpha = rgba[3]
+
+            actor.GetProperty().SetColor(*rgb)
+            actor.GetProperty().SetOpacity(alpha)
+
         self.ren.AddActor(actor)
 
     def start(self):

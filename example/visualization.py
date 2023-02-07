@@ -13,4 +13,13 @@ params = {
     'show_links': True,
     'link_axis_scale': 0.3,
 }
-optas.RobotVisualizer(robot, q=q, params=params).start()
+vis = optas.RobotVisualizer(robot, q=q, params=params)
+T = optas.np.array([
+    [1, 0, 0, -1],
+    [0, 1, 0, -1],
+    [0, 0, 1, 0.25],
+    [0, 0, 0, 1],
+])
+vis.draw_box(0.5, 0.5, 0.5, [0, 1, 0, 1], T=T)
+vis.start()
+
