@@ -560,13 +560,13 @@ class OptimizationBuilder:
         n = f'__{name}_model_limit_{time_deriv}__'
         self.add_bound_inequality_constraint(n, xlo, x, xup)
 
-    def initial_configuration(self, name, init=None, time_deriv=0, t0=0):
+    def initial_configuration(self, name, init=None, time_deriv=0):
         """Set initial configuration.
 
         Syntax
         ------
 
-        builder.initial_configuration(name, init=None, time_deriv=0, t0=0)
+        builder.initial_configuration(name, init=None, time_deriv=0)
 
         Parameters
         ----------
@@ -580,14 +580,10 @@ class OptimizationBuilder:
         time_deriv (int)
             The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
 
-        t0 (int)
-            Index for the initial configuration in trajectory (typically this will be the first element but it could also be the last for example in moving horizon estimation).
-
         """
-        from warnings import warn
-        warn("'initial_configuration' will be deprecated in the first full release for OpTaS, please use 'fix_configuration' instead.", DeprecationWarning, stacklevel=2)
+        t0 = 0
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
-        n = f'__{name}_initial_configuration_{time_deriv}_{t0}__'
+        n = f'__{name}_initial_configuration_{time_deriv}__'
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
 
 
