@@ -133,6 +133,19 @@ class RobotVisualizer:
             actor = vtk.vtkActor()
             actor.SetMapper(mapper)
 
+        material = link.visual.material
+
+        if isinstance(material.name, str) and material.name in [m.name for m in self.urdf.materials]:
+            for m in self.urdf.materials:
+                if m.name == material.name:
+                    break
+            if m.color is not None:
+                rgb = m.color.rgba[:3]
+                alpha = m.color.rgba[3]
+
+                actor.GetProperty().SetColor(*rgb)
+                actor.GetProperty().SetOpacity(alpha)
+
         return actor
 
     def draw_robot(self, q, alpha):
