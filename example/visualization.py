@@ -1,10 +1,24 @@
 import os
+import sys
 import pathlib
 import optas
 
 cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
-urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
-robot = optas.RobotModel(urdf_filename=urdf_filename)
+
+if 'lbr' in sys.argv:
+    model = 'lbr'
+elif 'lwr' in sys.argv:
+    model = 'lwr'
+else:
+    model = 'lwr'
+
+if model == 'lwr':
+    urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
+    robot = optas.RobotModel(urdf_filename=urdf_filename)
+
+elif model == 'lbr':
+    xacro_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'med7.urdf.xacro')
+    robot = optas.RobotModel(xacro_filename=xacro_filename)
 
 q = optas.deg2rad([0, 45, 0, -90, 0, -45, 0])
 params = {
