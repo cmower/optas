@@ -34,7 +34,14 @@ T = optas.np.array([
     [0, 0, 1, 0.25],
     [0, 0, 0, 1],
 ])
+T_cyl = optas.np.array([
+    [1, 0, 0, 1],
+    [0, 1, 0, -1],
+    [0, 0, 1, 0.25],
+    [0, 0, 0, 1],
+])
 vis.draw_box(0.5, 0.5, 0.5, rgba=[0, 1, 0, 1], T=T)
 vis.draw_sphere(0.25, rgba=[1, 0, 0, 1], position=[0, -1, 0.25])
+vis.draw_cylinder(0.25, 0.5, rgba=[0, 0, 1, 1], T=T_cyl)
 vis.start()
 

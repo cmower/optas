@@ -150,6 +150,43 @@ class RobotVisualizer:
 
         return actor
 
+    def draw_cylinder(self, radius, height, rgba=None, T=None):
+
+        cylinder = vtkCylinderSource()
+        cylinder.SetRadius(radius)
+        cylinder.SetHeight(height)
+        cylinder.SetResolution(20)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(cylinder.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # Transform cube
+        if T is not None:
+
+            if isinstance(T, cs.DM):
+                tf = T.toarray().flatten().tolist()
+            else:
+                # Assume numpy array
+                tf = T.flatten().tolist()
+
+            transform = vtk.vtkTransform()
+            transform.SetMatrix(tf)
+            actor.SetUserTransform(transform)
+
+        # Set color
+        if rgba is not None:
+            rgb = rgba[:3]
+            alpha = rgba[3]
+
+            actor.GetProperty().SetColor(*rgb)
+            actor.GetProperty().SetOpacity(alpha)
+
+        self.ren.AddActor(actor)
+
+
     def draw_sphere(self, radius, rgba=None, position=None):
 
         sphere = vtkSphereSource()
@@ -190,7 +227,6 @@ class RobotVisualizer:
             tf = self.visual_tf[link.name](q)
 
             if isinstance(geometry, Mesh):
-
                 if geometry.filename.lower().endswith('.stl'):
                     actor = self._actor_from_stl(link, q)
                 else:
