@@ -149,6 +149,7 @@ class KukaLWR(FixedBaseRobot):
 
     def __init__(self, base_position=[0.0]*3):
         f = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
+        self.urdf_filename = f
         super().__init__(f, base_position=base_position)
 
 class KukaLBR(FixedBaseRobot):
@@ -159,6 +160,7 @@ class KukaLBR(FixedBaseRobot):
         import xacro
         xacro_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'med7.urdf.xacro')
         urdf_string = xacro.process(xacro_filename)
+        self.urdf_string = urdf_string
         urdf_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'kuka_lbr.urdf')
         with open(urdf_filename, 'w') as f:
             f.write(urdf_string)
