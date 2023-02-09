@@ -26,5 +26,6 @@ setup(
         'cvxopt',
         'xacro',
         'vtk',
+        'pyyaml',
     ]
 )
