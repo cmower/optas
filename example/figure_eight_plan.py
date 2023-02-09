@@ -3,22 +3,19 @@ import os
 import sys
 import pathlib
 
-# ROS
-# import rospy
-# from sensor_msgs.msg import JointState
-
 # PyBullet
 import pybullet_api
 
 # OpTaS
 import optas
+from optas.templates import Manager
 
 cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
 
-class Planner:
+class Planner(Manager):
 
 
-    def __init__(self):
+    def setup_solver(self):
 
         # Setup robot  ========================
 
@@ -35,7 +32,7 @@ class Planner:
         # =====================================
 
 
-        # Setup        
+        # Setup
         pi = optas.np.pi  # 3.141...
         self.T = 50 # no. time steps in trajectory
         self.Tmax = 10.  # trajectory of 5 secs
@@ -105,10 +102,14 @@ class Planner:
 
         # Setup solver
         optimization = builder.build()
-        self.solver = optas.CasADiSolver(optimization).setup('ipopt')
+        solver = optas.CasADiSolver(optimization).setup('ipopt')
 
-    def plan(self, qc):
+        return solver
 
+    def is_ready(self):
+        return True
+
+    def reset(self, qc):
         # Set parameters
         self.solver.reset_parameters({'qc': optas.DM(qc)})
 
@@ -116,8 +117,15 @@ class Planner:
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
         self.solver.reset_initial_seed({f'{self.kuka_name}/q': Q0})
 
+    def get_target(self):
+        return self.solution
+
+    def plan(self):
+
         # Solve problem
-        solution = self.solver.solve()
+        self.solve()
+
+        solution = self.get_target()
 
         # Interpolate
         plan = self.solver.interpolate(solution[f'{self.kuka_name}/q'], self.Tmax)
@@ -130,9 +138,6 @@ class Planner:
 
             def __call__(self, t):
                 q = self.plan_function(t)
-                # msg = JointState(name=self.robot.actuated_joint_names, position=q.tolist())
-                # msg.header.stamp = rospy.Time.now()
-                # return msg
                 return q
 
         return Plan(self.kuka, plan)
@@ -144,7 +149,8 @@ def main():
 
     # Plan trajectory
     qc = optas.np.deg2rad([0, 30, 0, -90, 0, -30, 0])
-    plan = planner.plan(qc)
+    planner.reset(qc)
+    plan = planner.plan()
 
     # Setup PyBullet
     hz = 50
@@ -157,10 +163,6 @@ def main():
     kuka.reset(plan(0.))
     pb.start()
 
-    # Connect to ROS and publish
-    # rospy.init_node('figure_eight_plan_node')
-    # js_pub = rospy.Publisher('rpbi/kuka_lwr/joint_states/target', JointState, queue_size=10)
-    # rate = rospy.Rate(50)
     start_time = pybullet_api.time.time()
 
     # Main loop
@@ -169,8 +171,6 @@ def main():
         if t > planner.Tmax:
             break
         kuka.cmd(plan(t))
-        # js_pub.publish(plan(t))
-        # rate.sleep()
         pybullet_api.time.sleep(dt)
 
     pb.stop()
