@@ -5,6 +5,7 @@ import pathlib
 
 # OpTaS
 import optas
+from optas.templates import Manager
 
 # PyBullet
 import pybullet_api
@@ -12,9 +13,9 @@ import pybullet_api
 kukal_base_position = [0., -0.25, 0.]
 kukar_base_position = [0., 0.25, 0.]
 
-class DualKukaPlanner:
+class DualKukaPlanner(Manager):
 
-    def __init__(self):
+    def setup_solver(self):
 
         # Parameters
         T = 50
@@ -116,12 +117,14 @@ class DualKukaPlanner:
 
         # Setup solver
         optimization = builder.build()
-        self.solver = optas.CasADiSolver(optimization).setup('ipopt')
+        solver = optas.CasADiSolver(optimization).setup('ipopt')
 
         # Save variables for later
         self.kukal_name = kukal_name
         self.kukar_name = kukar_name
         self.Tmax = Tmax
+
+        return solver
 
     def _setup_kuka_model(self, name, base_position):
         cwd = pathlib.Path(__file__).parent.resolve() # path to current working directory
@@ -136,16 +139,22 @@ class DualKukaPlanner:
 
         return model
 
-    def plan(self, qcl, qcr):
+    def is_ready(self):
+        return True
 
+    def reset(self, qcl, qcr):
         # Set parameters
         self.solver.reset_parameters({
             'qcl': optas.DM(qcl),
             'qcr': optas.DM(qcr),
         })
 
-        # Solve problem
-        solution = self.solver.solve()
+    def get_target(self):
+        return self.solution
+
+    def plan(self):
+        self.solve()
+        solution = self.get_target()
 
         # Interpolate
         planl = self.solver.interpolate(solution[f'{self.kukal_name}/q'], self.Tmax)
@@ -170,7 +179,8 @@ def main():
     kukal.reset(qc)
     kukar.reset(qc)
 
-    planl, planr = dual_kuka_planner.plan(qc, qc)
+    dual_kuka_planner.reset(qc, qc)
+    planl, planr = dual_kuka_planner.plan()
 
     pb.start()
     pybullet_api.time.sleep(2.)
