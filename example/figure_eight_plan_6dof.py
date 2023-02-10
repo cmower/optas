@@ -32,7 +32,7 @@ class Planner:
         self.kuka = optas.RobotModel(
             urdf_filename=urdf_filename,
             time_derivs=[0, 1],  # i.e. joint position/velocity trajectory
-            param_joints='lwr_arm_0_joint',
+            param_joints=['lwr_arm_0_joint'],
         )
         self.kuka_name = self.kuka.get_name()
 
