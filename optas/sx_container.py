@@ -6,15 +6,20 @@ from typing import Union, List
 SX = cs.casadi.SX
 DM = cs.casadi.DM
 
+
 class SXContainer(collections.OrderedDict):
 
     """Container for SX variables"""
 
-    is_discrete = {} # Dict[str, bool]: labels for each item in dict, true means variables are discrete
+    is_discrete = (
+        {}
+    )  # Dict[str, bool]: labels for each item in dict, true means variables are discrete
 
     def __add__(self, other):
         """Add two SXContainer's"""
-        assert isinstance(other, SXContainer), f"cannot add SXContainer with a variable of type {type(other)}"
+        assert isinstance(
+            other, SXContainer
+        ), f"cannot add SXContainer with a variable of type {type(other)}"
         out = SXContainer()
         for label, value in self.items():
             out[label] = value
@@ -25,10 +30,15 @@ class SXContainer(collections.OrderedDict):
 
     def __setitem__(self, label: str, value: SX) -> None:
         """Set new SX item"""
-        assert isinstance(value, (SX, float)), f"value must be of type casadi.casadi.SX/float, not {type(value)}"
-        if label in self: raise KeyError(f"'{label}' already exists")
+        assert isinstance(
+            value, (SX, float)
+        ), f"value must be of type casadi.casadi.SX/float, not {type(value)}"
+        if label in self:
+            raise KeyError(f"'{label}' already exists")
         super().__setitem__(label, cs.SX(value))
-        self.is_discrete[label] = False  # assume non-discrete, otherwise variable_is_discrete(..) should be called
+        self.is_discrete[
+            label
+        ] = False  # assume non-discrete, otherwise variable_is_discrete(..) should be called
 
     def variable_is_discrete(self, label: str) -> None:
         """Specify that a given variable is discrete."""
@@ -44,7 +54,7 @@ class SXContainer(collections.OrderedDict):
         out = []
         for label, value in self.items():
             m, n = values.shape
-            out += [self.is_discrete[label]]*(m*n)
+            out += [self.is_discrete[label]] * (m * n)
         return out
 
     def vec(self) -> SX:
@@ -62,7 +72,7 @@ class SXContainer(collections.OrderedDict):
         out_dict = {}
         for label, value in self.items():
             m, n = value.shape
-            mn = m*n
+            mn = m * n
             out_dict[label] = cs.reshape(vec[:mn], m, n)
             vec = vec[mn:]
         return out_dict

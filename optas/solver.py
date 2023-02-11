@@ -7,39 +7,35 @@ from abc import ABC, abstractmethod
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
 from scipy.sparse import csc_matrix
-from .optimization import QuadraticCostUnconstrained,\
-    QuadraticCostLinearConstraints,\
-    QuadraticCostNonlinearConstraints,\
-    NonlinearCostUnconstrained,\
-    NonlinearCostLinearConstraints,\
-    NonlinearCostNonlinearConstraints
-
-QP_COST = {
+from .optimization import (
     QuadraticCostUnconstrained,
-    QuadraticCostLinearConstraints
-}
+    QuadraticCostLinearConstraints,
+    QuadraticCostNonlinearConstraints,
+    NonlinearCostUnconstrained,
+    NonlinearCostLinearConstraints,
+    NonlinearCostNonlinearConstraints,
+)
+
+QP_COST = {QuadraticCostUnconstrained, QuadraticCostLinearConstraints}
 
 NL_COST = {
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
-    NonlinearCostNonlinearConstraints
+    NonlinearCostNonlinearConstraints,
 }
 
-UNCONSTRAINED_OPT = {
-    QuadraticCostUnconstrained,
-    NonlinearCostUnconstrained
-}
+UNCONSTRAINED_OPT = {QuadraticCostUnconstrained, NonlinearCostUnconstrained}
 
 CONSTRAINED_OPT = {
     QuadraticCostLinearConstraints,
     QuadraticCostNonlinearConstraints,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
-
 }
 
 ################################################################
 # Solver base class
+
 
 class Solver(ABC):
 
@@ -109,7 +105,6 @@ class Solver(ABC):
         pass
 
     def violated_constraints(self, x, p):
-
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
 
@@ -125,48 +120,60 @@ class Solver(ABC):
 
             def __repr__(self):
                 info = str(self)
-                max_width = max(len(line) for line in info.split('\n'))
-                return "="*max_width + info + '-'*max_width + '\n'
+                max_width = max(len(line) for line in info.split("\n"))
+                return "=" * max_width + info + "-" * max_width + "\n"
 
             @property
             def verbose_info(self):
                 info = str(self)
-                info += f'{self.diff}\n'
+                info += f"{self.diff}\n"
                 return info
 
         lin_eq_violated_constraints = []
         for label, sx_var in self.opt.lin_eq_constraints.items():
-            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            fun = cs.Function("fun", [self.opt.x, self.opt.p], [sx_var])
             diff = fun(x, p)
-            lin_eq_violated_constraints.append(ViolatedConstraint(label, 'lin_eq', diff, diff>=0.))
+            lin_eq_violated_constraints.append(
+                ViolatedConstraint(label, "lin_eq", diff, diff >= 0.0)
+            )
 
         eq_violated_constraints = []
         for label, sx_var in self.opt.eq_constraints.items():
-            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            fun = cs.Function("fun", [self.opt.x, self.opt.p], [sx_var])
             diff = fun(x, p)
-            eq_violated_constraints.append(ViolatedConstraint(label, 'eq', diff, diff>=0.))
+            eq_violated_constraints.append(
+                ViolatedConstraint(label, "eq", diff, diff >= 0.0)
+            )
 
         lin_ineq_violated_constraints = []
         for label, sx_var in self.opt.lin_ineq_constraints.items():
-            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            fun = cs.Function("fun", [self.opt.x, self.opt.p], [sx_var])
             diff = fun(x, p)
-            lin_ineq_violated_constraints.append(ViolatedConstraint(label, 'lin_ineq', diff, diff>=0.))
+            lin_ineq_violated_constraints.append(
+                ViolatedConstraint(label, "lin_ineq", diff, diff >= 0.0)
+            )
 
         ineq_violated_constraints = []
         for label, sx_var in self.opt.ineq_constraints.items():
-            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            fun = cs.Function("fun", [self.opt.x, self.opt.p], [sx_var])
             diff = fun(x, p)
-            ineq_violated_constraints.append(ViolatedConstraint(label, 'ineq', diff, diff>=0.))
+            ineq_violated_constraints.append(
+                ViolatedConstraint(label, "ineq", diff, diff >= 0.0)
+            )
 
-        return (lin_eq_violated_constraints,
-                eq_violated_constraints,
-                lin_ineq_violated_constraints,
-                ineq_violated_constraints)
+        return (
+            lin_eq_violated_constraints,
+            eq_violated_constraints,
+            lin_ineq_violated_constraints,
+            ineq_violated_constraints,
+        )
 
     @staticmethod
     def interpolate(traj, T, **interp_args):
         """Interpolate a trajectory where T is the time duration of the trajectory."""
-        assert isinstance(traj, cs.casadi.DM), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
+        assert isinstance(
+            traj, cs.casadi.DM
+        ), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
 
@@ -202,12 +209,12 @@ class Solver(ABC):
 
             def __repr__(self):
                 info = str(self)
-                max_width = max(len(line) for line in info.split('\n'))
-                return "="*max_width + info + '-'*max_width + '\n'
+                max_width = max(len(line) for line in info.split("\n"))
+                return "=" * max_width + info + "-" * max_width + "\n"
 
         cost_terms = []
         for label, sx_var in self.opt.cost_terms.items():
-            fun = cs.Function('fun', [self.opt.x, self.opt.p], [sx_var])
+            fun = cs.Function("fun", [self.opt.x, self.opt.p], [sx_var])
             c = fun(x, p)
             cost_terms.append(c)
 
@@ -217,23 +224,23 @@ class Solver(ABC):
 ################################################################
 # CasADi solvers (https://web.casadi.org/)
 
+
 class CasADiSolver(Solver):
 
     """This is a base class for CasADi solver interfaces."""
 
-    nlp_solvers = {'ipopt', 'knitro', 'snopt', 'worhp', 'scpgen', 'sqpmethod'}
-    qp_solvers = {'cplex', 'gurobi', 'ooqp', 'qpoases', 'sqic', 'nlp'}
+    nlp_solvers = {"ipopt", "knitro", "snopt", "worhp", "scpgen", "sqpmethod"}
+    qp_solvers = {"cplex", "gurobi", "ooqp", "qpoases", "sqic", "nlp"}
 
     def setup(self, solver_name, solver_options={}):
-
         # Setup problem
         x = self.opt.decision_variables.vec()
         p = self.opt.parameters.vec()
 
         problem = {
-            'x': x,
-            'p': p,
-            'f': self.opt.f(x, p),
+            "x": x,
+            "p": p,
+            "f": self.opt.f(x, p),
         }
 
         # Setup constraints
@@ -241,7 +248,7 @@ class CasADiSolver(Solver):
         self._ubg = None
 
         if self.opt_type in CONSTRAINED_OPT:
-            problem['g'] = self.opt.v(x, p)
+            problem["g"] = self.opt.v(x, p)
             self._lbg = self.opt.lbv
             self._ubg = self.opt.ubv
 
@@ -255,40 +262,42 @@ class CasADiSolver(Solver):
 
         # Check for discrete variables
         if self.opt.decision_variables.has_discrete_variables():
-            solver_options['discrete'] = self.opt.decision_variables.discrete()
+            solver_options["discrete"] = self.opt.decision_variables.discrete()
 
         # Initialize solver
-        self._solver = sol('solver', solver_name, problem, solver_options)
+        self._solver = sol("solver", solver_name, problem, solver_options)
 
         return self
 
     def _solve(self):
-        solver_input = {'x0': self.x0, 'p': self.p}
+        solver_input = {"x0": self.x0, "p": self.p}
         if self.opt_type in CONSTRAINED_OPT:
-            solver_input['lbg'] = self._lbg
-            solver_input['ubg'] = self._ubg
+            solver_input["lbg"] = self._lbg
+            solver_input["ubg"] = self._ubg
         self._solution = self._solver(**solver_input)
         self._stats = self._solver.stats()
-        self._stats['solution'] = self._solution
-        return self._solution['x']
+        self._stats["solution"] = self._solution
+        return self._solution["x"]
 
     def stats(self):
         return self._stats
 
     def did_solve(self):
-        return self._stats['success']
+        return self._stats["success"]
 
     def number_of_iterations(self):
-        return self._stats['iter_count']
+        return self._stats["iter_count"]
+
 
 ################################################################
 # OSQP solver (https://osqp.org/)
+
 
 class OSQPSolver(Solver):
 
     """OSQP solver interface."""
 
-    OSQP_SOLVED = osqp.constant('OSQP_SOLVED')
+    OSQP_SOLVED = osqp.constant("OSQP_SOLVED")
 
     def setup(self, use_warm_start, settings={}):
         """Setup solver.
@@ -313,7 +322,7 @@ class OSQPSolver(Solver):
         self.use_warm_start = use_warm_start
         self._setup_input = settings
         if self.opt_type in CONSTRAINED_OPT:
-            self._setup_input['u'] = np.inf*np.ones(self.opt.nk+self.opt.na)
+            self._setup_input["u"] = np.inf * np.ones(self.opt.nk + self.opt.na)
         self._reset_parameters()
         return self
 
@@ -322,15 +331,21 @@ class OSQPSolver(Solver):
         self._reset_parameters()
 
     def _reset_parameters(self):
-        self._setup_input = {'P': csc_matrix(2.0*self.opt.P(self.p).toarray()), 'q': self.opt.q(self.p).toarray().flatten()}
+        self._setup_input = {
+            "P": csc_matrix(2.0 * self.opt.P(self.p).toarray()),
+            "q": self.opt.q(self.p).toarray().flatten(),
+        }
         if self.opt_type in CONSTRAINED_OPT:
             A = self.opt.A(self.p)
             b = self.opt.b(self.p)
-            self._setup_input['A'] = csc_matrix(cs.vertcat(self.opt.M(self.p), A, -A).toarray())
-            self._setup_input['l'] = cs.vertcat(-self.opt.c(self.p), -b, b).toarray().flatten()
+            self._setup_input["A"] = csc_matrix(
+                cs.vertcat(self.opt.M(self.p), A, -A).toarray()
+            )
+            self._setup_input["l"] = (
+                cs.vertcat(-self.opt.c(self.p), -b, b).toarray().flatten()
+            )
 
     def _solve(self):
-
         # Setup solver
         self.m = osqp.OSQP()
         self.m.setup(**self._setup_input)
@@ -353,8 +368,10 @@ class OSQPSolver(Solver):
     def number_of_iterations(self):
         return self._solution.info.iter
 
+
 ################################################################
 # CVXOPT QP solver (https://cvxopt.org/)
+
 
 class CVXOPTSolver(Solver):
 
@@ -386,46 +403,66 @@ class CVXOPTSolver(Solver):
         self._reset_parameters()
 
     def _reset_parameters(self):
-        self._solver_input['P'] = cvxopt.matrix(2.0*self.opt.P(self.p).toarray())
-        self._solver_input['q'] = cvxopt.matrix(self.opt.q(self.p).toarray().flatten())
+        self._solver_input["P"] = cvxopt.matrix(2.0 * self.opt.P(self.p).toarray())
+        self._solver_input["q"] = cvxopt.matrix(self.opt.q(self.p).toarray().flatten())
         if self.opt_type in CONSTRAINED_OPT:
             if self.opt.nk > 0:
-                self._solver_input['G'] = cvxopt.matrix(-self.opt.M(self.p).toarray())
-                self._solver_input['h'] = cvxopt.matrix(self.opt.c(self.p).toarray().flatten())
+                self._solver_input["G"] = cvxopt.matrix(-self.opt.M(self.p).toarray())
+                self._solver_input["h"] = cvxopt.matrix(
+                    self.opt.c(self.p).toarray().flatten()
+                )
             if self.opt.na > 0:
-                self._solver_input['A'] = cvxopt.matrix(self.opt.A(self.p).toarray())
-                self._solver_input['b'] = cvxopt.matrix(-self.opt.b(self.p).toarray())
+                self._solver_input["A"] = cvxopt.matrix(self.opt.A(self.p).toarray())
+                self._solver_input["b"] = cvxopt.matrix(-self.opt.b(self.p).toarray())
 
     def _solve(self):
         self._solution = cvxopt.solvers.qp(**self._solver_input)
-        return self._solution['x']
+        return self._solution["x"]
 
     def stats(self):
         return self._solution
 
     def did_solve(self):
-        return self._solution['status'] == 'optimal'
+        return self._solution["status"] == "optimal"
 
     def number_of_iterations(self):
-        return self._solution['iterations']
+        return self._solution["iterations"]
+
 
 ################################################################
 # Scipy Minimize solvers (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html)
+
 
 class ScipyMinimizeSolver(Solver):
 
     """Scipy solver (scipy.optimize.minimize) interface."""
 
-    methods_req_jac = {'CG', 'BFGS', 'Newton-CG', 'L-BFGS-B', 'TNC',
-                       'SLSQP', 'dogleg', 'trust-ncg', 'trust-krylov',
-                       'trust-exact', 'trust-constr'}
+    methods_req_jac = {
+        "CG",
+        "BFGS",
+        "Newton-CG",
+        "L-BFGS-B",
+        "TNC",
+        "SLSQP",
+        "dogleg",
+        "trust-ncg",
+        "trust-krylov",
+        "trust-exact",
+        "trust-constr",
+    }
 
-    methods_req_hess = {'Newton-CG', 'dogleg', 'trust-ncg', 'trust-krylov',
-                        'trust-exact', 'trust-constr'}
+    methods_req_hess = {
+        "Newton-CG",
+        "dogleg",
+        "trust-ncg",
+        "trust-krylov",
+        "trust-exact",
+        "trust-constr",
+    }
 
-    methods_handle_constraints = {'COBYLA', 'SLSQP', 'trust-constr'}
+    methods_handle_constraints = {"COBYLA", "SLSQP", "trust-constr"}
 
-    def setup(self, method='SLSQP', tol=None, options=None):
+    def setup(self, method="SLSQP", tol=None, options=None):
         """Setup the Scipy solver.
 
         Parameters
@@ -452,58 +489,71 @@ class ScipyMinimizeSolver(Solver):
         """
 
         # Input check
-        if self.opt_type in CONSTRAINED_OPT and (method not in ScipyMinimizeSolver.methods_handle_constraints):
-            raise TypeError(f"optimization problem has constraints, the method '{method}' is not suitable")
+        if self.opt_type in CONSTRAINED_OPT and (
+            method not in ScipyMinimizeSolver.methods_handle_constraints
+        ):
+            raise TypeError(
+                f"optimization problem has constraints, the method '{method}' is not suitable"
+            )
 
         # Setup class attributes
         self._stats = None
         self.method = method
 
         # Setup minimize input parameters
-        self.minimize_input = {'fun': self.f, 'method': method, 'x0': self.x0.toarray().flatten()}
+        self.minimize_input = {
+            "fun": self.f,
+            "method": method,
+            "x0": self.x0.toarray().flatten(),
+        }
 
         if tol is not None:
-            self.minimize_input['tol'] = tol
+            self.minimize_input["tol"] = tol
 
         if options is not None:
-            self.minimize_input['options'] = options
+            self.minimize_input["options"] = options
 
         if method in ScipyMinimizeSolver.methods_req_jac:
-            self.minimize_input['jac'] = self.jac
+            self.minimize_input["jac"] = self.jac
 
         if method in ScipyMinimizeSolver.methods_req_hess:
-            self.minimize_input['hess'] = self.hess
+            self.minimize_input["hess"] = self.hess
 
         self._constraints = {}
         if method in ScipyMinimizeSolver.methods_handle_constraints:
-            if method != 'trust-constr':
-                self._constraints['constr'] = {'type': 'ineq', 'fun': self.v, 'jac': self.dv}
+            if method != "trust-constr":
+                self._constraints["constr"] = {
+                    "type": "ineq",
+                    "fun": self.v,
+                    "jac": self.dv,
+                }
             else:
                 if self.opt.nk:
-                    self._constraints['k'] = LinearConstraint(
+                    self._constraints["k"] = LinearConstraint(
                         A=csc_matrix(self.opt.M(self.p).toarray()),
                         lb=-self.opt.c(self.p).toarray.flatten(),
-                        ub=self.opt.inf*np.ones(self.opt.nk),
+                        ub=self.opt.inf * np.ones(self.opt.nk),
                     )
 
                 if self.opt.na:
                     eq = -self.opt.b(self.p).toarray().flatten()
-                    self._constraints['a'] = LinearConstraint(
+                    self._constraints["a"] = LinearConstraint(
                         A=csc_matrix(self.opt.A(self.p).toarray()),
-                        lb=eq, ub=eq,
+                        lb=eq,
+                        ub=eq,
                     )
 
                 if self.opt.ng:
-                    self._constraints['g'] = NonlinearConstraint(
+                    self._constraints["g"] = NonlinearConstraint(
                         fun=self.g,
                         lb=np.zeros(self.opt.ng),
-                        ub=self.opt.inf*np.ones(self.opt.ng),
+                        ub=self.opt.inf * np.ones(self.opt.ng),
                         jac=self.dg,
                         hess=self.ddg,
                     )
 
                 if self.opt.nh:
-                    self._constraints['h'] = NonlinearConstraint(
+                    self._constraints["h"] = NonlinearConstraint(
                         fun=self.h,
                         lb=np.zeros(self.opt.nh),
                         ub=np.zeros(self.opt.nh),
@@ -548,21 +598,21 @@ class ScipyMinimizeSolver(Solver):
 
     def reset_initial_seed(self, x0):
         super().reset_initial_seed(x0)
-        self.minimize_input['x0'] = self.x0.toarray().flatten()
+        self.minimize_input["x0"] = self.x0.toarray().flatten()
 
     def reset_parameters(self, p):
         super().reset_parameters(p)
-        if self.method == 'trust-constr':
+        if self.method == "trust-constr":
             if self.opt.nk:
-                self._constraints['k'].A = csc_matrix(self.opt.M(self.p).toarray())
-                self._constraints['k'].lb = -self.opt.c(self.p).toarray.flatten()
+                self._constraints["k"].A = csc_matrix(self.opt.M(self.p).toarray())
+                self._constraints["k"].lb = -self.opt.c(self.p).toarray.flatten()
             if self.opt.na:
                 eq = -self.opt.b(self.p).toarray().flatten()
-                self._constraints['a'].A = csc_matrix(self.opt.A(self.p).toarray())
-                self._constraints['a'].lb = eq
-                self._constraints['a'].ub = eq
+                self._constraints["a"].A = csc_matrix(self.opt.A(self.p).toarray())
+                self._constraints["a"].lb = eq
+                self._constraints["a"].ub = eq
         if self._constraints:
-            self.minimize_input['constraints'] = list(self._constraints.values())
+            self.minimize_input["constraints"] = list(self._constraints.values())
 
     def _solve(self):
         self._solution = minimize(**self.minimize_input)

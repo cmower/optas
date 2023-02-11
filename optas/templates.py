@@ -26,7 +26,7 @@ class Manager(abc.ABC):
     def _load_configuration(self, filename):
         config = {}
         if filename:
-            with open(filename, 'rb') as config_file:
+            with open(filename, "rb") as config_file:
                 config = yaml.load(config_file, Loader=yaml.FullLoader)
         return config
 
@@ -82,7 +82,6 @@ class Manager(abc.ABC):
 
 
 class ROSManager(Manager):
-
     # Dictionary that defines the state listener. This is used to
     # setup subscribers that listen to the input that defines the
     # parameters for the solver. The key should be the topic name, and
@@ -92,24 +91,33 @@ class ROSManager(Manager):
     state_listener = {}
 
     def __init__(self, rosapi, rosver, config_filename, record_solver_perf=False):
-        super().__init__(config_filename=config_filename, record_solver_perf=record_solver_perf)
+        super().__init__(
+            config_filename=config_filename, record_solver_perf=record_solver_perf
+        )
         self.rosapi = rosapi
         self.rosver = rosver
 
         # Setup target publisher
         from std_msgs.msg import Float64MultiArray  # available in ros1/2
+
         self.Float64MultiArray = Float64MultiArray
         self.target_pub = self._setup_target_publisher()
 
         # Setup publishers/subscriber
-        self.msgs = {}  # for storing messages from subscribers setup in create_state_listener
+        self.msgs = (
+            {}
+        )  # for storing messages from subscribers setup in create_state_listener
         self.create_state_listener()  # user defined method
 
     def _setup_target_publisher(self):
         if self.rosver == 1:
-            target_pub = self.rosapi.Publisher('target', Float64MultiArray, queue_size=10)
+            target_pub = self.rosapi.Publisher(
+                "target", Float64MultiArray, queue_size=10
+            )
         elif self.rosver == 2:
-            target_pub = self.rosapi.create_publisher(self.Float64MultiArray, 'target', 10)
+            target_pub = self.rosapi.create_publisher(
+                self.Float64MultiArray, "target", 10
+            )
         else:
             raise ValueError(f"Did not recognize ros version, given '{self.rosver}'")
         return target_pub
@@ -139,17 +147,22 @@ class ROSManager(Manager):
 
     def create_state_listener(self):
         for topic_name, msg_type in self.state_listener.items():
-            if topic_name == 'tf2':
-                raise NotImplementedError("Listening to frames from the tf2 library has not yet been implemented.")
+            if topic_name == "tf2":
+                raise NotImplementedError(
+                    "Listening to frames from the tf2 library has not yet been implemented."
+                )
             self.add_subscriber(topic_name, msg_type)
 
 
 class ROSController(ROSManager):
-
-    def __init__(self, rosapi, rosver, config_filename, hz, urdf_string, record_solver_perf=False):
+    def __init__(
+        self, rosapi, rosver, config_filename, hz, urdf_string, record_solver_perf=False
+    ):
         self.urdf_string = urdf_string
         self.hz = hz
-        super().__init__(rosapi, rosver, config_filename, record_solver_perf=record_solver_perf)
+        super().__init__(
+            rosapi, rosver, config_filename, record_solver_perf=record_solver_perf
+        )
 
     def __call__(self):
         self.reset()
@@ -158,10 +171,11 @@ class ROSController(ROSManager):
 
 
 class ROSPlanner(ROSManager):
-
     def __init__(self, rosapi, rosver, config_filename, record_solver_perf=False):
         self.duration = None
-        super().__init__(rosapi, rosver, config_filename, record_solver_perf=record_solver_perf)
+        super().__init__(
+            rosapi, rosver, config_filename, record_solver_perf=record_solver_perf
+        )
 
     def set_duration(self, duration: float) -> None:
         self.duration = duration
