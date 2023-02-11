@@ -227,17 +227,41 @@ class RobotModel(Model):
         """Number of degrees of freedom."""
         return len(self.actuated_joint_names)
 
+    def get_joint_lower_limit(self, joint):
+        if joint.limit is None:
+            return -1e9
+        return joint.limit.lower
+
+    def get_joint_upper_limit(self, joint):
+        if joint.limit is None:
+            return 1e9
+        return joint.limit.upper
+
     @property
     def lower_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_joint_lower_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
 
     @property
     def upper_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_joint_upper_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
+
+    def get_velocity_joint_limit(self, joint):
+        if joint.limit is None:
+            return 1e9
+        return joint.limit.velocity
 
     @property
     def velocity_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_velocity_joint_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
