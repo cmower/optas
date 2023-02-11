@@ -227,17 +227,41 @@ class RobotModel(Model):
         """Number of degrees of freedom."""
         return len(self.actuated_joint_names)
 
+    def get_joint_lower_limit(self, joint):
+        if joint.limit is None:
+            return -1e9
+        return joint.limit.lower
+
+    def get_joint_upper_limit(self, joint):
+        if joint.limit is None:
+            return 1e9
+        return joint.limit.upper
+
     @property
     def lower_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_joint_lower_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
 
     @property
     def upper_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_joint_upper_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
+
+    def get_velocity_joint_limit(self, joint):
+        if joint.limit is None:
+            return 1e9
+        return joint.limit.velocity
 
     @property
     def velocity_actuated_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.type != 'fixed'])
+        return cs.DM([
+            self.get_velocity_joint_limit(jnt) for jnt in self._urdf.joints
+            if jnt.type != 'fixed'
+        ])
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""
@@ -323,9 +347,7 @@ class RobotModel(Model):
     def get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
-        if joint.type in {'revolute', 'continuous'}:
-            axis = unit(axis)
-        return axis
+        return unit(axis)
 
     def _get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
@@ -448,9 +470,13 @@ class RobotModel(Model):
             joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
+            T = T @ rt2tr(rpy2r(rpy), xyz)
+
             if joint.type in {'revolute', 'continuous'}:
-                T = T @ rt2tr(rpy2r(rpy), xyz)
                 T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
+
+            elif joint.type == 'prismatic':
+                T = T @ rt2tr(I3(), qi*self.get_joint_axis(joint))
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -545,9 +571,12 @@ class RobotModel(Model):
             joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
+            quat = Quaternion.fromrpy(rpy) * quat
             if joint.type in {'revolute', 'continuous'}:
-                quat = Quaternion.fromrpy(rpy) * quat
                 quat = Quaternion.fromangvec(qi, self.get_joint_axis(joint)) * quat
+
+            elif joint.type == 'prismatic':
+                pass
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -640,6 +669,14 @@ class RobotModel(Model):
                 pdot = cs.cross(z, e - p)
 
                 jcol = cs.vertcat(pdot, z)
+                jacobian_columns.append(jcol)
+
+            elif joint.type == 'prismatic':
+
+                axis = self.get_joint_axis(joint)
+                R = self.get_global_link_rotation(joint.child, q)
+                z = R @ axis
+                jcol = cs.vertcat(z, cs.DM.zeros(3))
                 jacobian_columns.append(jcol)
 
             else:
