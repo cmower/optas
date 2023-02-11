@@ -135,12 +135,7 @@ def oa2r(o, a):
 @arrayify_args
 def oa2tr(o, a):
     """Convert orientation and approach vectors to homogeneous transformation"""
-    n = cs.cross(o, a)
-    o = cs.cross(a, n)
-    return cs.vertcat(
-        cs.horzcat(unit(vec(n)), unit(vec(o)), unit(vec(a)), cs.DM.zeros(3)),
-        cs.DM([[0.0, 0.0, 0.0, 1]]),
-    )
+    return r2t(oa2r(o, a))
 
 
 @arrayify_args
