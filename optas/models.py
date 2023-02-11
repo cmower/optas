@@ -1,4 +1,6 @@
 import os
+import warnings
+import functools
 
 import casadi as cs
 
@@ -13,6 +15,7 @@ from .spatialmath import *
 
 def listify_output(fun):
 
+    @functools.wraps(fun)
     def listify(*args, **kwargs):
 
         args = list(args)  # makes concatenation easier later
@@ -43,6 +46,25 @@ def listify_output(fun):
 
     return listify
 
+
+def deprecation_warning(name_to):
+
+    def decorator(function):
+
+        def wrapper(*args, **kwargs):
+            name_from = function.__name__
+            warn = f"'{name_from}' will be deprecated, please use '{name_to}' instead"
+            msg = '\033[93m' + warn + '\033[0m'  # add
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            self_ = args[0]
+            new_function = getattr(self_, name_to)
+            while hasattr(new_function, '__wrapped__'):
+                new_function = new_function.__wrapped__
+            return new_function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 class Model:
 
@@ -80,7 +102,6 @@ class Model:
         self.symbol = symbol
         self.dlim = dlim
         self.T = T
-
 
     def get_name(self):
         """Return the name of the model."""
@@ -627,9 +648,14 @@ class RobotModel(Model):
         return self._make_function('quat', link, self.get_link_rpy, n=n, base_link=base_link)
 
 
+    @deprecation_warning('get_global_link_geometric_jacobian')
+    def get_global_geometric_jacobian(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_geometric_jacobian(self, link, q):
+    def get_global_link_geometric_jacobian(self, link, q):
         """Compute the geometric Jacobian matrix in the global frame."""
 
         e = self.get_global_link_position(link, q)
@@ -692,15 +718,22 @@ class RobotModel(Model):
 
         return J
 
-
+    @deprecation_warning('get_global_link_geometric_jacobian_function')
     def get_global_geometric_jacobian_function(self, link, n=1):
+        pass
+
+    def get_global_link_geometric_jacobian_function(self, link, n=1):
         """Get the function that computes the geometric jacobian in the global frame."""
         return self._make_function('J', link, self.get_global_geometric_jacobian, n=n)
 
 
+    @deprecation_warning('get_global_link_analytical_jacobian')
+    def get_global_analytical_jacobian(self, link, q):
+        pass
+
     @arrayify_args
     @listify_output
-    def get_global_analytical_jacobian(self, link, q):
+    def get_global_link_analytical_jacobian(self, link, q):
         """Compute the analytical Jacobian matrix in the global frame."""
         return cs. vertcat(
             self.get_global_linear_jacobian(link, q),
@@ -708,14 +741,24 @@ class RobotModel(Model):
         )
 
 
+    @deprecation_warning('get_global_link_analytical_jacobian_function')
     def get_global_analytical_jacobian_function(self, link):
+        pass
+
+
+    def get_global_link_analytical_jacobian_function(self, link):
         """Get the function that computes the analytical jacobian in the global frame."""
         return self._make_function('J_a', link, self.get_global_analytical_jacobian)
 
 
+    @deprecation_warning('get_link_geometric_jacobian')
+    def get_geometric_jacobian(self):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_geometric_jacobian(self, link, q, base_link):
+    def get_link_geometric_jacobian(self, link, q, base_link):
         """Get the geometric jacobian in a given base link."""
 
         J = self.get_global_geometric_jacobian(link, q)
@@ -732,14 +775,24 @@ class RobotModel(Model):
         return J
 
 
+    @deprecation_warning('get_link_geometric_jacobian_function')
     def get_geometric_jacobian_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_geometric_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the geometric jacobian in a given base frame"""
         return self._make_function('J', link, self.get_geometric_jacobian, base_link=base_link, n=n)
 
 
+    @deprecation_warning('get_link_analytical_jacobian')
+    def get_analytical_jacobian(self):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_analytical_jacobian(self, link, q, base_link):
+    def get_link_analytical_jacobian(self, link, q, base_link):
         """Compute the analytical Jacobian matrix in a given base link."""
         return cs.vertcat(
             self.get_linear_jacobian(link, q, base_link),
@@ -747,79 +800,138 @@ class RobotModel(Model):
         )
 
 
+    @deprecation_warning('get_link_analytical_jacobian_function')
     def get_analytical_jacobian_function(self, link, base_link):
+        pass
+
+
+    def get_link_analytical_jacobian_function(self, link, base_link):
         """Get the function that computes the analytical jacobian in a given base frame."""
         return self._make_function('J_a', link, self.get_analytical_jacobian, base_link=base_link)
 
 
+    @deprecation_warning('get_global_link_linear_jacobian')
+    def get_global_linear_jacobian(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_linear_jacobian(self, link, q):
+    def get_global_link_linear_jacobian(self, link, q):
         """Compute the linear part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
         return J[:3, :]
 
 
+    @deprecation_warning('get_global_link_linear_jacobian_function')
     def get_global_linear_jacobian_function(self, link, n=1):
+        pass
+
+
+    def get_global_link_linear_jacobian_function(self, link, n=1):
         """Get the function that computes the linear part of the geometric jacobian in the global frame."""
         return self._make_function('Jl', link, self.get_global_linear_jacobian, n=n)
 
 
+    @deprecation_warning('get_link_linear_jacobian')
+    def get_linear_jacobian(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_linear_jacobian(self, link, q, base_link):
+    def get_link_linear_jacobian(self, link, q, base_link):
         """Get the linear part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
         return J[:3, :]
 
 
+    @deprecation_warning('get_link_linear_jacobian_function')
     def get_linear_jacobian_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_linear_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
         return self._make_function('Jl', link, self.get_linear_jacobian, base_link=base_link, n=n)
 
 
+    @deprecation_warning('get_global_link_angular_geometric_jacobian')
+    def get_global_angular_geometric_jacobian(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_angular_geometric_jacobian(self, link, q):
+    def get_global_link_angular_geometric_jacobian(self, link, q):
         """Compute the angular part of the geometric jacobian in the global frame."""
         J = self.get_global_geometric_jacobian(link, q)
         return J[3:, :]
 
 
+    @deprecation_warning('get_global_link_angular_geometric_jacobian_function')
     def get_global_angular_geometric_jacobian_function(self, link, n=1):
+        pass
+
+
+    def get_global_link_angular_geometric_jacobian_function(self, link, n=1):
         """Get the function that computes the angular part of the geometric jacobian in the global frame."""
         return self._make_function('Ja', link, self.get_global_angular_geometric_jacobian, n=n)
 
 
+    @deprecation_warning('get_global_link_angular_analytical_jacobian')
+    def get_global_angular_analytical_jacobian(self, link, q):
+        pass
+
 
     @arrayify_args
     @listify_output
-    def get_global_angular_analytical_jacobian(self, link, q):
+    def get_global_link_angular_analytical_jacobian(self, link, q):
         """Compute the angular part of the analytical Jacobian matrix in the global frame."""
         return self.get_angular_analytical_jacobian(link, q, self.get_root_link())
 
 
+    @deprecation_warning('get_global_link_angular_analytical_jacobian_function')
     def get_global_angular_analytical_jacobian_function(self, link):
+        pass
+
+
+    def get_global_link_angular_analytical_jacobian_function(self, link):
         """Get the function that computes the angular part of the analytical jacobian in the global frame."""
         return self._make_function('Ja', link, self.get_global_angular_analytical_jacobian)
 
 
+    @deprecation_warning('get_link_angular_geometric_jacobian')
+    def get_angular_geometric_jacobian(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_angular_geometric_jacobian(self, link, q, base_link):
+    def get_link_angular_geometric_jacobian(self, link, q, base_link):
         """Get the angular part of the geometric jacobian in a given base frame."""
         J = self.get_geometric_jacobian(link, q, base_link)
         return J[3:, :]
 
 
+    @deprecation_warning('get_link_angular_geometric_jacobian_function')
     def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_angular_geometric_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
         return self._make_function('Ja', link, self.get_angular_geometric_jacobian, base_link=base_link, n=n)
 
 
+    @deprecation_warning('get_link_angular_analytical_jacobian')
+    def get_angular_analytical_jacobian(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_angular_analytical_jacobian(self, link, q, base_link):
+    def get_link_angular_analytical_jacobian(self, link, q, base_link):
         """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
 
         # Compute rpy derivative Ja
@@ -833,7 +945,12 @@ class RobotModel(Model):
         return Ja(q)
 
 
+    @deprecation_warning('get_link_angular_analytical_jacobian_function')
     def get_angular_analytical_jacobian_function(self, link, base_link):
+        pass
+
+
+    def get_link_angular_analytical_jacobian_function(self, link, base_link):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
         return self._make_function('Ja', link, self.get_angular_analytical_jacobian, base_link=base_link)
 
@@ -893,79 +1010,144 @@ class RobotModel(Model):
         return cs.sqrt(cs.det(J @ J.T))
 
 
+    @deprecation_warning('get_global_link_manipulability')
+    def get_global_manipulability(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_manipulability(self, link, q):
+    def get_global_link_manipulability(self, link, q):
         """Get the manipulability measure in the global frame"""
         J = self.get_global_geometric_jacobian(link, q)
         return self._manipulability(J)
 
 
+    @deprecation_warning('get_global_link_manipulability_function')
     def get_global_manipulability_function(self, link, n=1):
+        pass
+
+
+    def get_global_link_manipulability_function(self, link, n=1):
         """Get the function that computes the manipulability measure in the global frame."""
         return self._make_function('m', link, self.get_global_manipulability, n=n)
 
 
+    @deprecation_warning('get_link_manipulability')
+    def get_manipulability(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_manipulability(self, link, q, base_link):
+    def get_link_manipulability(self, link, q, base_link):
         """Get the manipulability measure in a given base frame"""
         J = self.get_geometric_jacobian(link, q, base_link)
         return self._manipulability(J)
 
 
+    @deprecation_warning('get_link_manipulability_function')
     def get_manipulability_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_manipulability_function(self, link, base_link, n=1):
         """Get the function that computes the manipulability measure in a given base frame"""
         return self._make_function('m', link, self.get_manipulability, n=n, base_link=base_link)
 
 
+    @deprecation_warning('get_global_link_linear_manipulability')
+    def get_global_linear_manipulability(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_linear_manipulability(self, link, q):
+    def get_global_link_linear_manipulability(self, link, q):
         """Get the manipulability measure for the linear dimensions in the global frame."""
         Jl = self.get_global_linear_jacobian(link, q)
         return self._manipulability(Jl)
 
 
+    @deprecation_warning('get_global_link_linear_manipulability_function')
     def get_global_linear_manipulability_function(self, link, n=1):
+        pass
+
+
+    def get_global_link_linear_manipulability_function(self, link, n=1):
         """Get the function that computes the manipulability measrure for the linear dimension in the global frame."""
         return self._make_function('ml', link, self.get_global_linear_manipulability, n=n)
 
 
+    @deprecation_warning('get_link_linear_manipulability')
+    def get_linear_manipulability(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_linear_manipulability(self, link, q, base_link):
+    def get_link_linear_manipulability(self, link, q, base_link):
         """Get the linear part of the manipulability measure in a given base frame"""
         Jl = self.get_linear_jacobian(link, q, base_link)
         return self._manipulability(Jl)
 
 
+    @deprecation_warning('get_link_linear_manipulability_function')
     def get_linear_manipulability_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_linear_manipulability_function(self, link, base_link, n=1):
         """Get the function that computes the linear part of the manipulability measure in a given base frame"""
         return self._make_function('ml', link, self.get_linear_manipulability, n=n, base_link=base_link)
 
 
+    @deprecation_warning('get_global_link_angular_manipulability')
+    def get_global_angular_manipulability(self, link, q):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_global_angular_manipulability(self, link, q):
+    def get_global_link_angular_manipulability(self, link, q):
         """Get the angular part of the manipulability measure in the global frame"""
         Ja = self.get_global_angular_geometric_jacobian(link, q)
         return self._manipulability(Ja)
 
 
+    @deprecation_warning('get_global_link_angular_manipulability_function')
     def get_global_angular_manipulability_function(self, link, n=1):
+        pass
+
+
+    @deprecation_warning('get_global_link_angular_manipulability_function')
+    def get_global_angular_manipulability_function(self, link, n=1):
+        pass
+
+
+    def get_global_link_angular_manipulability_function(self, link, n=1):
         """Get the function that computes the angular part of the manipulability measure in a given base frame"""
         return self._make_function('ma', link, self.get_global_angular_manipulability, n=n)
 
 
+    @deprecation_warning('get_link_angular_manipulability')
+    def get_angular_manipulability(self, link, q, base_link):
+        pass
+
+
     @arrayify_args
     @listify_output
-    def get_angular_manipulability(self, link, q, base_link):
+    def get_link_angular_manipulability(self, link, q, base_link):
         """Get the angular part of the manipulability measure in a given base frame"""
         Ja = self.get_angular_geometric_jacobian(link, q, base_link)
         return self._manipulability(Ja)
 
 
+    @deprecation_warning('get_link_angular_manipulability_function')
     def get_angular_manipulability_function(self, link, base_link, n=1):
+        pass
+
+
+    def get_link_angular_manipulability_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the manipulability measure in a given base frame"""
         return self._make_function('ma', link, self.get_angular_manipulability, n=n, base_link=base_link)

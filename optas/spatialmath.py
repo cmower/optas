@@ -1,3 +1,4 @@
+import functools
 import casadi as cs
 from casadi import sin, cos, vec
 
@@ -29,6 +30,7 @@ def _handle_arraylike_args(args, handle):
 def arrayify_args(fun):
     """Decorator that ensures all input arguments are casadi arrays (i.e. either DM or SX)"""
 
+    @functools.wraps(fun)
     def wrap(*args, **kwargs):
         args_use = _handle_arraylike_args(args, cs.horzcat)
         return fun(*args_use, **kwargs)
