@@ -126,8 +126,7 @@ class FixedBaseRobot:
             if info[2] in {p.JOINT_REVOLUTE, p.JOINT_PRISMATIC}:
                 self._actuated_joints.append(j)
         self.ndof = len(self._actuated_joints)
-        self.kuka = optas.RobotModel(urdf_filename, time_derivs=[0])
-
+        self.robot = optas.RobotModel(urdf_filename, time_derivs=[0])
 
     def reset(self, q):
         for j, idx in enumerate(self._actuated_joints):
@@ -144,6 +143,13 @@ class FixedBaseRobot:
 
     def q(self):
         return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
+
+class R2D2(FixedBaseRobot):
+
+    def __init__(self, base_position=[0.]*3):
+        f = os.path.join(cwd, 'robots', 'r2d2', 'r2d2.urdf')
+        self.urdf_filename = f
+        super().__init__(f, base_position=base_position)
 
 class KukaLWR(FixedBaseRobot):
 
@@ -176,11 +182,12 @@ def main():
     hz = 250
     dt = 1.0/float(hz)
     pb = PyBullet(dt)
-    kuka = KukaLWR()
-    # kuka = KukaLBR()
+    # robot = KukaLWR()
+    # robot = KukaLBR()
+    robot = R2D2([0, 0, 0.5])
 
-    q0 = np.zeros(7)
-    qF = np.random.uniform(-np.pi, np.pi, size=(7,))
+    q0 = np.zeros(robot.ndof)
+    qF = np.random.uniform(-np.pi, np.pi, size=(robot.ndof,))
 
     alpha = 0.
 
@@ -188,7 +195,7 @@ def main():
 
     while alpha < 1.:
         q = (1.-alpha)*q0 + alpha*qF
-        kuka.cmd(q)
+        robot.cmd(q)
         time.sleep(dt)
         alpha += 0.05*dt
 
