@@ -55,7 +55,12 @@ def deprecation_warning(name_to):
             new_function = getattr(self_, name_to)
             while hasattr(new_function, "__wrapped__"):
                 new_function = new_function.__wrapped__
-            return new_function(*args[1:], **kwargs)
+
+            args_use = list(args)
+            if function.__name__.endswith('_function'):
+                args_use = args_use[1:]
+
+            return new_function(*args_use, **kwargs)
 
         return wrapper
 
