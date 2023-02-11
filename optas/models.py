@@ -347,9 +347,7 @@ class RobotModel(Model):
     def get_joint_axis(joint):
         """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1., 0., 0.])
-        if joint.type in {'revolute', 'continuous'}:
-            axis = unit(axis)
-        return axis
+        return unit(axis)
 
     def _get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
