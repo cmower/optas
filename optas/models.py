@@ -57,7 +57,7 @@ def deprecation_warning(name_to):
                 new_function = new_function.__wrapped__
 
             args_use = list(args)
-            if function.__name__.endswith('_function'):
+            if function.__name__.endswith("_function"):
                 args_use = args_use[1:]
 
             return new_function(*args_use, **kwargs)
