@@ -387,7 +387,7 @@ def transl2(T):
 
 
 @arrayify_args
-def trlog(R):
+def trlog(R, rmat=False):
     """Logarithm of SO(3) or SE(3) matrix"""
     theta = cs.acos(0.5 * (cs.trace(R) - 1.0))
     return theta, vex((R - R.T) / 2.0 / sin(theta))
@@ -428,7 +428,6 @@ def vex(S):
         raise ValueError(
             f"input must be a 2-by-2 or 3-by-3 matrix, not {S.shape[0]}-by-{S.shape[1]}"
         )
-
 
 @arrayify_args
 def vexa(S):
