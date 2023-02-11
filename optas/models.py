@@ -671,6 +671,14 @@ class RobotModel(Model):
                 jcol = cs.vertcat(pdot, z)
                 jacobian_columns.append(jcol)
 
+            elif joint.type == 'prismatic':
+
+                axis = self.get_joint_axis(joint)
+                R = self.get_global_link_rotation(joint.child, q)
+                z = R @ axis
+                jcol = cs.vertcat(z, cs.DM.zeros(3))
+                jacobian_columns.append(jcol)
+
             else:
                 raise JointTypeNotSupported(joint.type)
 
