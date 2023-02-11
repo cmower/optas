@@ -6,13 +6,16 @@ from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver
 from .visualize import RobotVisualizer
 
+
 @arrayify_args
 def deg2rad(x):
-    return (pi/180.0)*x
+    return (pi / 180.0) * x
+
 
 @arrayify_args
 def rad2deg(x):
-    return (180.0/pi)*x
+    return (180.0 / pi) * x
+
 
 @arrayify_args
 def clip(x, lo, hi):

@@ -3,6 +3,7 @@ from .sx_container import SXContainer
 from .spatialmath import arrayify_args
 from .optimization import *
 
+
 class OptimizationBuilder:
 
     """
@@ -45,10 +46,10 @@ class OptimizationBuilder:
         assert T > 0, f"T must be strictly positive"
 
         if not isinstance(robots, list):
-            robots = [robots] # allow user to pass a single robot
+            robots = [robots]  # allow user to pass a single robot
 
         if not isinstance(tasks, list):
-            tasks = [tasks] # all user to pass a single task
+            tasks = [tasks]  # all user to pass a single task
 
         # Class attributes
         self.T = T
@@ -58,7 +59,6 @@ class OptimizationBuilder:
 
         # Ensure T is sufficiently large
         if not derivs_align:
-
             # Get max time deriv
             all_time_derivs = []
             for m in self._models:
@@ -66,7 +66,7 @@ class OptimizationBuilder:
             max_time_deriv = max(all_time_derivs)
 
             # Check T is large enough
-            Tmin = max_time_deriv+1
+            Tmin = max_time_deriv + 1
             assert T >= Tmin, f"{T=} is too low, it should be at least {Tmin}"
 
         model_names = [m.get_name() for m in self._models]
@@ -79,13 +79,13 @@ class OptimizationBuilder:
             for d in model.time_derivs:
                 n = model.state_name(d)
                 if model.T is None:
-                    t = T-d if not derivs_align else T
+                    t = T - d if not derivs_align else T
                 else:
                     t = model.T
                 self.add_decision_variables(n, model.dim, t)
 
         if optimize_time:
-            self.add_decision_variables('dt', T-1)
+            self.add_decision_variables("dt", T - 1)
 
         # Setup containers for parameters, cost terms, ineq/eq constraints
         self._parameters = SXContainer()
@@ -95,11 +95,9 @@ class OptimizationBuilder:
         self._ineq_constraints = SXContainer()
         self._eq_constraints = SXContainer()
 
-
     def get_model_names(self):
         """Return the names of each model."""
         return [model.name for model in self._models]
-
 
     def get_model_index(self, name):
         """Return the index of the model in the list of models.
@@ -124,7 +122,6 @@ class OptimizationBuilder:
         """
         return self.get_model_names().index(name)
 
-
     def get_model(self, name):
         """Return the model with given name.
 
@@ -147,7 +144,6 @@ class OptimizationBuilder:
 
         """
         return self._models[self.get_model_index(name)]
-
 
     def get_model_state(self, name, t, time_deriv=0):
         """Get the model state at a given time.
@@ -179,7 +175,6 @@ class OptimizationBuilder:
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
-
     def get_model_states(self, name, time_deriv=0):
         """Get the full state trajectory for a given model.
 
@@ -205,36 +200,34 @@ class OptimizationBuilder:
 
         """
         model = self.get_model(name)
-        assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        assert (
+            time_deriv in model.time_derivs
+        ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
         name = model.state_name(time_deriv)
         return self._decision_variables[name]
 
-
     def get_dt(self):
         """When optimizing time, then this method returns the trajectory of dt variables."""
-        assert self.optimize_time, "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
-        return self._decision_variables['dt']
-
+        assert (
+            self.optimize_time
+        ), "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
+        return self._decision_variables["dt"]
 
     def _x(self):
         """Return the decision variables as a casadi.SX vector."""
         return self._decision_variables.vec()
 
-
     def _p(self):
         """Return the parameters as a casadi.SX vector."""
         return self._parameters.vec()
-
 
     def _is_linear(self, y):
         """Returns true if y is a linear function of the decision variables."""
         return cs.is_linear(y, self._x())
 
-
     def _cost(self):
         """Returns the cost function."""
         return cs.sum1(self._cost_terms.vec())
-
 
     def is_cost_quadratic(self):
         """True when cost function is quadratic in the decision variables, False otherwise."""
@@ -280,7 +273,6 @@ class OptimizationBuilder:
             self._decision_variables.variable_is_discrete(name)
         return x
 
-
     def add_parameter(self, name, m=1, n=1):
         """Add a parameter to the optimization problem.
 
@@ -312,7 +304,6 @@ class OptimizationBuilder:
         self._parameters[name] = p
         return p
 
-
     @arrayify_args
     def add_cost_term(self, name, cost_term):
         """Add cost term to the optimization problem.
@@ -334,9 +325,8 @@ class OptimizationBuilder:
         """
         cost_term = cs.vec(cost_term)
         m, n = cost_term.shape
-        assert m==1 and n==1, "cost term must be scalar"
+        assert m == 1 and n == 1, "cost term must be scalar"
         self._cost_terms[name] = cost_term
-
 
     @arrayify_args
     def add_geq_inequality_constraint(self, name, lhs, rhs=None):
@@ -363,7 +353,6 @@ class OptimizationBuilder:
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         self.add_leq_inequality_constraint(name, rhs, lhs)
-
 
     @arrayify_args
     def add_leq_inequality_constraint(self, name, lhs, rhs=None):
@@ -395,7 +384,6 @@ class OptimizationBuilder:
         else:
             self._ineq_constraints[name] = diff
 
-
     @arrayify_args
     def add_bound_inequality_constraint(self, name, lhs, mid, rhs):
         """Add the inequality constraint lhs <= mid <= rhs to the optimization problem.
@@ -421,9 +409,8 @@ class OptimizationBuilder:
             Right-hand side for the inequality constraint.
 
         """
-        self.add_leq_inequality_constraint(name+'_l', lhs, mid)
-        self.add_leq_inequality_constraint(name+'_r', mid, rhs)
-
+        self.add_leq_inequality_constraint(name + "_l", lhs, mid)
+        self.add_leq_inequality_constraint(name + "_r", mid, rhs)
 
     @arrayify_args
     def add_equality_constraint(self, name, lhs, rhs=None):
@@ -459,22 +446,21 @@ class OptimizationBuilder:
     # Common constraints
     #
 
-
     def ensure_positive_dt(self):
         """Specifies the constraint dt >= 0 when optimize_time=True."""
-        assert self.optimize_time, "optimize_time should be True in the OptimizationBuilder interface"
-        self.add_geq_inequality_constraint('__ensure_positive_dt__', self.get_dt())
-
+        assert (
+            self.optimize_time
+        ), "optimize_time should be True in the OptimizationBuilder interface"
+        self.add_geq_inequality_constraint("__ensure_positive_dt__", self.get_dt())
 
     def _integr(self, m, n):
         """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
-        xd = cs.SX.sym('xd', m)
-        x0 = cs.SX.sym('x0', m)
-        x1 = cs.SX.sym('x1', m)
-        dt = cs.SX.sym('dt')
-        integr = cs.Function('integr', [x0, x1, xd, dt], [x0 + dt*xd - x1])
+        xd = cs.SX.sym("xd", m)
+        x0 = cs.SX.sym("x0", m)
+        x1 = cs.SX.sym("x1", m)
+        dt = cs.SX.sym("dt")
+        integr = cs.Function("integr", [x0, x1, xd, dt], [x0 + dt * xd - x1])
         return integr.map(n)
-
 
     def integrate_model_states(self, name, time_deriv, dt=None):
         """Integrates the model states over time.
@@ -505,7 +491,7 @@ class OptimizationBuilder:
 
         model = self.get_model(name)
         xd = self.get_model_states(name, time_deriv)
-        x = self.get_model_states(name, time_deriv-1)
+        x = self.get_model_states(name, time_deriv - 1)
         n = x.shape[1]
         if self.derivs_align:
             xd = xd[:, :-1]
@@ -514,15 +500,17 @@ class OptimizationBuilder:
             dt = self.get_dt()[:n]
         else:
             dt = cs.vec(dt)
-            assert dt.shape[0] in {1, n-1}, f"dt should be scalar or have {n-1} elements"
+            assert dt.shape[0] in {
+                1,
+                n - 1,
+            }, f"dt should be scalar or have {n-1} elements"
             if dt.shape[0] == 1:
-                dt = dt*cs.DM.ones(n-1)
+                dt = dt * cs.DM.ones(n - 1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(model.dim, n-1)
-        name = f'__integrate_model_states_{name}_{time_deriv}__'
+        integr = self._integr(model.dim, n - 1)
+        name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
-
 
     def enforce_model_limits(self, name, time_deriv=0, lo=None, up=None):
         """Enforce model limits.
@@ -557,7 +545,7 @@ class OptimizationBuilder:
                 xlo = mlo
             if xup is None:
                 xup = mup
-        n = f'__{name}_model_limit_{time_deriv}__'
+        n = f"__{name}_model_limit_{time_deriv}__"
         self.add_bound_inequality_constraint(n, xlo, x, xup)
 
     def initial_configuration(self, name, init=None, time_deriv=0):
@@ -583,9 +571,8 @@ class OptimizationBuilder:
         """
         t0 = 0
         x0 = self.get_model_state(name, t0, time_deriv=time_deriv)
-        n = f'__{name}_initial_configuration_{time_deriv}__'
+        n = f"__{name}_initial_configuration_{time_deriv}__"
         self.add_equality_constraint(n, lhs=x0, rhs=init)  # init will be zero when None
-
 
     def fix_configuration(self, name, config=None, time_deriv=0, t=0):
         """Fix configuration.
@@ -612,9 +599,10 @@ class OptimizationBuilder:
 
         """
         x0 = self.get_model_state(name, t, time_deriv=time_deriv)
-        n = f'__{name}_fix_configuration_{time_deriv}_{t}__'
-        self.add_equality_constraint(n, lhs=x0, rhs=config)  # config will be zero when None
-
+        n = f"__{name}_fix_configuration_{time_deriv}_{t}__"
+        self.add_equality_constraint(
+            n, lhs=x0, rhs=config
+        )  # config will be zero when None
 
     #
     # Main build method
@@ -624,8 +612,12 @@ class OptimizationBuilder:
         """Build the optimization problem."""
 
         # Setup optimization
-        nlin = self._lin_ineq_constraints.numel()+self._lin_eq_constraints.numel() # total no. linear constraints
-        nnlin = self._ineq_constraints.numel()+self._eq_constraints.numel() # total no. nonlinear constraints
+        nlin = (
+            self._lin_ineq_constraints.numel() + self._lin_eq_constraints.numel()
+        )  # total no. linear constraints
+        nnlin = (
+            self._ineq_constraints.numel() + self._eq_constraints.numel()
+        )  # total no. nonlinear constraints
 
         if self.is_cost_quadratic():
             # True -> use QP formulation
