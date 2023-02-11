@@ -472,9 +472,13 @@ class RobotModel(Model):
             joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
+            T = T @ rt2tr(rpy2r(rpy), xyz)
+
             if joint.type in {'revolute', 'continuous'}:
-                T = T @ rt2tr(rpy2r(rpy), xyz)
                 T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
+
+            elif joint.type == 'prismatic':
+                T = T @ rt2tr(I3(), qi*self.get_joint_axis(joint))
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -569,9 +573,12 @@ class RobotModel(Model):
             joint_index = self._get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
+            quat = Quaternion.fromrpy(rpy) * quat
             if joint.type in {'revolute', 'continuous'}:
-                quat = Quaternion.fromrpy(rpy) * quat
                 quat = Quaternion.fromangvec(qi, self.get_joint_axis(joint)) * quat
+
+            elif joint.type == 'prismatic':
+                pass
 
             else:
                 raise JointTypeNotSupported(joint.type)
