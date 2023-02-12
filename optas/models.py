@@ -252,11 +252,8 @@ class RobotModel(Model):
         # Setup joint limits, joint position/velocity limits
         self.param_joints = param_joints
         dlim = {
-            0: (self.lower_actuated_joint_limits, self.upper_actuated_joint_limits),
-            1: (
-                -self.velocity_actuated_joint_limits,
-                self.velocity_actuated_joint_limits,
-            ),
+            0: (self.lower_optimized_joint_limits, self.upper_optimized_joint_limits),
+            1: (-self.velocity_optimized_joint_limits, self.velocity_optimized_joint_limits),
         }
 
         # Handle potential acceleration limit
@@ -345,6 +342,22 @@ class RobotModel(Model):
         return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
 
     @property
+    def parameter_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
+    
+    @property
+    def parameter_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.parameter_joint_names]
+
+    @property
+    def optimized_joint_names(self):
+        return [joint for joint in self.actuated_joint_names if joint not in self.parameter_joint_names]
+
+    @property
+    def optimized_joint_indexes(self):
+        return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
+
+    @property
     def ndof(self):
         """Number of degrees of freedom."""
         return len(self.actuated_joint_names)
@@ -393,6 +406,18 @@ class RobotModel(Model):
                 if jnt.type != "fixed"
             ]
         )
+
+    @property
+    def lower_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+
+    @property
+    def upper_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+
+    @property
+    def velocity_optimized_joint_limits(self):
+        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
 
     @property
     def lower_optimized_joint_limits(self):
