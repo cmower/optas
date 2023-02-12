@@ -80,33 +80,6 @@ def angvec2tr(theta, v):
 
 
 @arrayify_args
-def delta2tr(d):
-    """Convert differential motion  to SE(3) homogeneous transform"""
-    up = cs.horzcat(skew(d[3:6]), d[:3])
-    lo = cs.DM.zeros(1, 4)
-    return I4() + cs.vertcat(up, lo)
-
-
-@arrayify_args
-def e2h(e):
-    """Euclidean to homogeneous"""
-    ones = cs.DM.ones(1, e.shape[1])
-    return cs.vertcat(e, ones)
-
-
-@arrayify_args
-def eul2jac(phi, theta, psi):
-    """Euler angle rate Jacobian"""
-    sphi, cphi = sin(phi), cos(phi)
-    stheta, ctheta = sin(theta), cos(theta)
-    return cs.vertcat(
-        cs.horzcat(0.0, -sphi, cphi * stheta),
-        cs.horzcat(0.0, cphi, sphi * stheta),
-        cs.horzcat(1.0, 0.0, ctheta),
-    )
-
-
-@arrayify_args
 def eul2r(phi, theta, psi):
     """Convert Euler angles to rotation matrix"""
     return rotz(phi) @ roty(theta) @ rotz(psi)
@@ -188,7 +161,6 @@ def rotz(theta):
         cs.horzcat(st, ct, 0.0),
         cs.DM([[0.0, 0.0, 1.0]]),
     )
-
 
 @arrayify_args
 def rpy2jac(rpy, opt="zyx"):
@@ -287,6 +259,7 @@ def invt(T):
     return rt2tr(R.T, -R.T @ t)
 
 
+<<<<<<< HEAD
 @arrayify_args
 def tr2angvec(T):
     """Convert rotation matrix to angle-vector form"""
@@ -328,22 +301,6 @@ def tr2eul(R, flip=False):
     )
 
     return cs.if_else(cond, eul_true, eul_false)
-
-
-@arrayify_args
-def tr2jac(T, samebody=False):
-    """Jacobian for differential motion"""
-    R = t2r(T)
-    if samebody:
-        return cs.vertcat(
-            cs.horzcat(R.T, (skew(transl(T)) @ R).T),
-            cs.horzcat(cs.DM.zeros(3, 3), R.T),
-        )
-    else:
-        return cs.vertcat(
-            cs.horzcat(R.T, cs.DM.zeros(3, 3)),
-            cs.horzcat(cs.DM.zeros(3, 3), R.T),
-        )
 
 
 @arrayify_args
