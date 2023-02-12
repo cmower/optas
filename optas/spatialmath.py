@@ -163,39 +163,6 @@ def rotz(theta):
     )
 
 @arrayify_args
-def rpy2jac(rpy, opt="zyx"):
-    """Jacobian from RPY angle rates to angular velocity"""
-
-    order = ["zyx", "xyz", "yxz"]
-    r, p, y = cs.vertsplit(rpy)
-
-    sr, cr = sin(r), cos(r)
-    sp, cp = sin(p), cos(p)
-    sy, cy = sin(y), cos(y)
-
-    if opt == "xyz":
-        return cs.vertcat(
-            cs.horzcat(sp, 0.0, 1.0),
-            cs.horzcat(-cp * sy, cy, 0.0),
-            cs.horzcat(cp * cy, sy, 0.0),
-        )
-    elif opt == "zyx":
-        return cs.vertcat(
-            cs.horzcat(cp * cy, -sy, 0.0),
-            cs.horzcat(cp * sy, cy, 0.0),
-            cs.horzcat(-sp, 0.0, 1.0),
-        )
-    elif opt == "yxz":
-        return cs.vertcat(
-            cs.horzcat(cp * sy, cy, 0.0),
-            cs.horzcat(-sp, 0.0, 1.0),
-            cs.horzcat(cp * cy, -sy, 0.0),
-        )
-    else:
-        raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
-
-
-@arrayify_args
 def rpy2r(rpy, opt="zyx"):
     """Roll-pitch-yaw angles to SO(3) rotation matrix"""
 
