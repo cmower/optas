@@ -40,21 +40,6 @@ def arrayify_args(fun):
     return wrap
 
 
-def _is_shape(M, s1, s2):
-    """Abstract method for checking if an array has a given shape."""
-    return M.shape[0] == s1 and M.shape[1] == s2
-
-
-def is_2x2(M):
-    """Returns true if M is a 2-by-2 array, false otherwise."""
-    return _is_shape(M, 2, 2)
-
-
-def is_3x3(M):
-    """Returns true if M is a 3-by-3 array, false otherwise."""
-    return _is_shape(M, 3, 3)
-
-
 def I3():
     """3-by-3 identity matrix"""
     return cs.DM.eye(3)
@@ -74,59 +59,11 @@ def angvec2r(theta, v):
 
 
 @arrayify_args
-def angvec2tr(theta, v):
-    """Convert angle and vector orientation to a homogeneous transform"""
-    return r2t(angvec2r(theta, v))
-
-
-@arrayify_args
-def eul2r(phi, theta, psi):
-    """Convert Euler angles to rotation matrix"""
-    return rotz(phi) @ roty(theta) @ rotz(psi)
-
-
-@arrayify_args
-def eul2tr(phi, theta, psi):
-    """Convert Euler angles to homogeneous transform"""
-    return r2t(eul2r(phi, theta, psi))
-
-
-@arrayify_args
-def h2e(h):
-    """Homogeneous to Euclidean"""
-    return h[:-1, :] / cs.repmat(h[-1, :], h.shape[0] - 1, 1)
-
-
-@arrayify_args
-def oa2r(o, a):
-    """Convert orientation and approach vectors to rotation matrix"""
-    n = cs.cross(o, a)
-    o = cs.cross(a, n)
-    return cs.horzcat(unit(vec(n)), unit(vec(o)), unit(vec(a)))
-
-
-@arrayify_args
-def oa2tr(o, a):
-    """Convert orientation and approach vectors to homogeneous transformation"""
-    return r2t(oa2r(o, a))
-
-
-@arrayify_args
 def r2t(R):
     """Convert rotation matrix to a homogeneous transform"""
     return cs.vertcat(
         cs.horzcat(R, cs.DM.zeros(3)),
         cs.DM([[0.0, 0.0, 0.0, 1]]),
-    )
-
-
-@arrayify_args
-def rot2(theta):
-    """SO(2) rotation matrix"""
-    ct, st = cos(theta), sin(theta)
-    return cs.vertcat(
-        cs.horzcat(ct, -st),
-        cs.horzcat(st, ct),
     )
 
 
@@ -162,6 +99,7 @@ def rotz(theta):
         cs.DM([[0.0, 0.0, 1.0]]),
     )
 
+
 @arrayify_args
 def rpy2r(rpy, opt="zyx"):
     """Roll-pitch-yaw angles to SO(3) rotation matrix"""
@@ -177,12 +115,6 @@ def rpy2r(rpy, opt="zyx"):
         return roty(y) @ rotx(p) @ rotz(r)
     else:
         raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
-
-
-@arrayify_args
-def rpy2tr(rpy, opt="zyx"):
-    """Roll-pitch-yaw angles to SE(3) homogeneous transform"""
-    return r2t(rpy2r(rpy, opt=opt))
 
 
 @arrayify_args
@@ -227,86 +159,15 @@ def invt(T):
 
 
 @arrayify_args
-def tr2eul(R, flip=False):
-    """Convert SO(3) or SE(3) matrix to Euler angles"""
-
-    cond = cs.logic_and(
-        cs.fabs(R[0, 2]) < eps,
-        cs.fabs(R[1, 2]) < eps,
-    )
-
-    eul_true = cs.vertcat(
-        0.0,
-        cs.atan2(R[0, 2], R[2, 2]),
-        cs.atan2(R[1, 0], R[1, 1]),
-    )
-
-    eul0_false = cs.atan2(-R[1, 2], -R[0, 2]) if flip else cs.atan2(R[1, 2], R[0, 2])
-    sp, cp = sin(eul0_false), cos(eul0_false)
-
-    eul_false = cs.vertcat(
-        eul0_false,
-        cs.atan2(cp * R[0, 2] + sp * R[1, 2], R[2, 2]),
-        cs.atan2(-sp * R[0, 0] + cp * R[1, 0], -sp * R[0, 1] + cp * R[1, 1]),
-    )
-
-    return cs.if_else(cond, eul_true, eul_false)
-
-
-@arrayify_args
-def tr2rt(T):
-    """Convert homogeneous transform to rotation and translation"""
-    return t2r(T), transl(T)
-
-
-@arrayify_args
 def transl(T):
     """SE(3) translational homogeneous transform"""
     return T[:3, 3]
 
 
 @arrayify_args
-def transl2(T):
-    """SE(2) translational homogeneous transform"""
-    return T[:2, 2]
-
-
-@arrayify_args
-def trotx(theta):
-    """SE(3) rotation about X axis"""
-    return r2t(rotx(theta))
-
-
-@arrayify_args
-def troty(theta):
-    """SE(3) rotation about Y axis"""
-    return r2t(roty(theta))
-
-
-@arrayify_args
-def trotz(theta):
-    """SE(3) rotation about Z axis"""
-    return r2t(rotz(theta))
-
-
-@arrayify_args
 def unit(v):
     """Unitize a vector"""
     return v / cs.norm_fro(v)
-
-
-@arrayify_args
-def vex(S):
-    """Convert skew-symmetric matrix to vector"""
-    if is_2x2(S):
-        return 0.5 * (S[1, 0] - S[0, 1])
-    elif is_3x3(S):
-        return 0.5 * cs.vertcat(S[2, 1] - S[1, 2], S[0, 2] - S[2, 0], S[1, 0] - S[0, 1])
-    else:
-        raise ValueError(
-            f"input must be a 2-by-2 or 3-by-3 matrix, not {S.shape[0]}-by-{S.shape[1]}"
-        )
-
 
 
 class Quaternion:
