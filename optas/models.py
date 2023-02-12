@@ -75,7 +75,7 @@ class Model:
 
     """
 
-    def __init__(self, name, dim, time_derivs, symbol_state, symbol_param, dlim, T, param_joints):
+    def __init__(self, name, dim, time_derivs, symbol_state, symbol_param, dlim, T):
         """
         name (str):
             Name of model.
@@ -98,9 +98,6 @@ class Model:
         T (int)
             Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
-        param_joints (list[int]):
-            joints to be recorded as parameterizable instead of optimizable
-
         """
         self.name = name
         self.dim = dim
@@ -109,7 +106,6 @@ class Model:
         self.symbol_param = symbol_param
         self.dlim = dlim
         self.T = T
-        self.param_joints = param_joints
 
     def get_name(self):
         """Return the name of the model."""
