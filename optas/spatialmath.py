@@ -259,23 +259,6 @@ def invt(T):
     return rt2tr(R.T, -R.T @ t)
 
 
-<<<<<<< HEAD
-@arrayify_args
-def tr2angvec(T):
-    """Convert rotation matrix to angle-vector form"""
-    return trlog(t2r(T))
-
-
-@arrayify_args
-def tr2delta(T0, T1):
-    """Convert SE(3) homogeneous transform to differential motion"""
-    TD = cs.inv(T0) @ T1
-    return cs.vertcat(
-        transl(TD),
-        vex(t2r(TD) - I3()),
-    )
-
-
 @arrayify_args
 def tr2eul(R, flip=False):
     """Convert SO(3) or SE(3) matrix to Euler angles"""
@@ -319,13 +302,6 @@ def transl(T):
 def transl2(T):
     """SE(2) translational homogeneous transform"""
     return T[:2, 2]
-
-
-@arrayify_args
-def trlog(R, rmat=False):
-    """Logarithm of SO(3) or SE(3) matrix"""
-    theta = cs.acos(0.5 * (cs.trace(R) - 1.0))
-    return theta, vex((R - R.T) / 2.0 / sin(theta))
 
 
 @arrayify_args
