@@ -28,7 +28,7 @@ class Planner:
         self.dt = float((t[1] - t[0]).toarray()[0, 0])  # time step
 
         # Setup robot
-        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr.urdf')
+        urdf_filename = os.path.join(cwd, 'robots', 'kuka_lwr', 'kuka_lwr.urdf')
         self.kuka = optas.RobotModel(
             urdf_filename=urdf_filename,
             time_derivs=[0, 1],  # i.e. joint position/velocity trajectory
@@ -142,7 +142,7 @@ def main():
     hz = 50
     dt = 1.0/float(hz)
     pb = pybullet_api.PyBullet(dt)
-    kuka = pybullet_api.Kuka()
+    kuka = pybullet_api.KukaLWR()
     kuka.reset(plan(0.))
     pb.start()
 
