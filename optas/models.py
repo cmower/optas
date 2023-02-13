@@ -306,22 +306,6 @@ class RobotModel(Model):
         return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
 
     @property
-    def param_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
-    
-    @property
-    def param_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.param_joint_names]
-
-    @property
-    def opt_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint not in self.param_joint_names]
-
-    @property
-    def opt_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.opt_joint_names]
-
-    @property
     def parameter_joint_names(self):
         return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
     
