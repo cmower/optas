@@ -132,9 +132,10 @@ class Model:
             The state name in the form {name}/{d}{symbol_state}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol_state is the symbol for the model state.
 
         """
-        assert time_deriv in self.time_derivs, f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
-        return self.name + '/' + 'd'*time_deriv + self.symbol_state
-
+        assert (
+            time_deriv in self.time_derivs
+        ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
+        return self.name + "/" + "d" * time_deriv + self.symbol_state
 
     def parameter_name(self, time_deriv):
         """Return the parameter name.
@@ -160,8 +161,7 @@ class Model:
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
-        return self.name + '/' + 'd'*time_deriv + self.symbol_param
-
+        return self.name + "/" + "d" * time_deriv + self.symbol_param
 
     def get_limits(self, time_deriv):
         """Return the model limits.
@@ -199,9 +199,16 @@ class Model:
 
 
 class TaskModel(Model):
-
-
-    def __init__(self, name, dim, time_derivs=[0], symbol_state='x', symbol_param='p', dlim={}, T=None):
+    def __init__(
+        self,
+        name,
+        dim,
+        time_derivs=[0],
+        symbol_state="x",
+        symbol_param="p",
+        dlim={},
+        T=None,
+    ):
         super().__init__(name, dim, time_derivs, symbol_state, symbol_param, dlim, T)
 
 
@@ -226,7 +233,6 @@ class RobotModel(Model):
         param_joints=[],
     ):
 
-
         # If xacro is passed then convert to urdf string
         self._xacro_filename = xacro_filename
         if xacro_filename is not None:
@@ -249,7 +255,10 @@ class RobotModel(Model):
         self.param_joints = param_joints
         dlim = {
             0: (self.lower_optimized_joint_limits, self.upper_optimized_joint_limits),
-            1: (-self.velocity_optimized_joint_limits, self.velocity_optimized_joint_limits),
+            1: (
+                -self.velocity_optimized_joint_limits,
+                self.velocity_optimized_joint_limits,
+            ),
         }
 
         # Handle potential acceleration limit
@@ -266,7 +275,7 @@ class RobotModel(Model):
         if name is None:
             name = self._urdf.name
 
-        super().__init__(name, self.ndof, time_derivs, 'q', 'P', dlim, T)
+        super().__init__(name, self.ndof, time_derivs, "q", "P", dlim, T)
 
     def get_urdf(self):
         return self._urdf
@@ -291,51 +300,87 @@ class RobotModel(Model):
 
     @property
     def parameter_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
-    
+        return [
+            joint for joint in self.actuated_joint_names if joint in self.param_joints
+        ]
+
     @property
     def parameter_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.parameter_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint not in self.parameter_joint_names]
+        return [
+            joint
+            for joint in self.actuated_joint_names
+            if joint not in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.optimized_joint_names
+        ]
 
     @property
     def parameter_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
-    
+        return [
+            joint for joint in self.actuated_joint_names if joint in self.param_joints
+        ]
+
     @property
     def parameter_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.parameter_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint not in self.parameter_joint_names]
+        return [
+            joint
+            for joint in self.actuated_joint_names
+            if joint not in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.optimized_joint_names
+        ]
 
     @property
     def parameter_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint in self.param_joints]
-    
+        return [
+            joint for joint in self.actuated_joint_names if joint in self.param_joints
+        ]
+
     @property
     def parameter_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.parameter_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_names(self):
-        return [joint for joint in self.actuated_joint_names if joint not in self.parameter_joint_names]
+        return [
+            joint
+            for joint in self.actuated_joint_names
+            if joint not in self.parameter_joint_names
+        ]
 
     @property
     def optimized_joint_indexes(self):
-        return [self._get_actuated_joint_index(joint) for joint in self.optimized_joint_names]
+        return [
+            self._get_actuated_joint_index(joint)
+            for joint in self.optimized_joint_names
+        ]
 
     @property
     def ndof(self):
@@ -399,39 +444,93 @@ class RobotModel(Model):
 
     @property
     def lower_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.lower
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def upper_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.upper
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def velocity_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.velocity
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def lower_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.lower
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def upper_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.upper
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def velocity_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.velocity
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def lower_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.lower for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.lower
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def upper_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.upper for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.upper
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     @property
     def velocity_optimized_joint_limits(self):
-        return cs.DM([jnt.limit.velocity for jnt in self._urdf.joints if jnt.name in self.optimized_joint_names])
+        return cs.DM(
+            [
+                jnt.limit.velocity
+                for jnt in self._urdf.joints
+                if jnt.name in self.optimized_joint_names
+            ]
+        )
 
     def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
         """Add new base frame, note this changes the root link."""

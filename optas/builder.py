@@ -101,7 +101,6 @@ class OptimizationBuilder:
         if optimize_time:
             self.add_decision_variables("dt", T - 1)
 
-
     def get_model_names(self):
         """Return the names of each model."""
         return [model.name for model in self._models]
@@ -213,7 +212,6 @@ class OptimizationBuilder:
         name = model.state_name(time_deriv)
         return self._decision_variables[name]
 
-
     def get_model_parameters(self, name, time_deriv=0):
         """Get the array of parameters for a given model.
 
@@ -239,10 +237,11 @@ class OptimizationBuilder:
 
         """
         model = self.get_model(name)
-        assert time_deriv in model.time_derivs, f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        assert (
+            time_deriv in model.time_derivs
+        ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
         name = model.parameter_name(time_deriv)
         return self._parameters[name]
-
 
     def get_model_parameter(self, name, t, time_deriv=0):
         """Get the model parameter at a given time.
@@ -273,7 +272,6 @@ class OptimizationBuilder:
         """
         parameters = self.get_model_parameters(name, time_deriv)
         return parameters[:, t]
-
 
     def get_robot_states_and_parameters(self, name, time_deriv=0):
         """Get the vector of states and parameters for a given model.
@@ -309,13 +307,14 @@ class OptimizationBuilder:
 
         assert isinstance(model, RobotModel), "this method only applies to robot models"
 
-        states_and_params = cs.SX.zeros(model.dim, max(1, self.T-time_deriv))
+        states_and_params = cs.SX.zeros(model.dim, max(1, self.T - time_deriv))
         for idx in range(model.num_param_joints):
-            states_and_params[model.parameter_joint_indexes[idx], :] = parameters[idx, :]
+            states_and_params[model.parameter_joint_indexes[idx], :] = parameters[
+                idx, :
+            ]
         for idx in range(model.num_opt_joints):
             states_and_params[model.optimized_joint_indexes[idx], :] = states[idx, :]
         return states_and_params
-
 
     def get_dt(self):
         """When optimizing time, then this method returns the trajectory of dt variables."""
@@ -619,8 +618,8 @@ class OptimizationBuilder:
                 dt = dt * cs.DM.ones(n - 1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(len(model.optimized_joint_indexes), n-1)
-        name = f'__integrate_model_states_{name}_{time_deriv}__'
+        integr = self._integr(len(model.optimized_joint_indexes), n - 1)
+        name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
     def enforce_model_limits(self, name, time_deriv=0, lo=None, up=None):
