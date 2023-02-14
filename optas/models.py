@@ -342,6 +342,16 @@ class RobotModel(Model):
         """Number of degrees of freedom."""
         return len(self.actuated_joint_names)
 
+    @property
+    def num_opt_joints(self):
+        """Number of optimized joints"""
+        return len(self.optimized_joint_names)
+
+    @property
+    def num_param_joints(self):
+        """Number of joints defined as parameter"""
+        return len(self.parameter_joint_names)
+
     def get_joint_lower_limit(self, joint):
         if joint.limit is None:
             return -1e9

@@ -100,7 +100,6 @@ class Planner:
         self.solver.reset_parameters({
             'qc': optas.DM(qc),
             f'{self.kuka_name}/P': Q0[self.kuka.parameter_joint_indexes, :],
-            f'{self.kuka_name}/dP': optas.DM.zeros(len(self.kuka.parameter_joint_indexes), self.T-1)
         })
 
         # Solve problem

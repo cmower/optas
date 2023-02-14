@@ -92,9 +92,9 @@ class OptimizationBuilder:
                 else:
                     t = model.T
                 if isinstance(model, RobotModel):
-                    self.add_decision_variables(n_s, len(model.optimized_joint_names), t)
+                    self.add_decision_variables(n_s, model.num_opt_joints, t)
                     n_p = model.parameter_name(d)
-                    self.add_parameter(n_p, len(model.parameter_joint_names), t)
+                    self.add_parameter(n_p, model.num_param_joints, t)
                 elif isinstance(model, TaskModel):
                     self.add_decision_variables(n_s, model.dim, t)
 
@@ -278,6 +278,9 @@ class OptimizationBuilder:
     def get_robot_states_and_parameters(self, name, time_deriv=0):
         """Get the vector of states and parameters for a given model.
 
+        Note that method only applies to to RobotModel.
+        To be replaced by get_model_states_and_parameters once parameters are added to base class Model.
+
         Syntax
         ------
 
@@ -307,9 +310,9 @@ class OptimizationBuilder:
         assert isinstance(model, RobotModel), "this method only applies to robot models"
 
         states_and_params = cs.SX.zeros(model.dim, max(1, self.T-time_deriv))
-        for idx in range(0, len(model.parameter_joint_indexes)):
+        for idx in range(model.num_param_joints):
             states_and_params[model.parameter_joint_indexes[idx], :] = parameters[idx, :]
-        for idx in range(0, len(model.optimized_joint_indexes)):
+        for idx in range(model.num_opt_joints):
             states_and_params[model.optimized_joint_indexes[idx], :] = states[idx, :]
         return states_and_params
 
