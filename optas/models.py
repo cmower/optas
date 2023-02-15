@@ -1221,8 +1221,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_link_axis_jacobian(self, link, q, axis, base_link):
-        q_sym = cs.SX.sym("q_sym", self.ndof)
+    def get_link_axis(self, link, q, axis, base_link):
         Tf = self.get_link_transform(link, q, base_link)
 
         axis2index = {"x": 0, "y": 1, "z": 2}
@@ -1242,6 +1241,27 @@ class RobotModel(Model):
 
         else:
             raise ValueError(f"did not recognize input for axis: {axis}")
+
+        return vector
+
+    def get_link_axis_function(self, link, axis, base_link, n=1):
+        return self._make_function(
+            "a", link, self.get_link_axis, n=n, base_link=base_link
+        )
+
+    @arrayify_args
+    @listify_output
+    def get_global_link_axis(self, link, q, axis):
+        return self.get_link_axis(link, q, axis, self.get_root_link())
+
+    def get_global_link_axis_function(self, link, axis, n=1):
+        return self._make_function("a", link, self.get_global_link_axis, n=n)
+
+    @arrayify_args
+    @listify_output
+    def get_link_axis_jacobian(self, link, q, axis, base_link):
+        q_sym = cs.SX.sym("q_sym", self.ndof)
+        vector = self.get_link_axis(link, q, axis, base_link)
 
         # Compute jacobian
         Jv = cs.jacobian(vector, q_sym)
