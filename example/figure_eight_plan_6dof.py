@@ -46,7 +46,8 @@ class Planner:
 
         # Constraint: initial configuration
         builder.initial_configuration(
-            self.kuka_name, qc[self.kuka.optimized_joint_indexes]
+            self.kuka_name,
+            self.kuka.split_optimized_dimensions(qc),
         )
         builder.initial_configuration(
             self.kuka_name, time_deriv=1
@@ -102,26 +103,22 @@ class Planner:
         # Set initial seed, note joint velocity will be set to zero
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
         self.solver.reset_initial_seed(
-            {f"{self.kuka_name}/q": Q0[self.kuka.optimized_joint_indexes, :]}
+            {f"{self.kuka_name}/q/x": self.kuka.split_optimized_dimensions(Q0)}
         )
 
         # Set parameters
         self.solver.reset_parameters(
             {
                 "qc": optas.DM(qc),
-                f"{self.kuka_name}/P": Q0[self.kuka.parameter_joint_indexes, :],
+                f"{self.kuka_name}/q/p": self.kuka.split_parameter_dimensions(Q0),
             }
         )
 
         # Solve problem
         solution = self.solver.solve()
 
-        # Merge solution with parameterized joint values
-        Q = optas.DM.zeros(self.kuka.ndof, self.T)
-        Q[self.kuka.optimized_joint_indexes, :] = solution[f"{self.kuka_name}/q"]
-        Q[self.kuka.parameter_joint_indexes, :] = Q0[
-            self.kuka.parameter_joint_indexes, :
-        ]
+        # Get robot configuration
+        Q = solution[f"{self.kuka_name}/q"]
 
         # Interpolate
         plan = self.solver.interpolate(Q, self.Tmax)

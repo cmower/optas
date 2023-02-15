@@ -2,7 +2,7 @@ import casadi as cs
 from .sx_container import SXContainer
 from .spatialmath import arrayify_args
 from .optimization import *
-from .models import RobotModel, TaskModel
+from .models import RobotModel
 
 
 class OptimizationBuilder:
@@ -92,10 +92,11 @@ class OptimizationBuilder:
                 else:
                     t = model.T
                 if isinstance(model, RobotModel):
-                    self.add_decision_variables(n_s, model.num_opt_joints, t)
-                    n_p = model.parameter_name(d)
-                    self.add_parameter(n_p, model.num_param_joints, t)
-                elif isinstance(model, TaskModel):
+                    n_s_x = model.state_optimized_name(d)
+                    self.add_decision_variables(n_s_x, model.num_opt_joints, t)
+                    n_s_p = model.state_parameter_name(d)
+                    self.add_parameter(n_s_p, model.num_param_joints, t)
+                else:
                     self.add_decision_variables(n_s, model.dim, t)
 
         if optimize_time:
@@ -209,7 +210,7 @@ class OptimizationBuilder:
         assert (
             time_deriv in model.time_derivs
         ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
-        name = model.state_name(time_deriv)
+        name = model.state_optimized_name(time_deriv)
         return self._decision_variables[name]
 
     def get_model_parameters(self, name, time_deriv=0):
@@ -240,7 +241,7 @@ class OptimizationBuilder:
         assert (
             time_deriv in model.time_derivs
         ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
-        name = model.parameter_name(time_deriv)
+        name = model.state_parameter_name(time_deriv)
         return self._parameters[name]
 
     def get_model_parameter(self, name, t, time_deriv=0):
@@ -781,5 +782,7 @@ class OptimizationBuilder:
                     self._parameters,
                     self._cost_terms,
                 )
+
+        opt.set_models(self._models)
 
         return opt

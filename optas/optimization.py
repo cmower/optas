@@ -37,6 +37,8 @@ class Optimization:
         self.eq_constraints = {}
         self.ineq_constraints = {}
 
+        self.models = None
+
         # Get symbolic variables
         x = decision_variables.vec()  # symbolic decision variables
         p = parameters.vec()  # symbolic parameters
@@ -58,6 +60,9 @@ class Optimization:
         self.ng = 0
         self.nh = 0
         self.nv = 0
+
+    def set_models(self, models):
+        self.models = models
 
 
 class QuadraticCostUnconstrained(Optimization):

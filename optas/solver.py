@@ -15,6 +15,7 @@ from .optimization import (
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
 )
+from .models import RobotModel
 
 QP_COST = {QuadraticCostUnconstrained, QuadraticCostLinearConstraints}
 
@@ -55,6 +56,7 @@ class Solver(ABC):
         self.opt = optimization
         self.x0 = cs.DM.zeros(optimization.nx)
         self.p = cs.DM.zeros(optimization.np)
+        self._p_dict = None
 
     @property
     def opt_type(self):
@@ -89,6 +91,7 @@ class Solver(ABC):
 
         """
         self.p = self.opt.parameters.dict2vec(p)
+        self._p_dict = self.opt.parameters.vec2dict(self.p)
 
     @abstractmethod
     def _solve(self):
@@ -97,7 +100,23 @@ class Solver(ABC):
 
     def solve(self):
         """Solve the optimization problem."""
-        return self.opt.decision_variables.vec2dict(self._solve())
+        solution = self.opt.decision_variables.vec2dict(self._solve())
+        # Add full model state to the solution dictionary
+        for model in self.opt.models:
+            for d in model.time_derivs:
+                n_s = model.state_name(d)
+                if isinstance(model, RobotModel):
+                    n_s_x = model.state_optimized_name(d)
+                    n_s_p = model.state_parameter_name(d)
+                    t = cs.DM.size(solution[n_s_x])[1]
+                    solution[n_s] = cs.DM(model.dim, t)
+                    solution[n_s][model.optimized_joint_indexes, :] = solution[n_s_x]
+                    solution[n_s][model.parameter_joint_indexes, :] = self._p_dict[
+                        n_s_p
+                    ]
+                else:
+                    solution[n_s] = solution[n_s_x]
+        return solution
 
     @abstractmethod
     def stats(self):
