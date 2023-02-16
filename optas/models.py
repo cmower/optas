@@ -1255,7 +1255,8 @@ class RobotModel(Model):
         return self.get_link_axis(link, q, axis, self.get_root_link())
 
     def get_global_link_axis_function(self, link, axis, n=1):
-        return self._make_function("a", link, self.get_global_link_axis, n=n)
+        get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
+        return self._make_function("a", link, get_global_link_axis, n=n)
 
     @arrayify_args
     @listify_output
