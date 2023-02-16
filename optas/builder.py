@@ -87,10 +87,7 @@ class OptimizationBuilder:
         for model in self._models:
             for d in model.time_derivs:
                 n_s = model.state_name(d)
-                if model.T is None:
-                    t = T - d if not derivs_align else T
-                else:
-                    t = model.T
+                t = T - d if not derivs_align else T
                 if isinstance(model, RobotModel):
                     n_s_x = model.state_optimized_name(d)
                     self.add_decision_variables(n_s_x, model.num_opt_joints, t)

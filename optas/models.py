@@ -75,7 +75,7 @@ class Model:
 
     """
 
-    def __init__(self, name, dim, time_derivs, symbol_state, dlim, T):
+    def __init__(self, name, dim, time_derivs, symbol, dlim, T):
         """
         name (str):
             Name of model.
@@ -86,7 +86,7 @@ class Model:
         time_derivs (list[int]):
             Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
 
-        symbol_state (str):
+        symbol (str):
             A short symbol to represent the model state.
 
         dlim (dict[ int, tuple[list[float]] ]):
@@ -99,7 +99,7 @@ class Model:
         self.name = name
         self.dim = dim
         self.time_derivs = time_derivs
-        self.symbol_state = symbol_state
+        self.symbol = symbol
         self.dlim = dlim
         self.T = T
 
@@ -125,13 +125,13 @@ class Model:
         -------
 
         state_name (string)
-            The state name in the form {name}/{d}{symbol_state}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol_state is the symbol for the model state.
+            The state name in the form {name}/{d}{symbol}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model state.
 
         """
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
-        return self.name + "/" + "d" * time_deriv + self.symbol_state
+        return self.name + "/" + "d" * time_deriv + self.symbol
 
     def state_parameter_name(self, time_deriv):
         """Return the parameter name.
@@ -151,13 +151,13 @@ class Model:
         -------
 
         state_parameter_name (string)
-            The parameter name in the form {name}/{d}{symbol_state}/p, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol_state is the symbol for the model parameters.
+            The parameter name in the form {name}/{d}{symbol}/p, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model parameters.
 
         """
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
-        return self.name + "/" + "d" * time_deriv + self.symbol_state + "/" + "p"
+        return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "p"
 
     def state_optimized_name(self, time_deriv):
         """Return the parameter name.
@@ -183,7 +183,7 @@ class Model:
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
-        return self.name + "/" + "d" * time_deriv + self.symbol_state + "/" + "x"
+        return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "x"
 
     def get_limits(self, time_deriv):
         """Return the model limits.
@@ -226,11 +226,11 @@ class TaskModel(Model):
         name,
         dim,
         time_derivs=[0],
-        symbol_state="y",
+        symbol="y",
         dlim={},
         T=None,
     ):
-        super().__init__(name, dim, time_derivs, symbol_state, dlim, T)
+        super().__init__(name, dim, time_derivs, symbol, dlim, T)
 
 
 class JointTypeNotSupported(NotImplementedError):
@@ -388,7 +388,7 @@ class RobotModel(Model):
             for joint in self.parameter_joint_names
         ]
 
-    def split_parameter_dimensions(self, values):
+    def extract_parameter_dimensions(self, values):
         return values[self.parameter_joint_indexes, :]
 
     @property
@@ -406,7 +406,7 @@ class RobotModel(Model):
             for joint in self.optimized_joint_names
         ]
 
-    def split_optimized_dimensions(self, values):
+    def extract_optimized_dimensions(self, values):
         return values[self.optimized_joint_indexes, :]
 
     @property

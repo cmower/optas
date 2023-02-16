@@ -101,6 +101,7 @@ class Solver(ABC):
     def solve(self):
         """Solve the optimization problem."""
         solution = self.opt.decision_variables.vec2dict(self._solve())
+
         # Add full model state to the solution dictionary
         for model in self.opt.models:
             for d in model.time_derivs:
@@ -108,8 +109,8 @@ class Solver(ABC):
                 if isinstance(model, RobotModel):
                     n_s_x = model.state_optimized_name(d)
                     n_s_p = model.state_parameter_name(d)
-                    t = cs.DM.size(solution[n_s_x])[1]
-                    solution[n_s] = cs.DM(model.dim, t)
+                    t = solution[n_s_x].shape[1]
+                    solution[n_s] = cs.DM.zeros(model.dim, t)
                     solution[n_s][model.optimized_joint_indexes, :] = solution[n_s_x]
                     solution[n_s][model.parameter_joint_indexes, :] = self._p_dict[
                         n_s_p
