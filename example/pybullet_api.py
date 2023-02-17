@@ -163,9 +163,17 @@ class KukaLBR(FixedBaseRobot):
     def __init__(self, base_position=[0.0]*3):
 
         # Process xacro
+        xacro_filename = os.path.join(cwd, "robots", "kuka_lbr", "med7.urdf.xacro")
         import xacro
-        xacro_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'med7.urdf.xacro')
-        urdf_string = xacro.process(xacro_filename)
+        from io import StringIO
+
+        try:
+            urdf_string = xacro.process(xacro_filename)
+        except AttributeError:
+            xml = xacro.process_file(xacro_filename)
+            out = StringIO()
+            xml.writexml(out)
+            urdf_string = out.getvalue()
         self.urdf_string = urdf_string
         urdf_filename = os.path.join(cwd, 'robots', 'kuka_lbr', 'kuka_lbr.urdf')
         with open(urdf_filename, 'w') as f:
