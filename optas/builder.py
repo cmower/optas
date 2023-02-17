@@ -86,15 +86,14 @@ class OptimizationBuilder:
         # Setup decision variables and parameters
         for model in self._models:
             for d in model.time_derivs:
-                n_s = model.state_name(d)
+                n_s_x = model.state_optimized_name(d)
                 t = T - d if not derivs_align else T
                 if isinstance(model, RobotModel):
-                    n_s_x = model.state_optimized_name(d)
                     self.add_decision_variables(n_s_x, model.num_opt_joints, t)
                     n_s_p = model.state_parameter_name(d)
                     self.add_parameter(n_s_p, model.num_param_joints, t)
                 else:
-                    self.add_decision_variables(n_s, model.dim, t)
+                    self.add_decision_variables(n_s_x, model.dim, t)
 
         if optimize_time:
             self.add_decision_variables("dt", T - 1)
@@ -616,7 +615,10 @@ class OptimizationBuilder:
                 dt = dt * cs.DM.ones(n - 1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(len(model.optimized_joint_indexes), n - 1)
+        if isinstance(model, RobotModel):
+            integr = self._integr(model.num_opt_joints, n - 1)
+        else:
+            integr = self._integr(model.dim, n - 1)
         name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 

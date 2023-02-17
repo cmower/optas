@@ -56,7 +56,7 @@ class Solver(ABC):
         self.opt = optimization
         self.x0 = cs.DM.zeros(optimization.nx)
         self.p = cs.DM.zeros(optimization.np)
-        self._p_dict = None
+        self._p_dict = {}
 
     @property
     def opt_type(self):
@@ -106,17 +106,23 @@ class Solver(ABC):
         for model in self.opt.models:
             for d in model.time_derivs:
                 n_s = model.state_name(d)
+                n_s_x = model.state_optimized_name(d)
                 if isinstance(model, RobotModel):
-                    n_s_x = model.state_optimized_name(d)
-                    n_s_p = model.state_parameter_name(d)
-                    t = solution[n_s_x].shape[1]
-                    solution[n_s] = cs.DM.zeros(model.dim, t)
-                    solution[n_s][model.optimized_joint_indexes, :] = solution[n_s_x]
-                    solution[n_s][model.parameter_joint_indexes, :] = self._p_dict[
-                        n_s_p
-                    ]
+                    if model.num_param_joints > 0:
+                        n_s_p = model.state_parameter_name(d)
+                        t = solution[n_s_x].shape[1]
+                        solution[n_s] = cs.DM.zeros(model.dim, t)
+                        solution[n_s][model.optimized_joint_indexes, :] = solution[
+                            n_s_x
+                        ]
+                        solution[n_s][model.parameter_joint_indexes, :] = self._p_dict[
+                            n_s_p
+                        ]
+                    else:
+                        solution[n_s] = solution[n_s_x]
                 else:
                     solution[n_s] = solution[n_s_x]
+
         return solution
 
     @abstractmethod
