@@ -44,7 +44,7 @@ builder.add_bound_inequality_constraint('task', -70.*(optas.pi/180.), phi(q_T), 
 # setup solver
 solver_casadi = optas.CasADiSolver(builder.build()).setup('ipopt')
 # set initial seed
-solver_casadi.reset_initial_seed({f'{robot_name}/q': q_0})
+solver_casadi.reset_initial_seed({f'{robot_name}/q/x': q_0})
 # solve problem
 solution_casadi = solver_casadi.solve()
 print('***********************************')

@@ -106,7 +106,7 @@ class OpTaSIK(ExprIK):
 
     @arrayify_args
     def reset(self, t, qc):
-        self._solver.reset_initial_seed({f'{self.name}/q': qc})
+        self._solver.reset_initial_seed({f'{self.name}/q/x': qc})
         self._solver.reset_parameters({'pg': figure_eight(t), 'qc': qc})
 
     def solve(self):

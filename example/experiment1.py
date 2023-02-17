@@ -64,7 +64,7 @@ class DifferentialIK:
     def reset(self, qc, qd_init=None):
         if qd_init is not None:
             self._solver.reset_initial_seed(
-                {f'{self.robot_name}/dq': optas.vec(qd_init)},
+                {f'{self.robot_name}/dq/x': optas.vec(qd_init)},
             )
         self._params = {'qc': qc}
         self._solver.reset_parameters(self._params)

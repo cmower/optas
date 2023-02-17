@@ -115,7 +115,7 @@ class Planner(Manager):
 
         # Set initial seed, note joint velocity will be set to zero
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
-        self.solver.reset_initial_seed({f'{self.kuka_name}/q': Q0})
+        self.solver.reset_initial_seed({f'{self.kuka_name}/q/x': Q0})
 
     def get_target(self):
         return self.solution
