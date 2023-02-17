@@ -158,8 +158,8 @@ class Controller:
                 for vc in vc_collection:
                     print(vc)
             raise RuntimeError("solver failed")
-        plan_y = self.solver.interpolate(self.solution[f'{self.pm_name}/x'], self.duration)
-        plan_dy = self.solver.interpolate(self.solution[f'{self.pm_name}/dx'], self.duration)
+        plan_y = self.solver.interpolate(self.solution[f'{self.pm_name}/y'], self.duration)
+        plan_dy = self.solver.interpolate(self.solution[f'{self.pm_name}/dy'], self.duration)
         return plan_y(2*self.dt), plan_dy(2*self.dt), plan_y, plan_dy
 
 class Animate:
