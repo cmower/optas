@@ -6,16 +6,15 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name='optas',
     version='1.0.0',
-    description='Python Inverse Kinematics.',
-    long_description=long_description,
+    description='An optimization-based task specification library for task and motion planning (TAMP), trajectory optimization, and model predictive control. ',
     long_description_content_type="text/markdown",
     url='https://github.com/cmower/optas',
     project_urls={
         "Bug Tracker": "https://github.com/cmower/optas/issues",
     },
     author='Christopher E. Mower',
-    author_email='cmower@ed.ac.uk',
-    license='BSD 2-Clause License',
+    author_email='christopher.mower@kcl.ac.uk',
+    license='Apache License, Version 2.0',
     packages=['optas'],
     install_requires=[
         'numpy',
