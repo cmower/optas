@@ -24,6 +24,7 @@ def arrayify_args(fun):
     def _handle_arraylike_args(args, handle):
         """Helper method that applies the handle to array like arguments."""
         args_out = []
+
         for a in args:
             if isinstance(a, _arraylike_types):
                 args_out.append(handle(a))
@@ -31,19 +32,33 @@ def arrayify_args(fun):
                 args_out.append(a)
         return args_out
 
-    def _handle_arraylike_kwargs(kwargs, handle):
+    def _handle_arraylike_kwargs(kwargs, handle, default_kwargs):
         kwargs_out = {}
+
         for label, value in kwargs.items():
             if isinstance(value, _arraylike_types):
                 kwargs_out[label] = handle(value)
             else:
                 kwargs_out[label] = value
+
+        for label, default_value in default_kwargs.items():
+            if label not in kwargs_out and isinstance(default_value, _arraylike_types):
+                kwargs_out[label] = handle(default_value)
+
         return kwargs_out
 
     @functools.wraps(fun)
     def wrap(*args, **kwargs):
+        # Extract default values for kwargs from fun
+        arg_names = fun.__code__.co_varnames[: fun.__code__.co_argcount]
+        arg_defaults = fun.__defaults__
+        if arg_defaults is not None:
+            default_kwargs = dict(zip(arg_names[-len(arg_defaults) :], arg_defaults))
+        else:
+            default_kwargs = {}
+
         args_use = _handle_arraylike_args(args, cs.horzcat)
-        kwargs_use = _handle_arraylike_kwargs(kwargs, cs.horzcat)
+        kwargs_use = _handle_arraylike_kwargs(kwargs, cs.horzcat, default_kwargs)
         return fun(*args_use, **kwargs_use)
 
     return wrap
