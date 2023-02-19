@@ -498,10 +498,23 @@ class Test_Quaternion:
     # fromangvec
 
     def test_fromangvec_numerical_output(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            theta = random_angle()
+            v = random_vector()
+            quat = optas.Quaternion.fromangvec(theta, v)
+            assert isinstance(quat, optas.Quaternion)
+            assert isinstance(quat.getquat(), optas.DM)
 
     def test_fromangvec_correct_output(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            theta = random_angle()
+            v = random_vector()
+            quat = optas.Quaternion.fromangvec(theta, v)
+            quat_optas = quat.getquat().toarray().flatten()
+
+            vn = normalize(v)
+            quat_lib = Rot.from_rotvec(vn * theta).as_quat()
+            assert isclose(quat_optas, quat_lib)
 
     def test_fromangvec_symbolic_output(self):
         theta = optas.SX.sym("theta")
@@ -529,10 +542,18 @@ class Test_Quaternion:
     # getrpy
 
     def test_getrpy_numerical_output(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            quat = self._random_quaternion()
+            assert isinstance(quat.getrpy(), optas.DM)
 
     def test_getrpy_correct_output(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            quat = self._random_quaternion()
+            result_optas = quat.getrpy().toarray().flatten()
+            result_lib = Rot.from_quat(quat.getquat().toarray().flatten()).as_euler(
+                "xyz"
+            )
+            assert isclose(result_optas, result_lib)
 
     def test_getrpy_symbolic_output(self):
         quat = self._symbolic_quaternion()
