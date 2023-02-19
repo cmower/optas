@@ -31,10 +31,20 @@ def arrayify_args(fun):
                 args_out.append(a)
         return args_out
 
+    def _handle_arraylike_kwargs(kwargs, handle):
+        kwargs_out = {}
+        for label, value in kwargs.items():
+            if isinstance(value, _arraylike_types):
+                kwargs_out[label] = handle(value)
+            else:
+                kwargs_out[label] = value
+        return kwargs_out
+
     @functools.wraps(fun)
     def wrap(*args, **kwargs):
         args_use = _handle_arraylike_args(args, cs.horzcat)
-        return fun(*args_use, **kwargs)
+        kwargs_use = _handle_arraylike_kwargs(kwargs, cs.horzcat)
+        return fun(*args_use, **kwargs_use)
 
     return wrap
 
