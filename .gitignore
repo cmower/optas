@@ -137,3 +137,6 @@ doc/latex/
 
 # Data
 example/data/
+
+# Backup folder
+backup/
