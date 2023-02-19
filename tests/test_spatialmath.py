@@ -239,7 +239,26 @@ class Test_invt:
 
 
 class Test_transl:
-    pass
+    def _random_T(self):
+        T = optas.DM.eye(4)
+        T[:3, :3] = random_rotation_matrix()
+        T[:3, 3] = random_vector()
+        return T
+
+    def test_numerical_output(self):
+        for _ in range(NUM_RANDOM):
+            T = self._random_T()
+            assert isinstance(optas.transl(T), optas.DM)
+
+    def test_correct_output(self):
+        for _ in range(NUM_RANDOM):
+            T = self._random_T()
+            t = optas.transl(T)
+            assert isclose(t.toarray().flatten(), T[:3, 3].toarray().flatten())
+
+    def test_symbolic_output(self):
+        T = optas.SX.sym("T", 4, 4)
+        assert isinstance(optas.transl(T), optas.SX)
 
 
 class Test_unit:
