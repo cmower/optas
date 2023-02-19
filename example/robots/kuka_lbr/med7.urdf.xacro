@@ -5,13 +5,10 @@
 
     <!-- include the lbr med macro -->
     <xacro:include filename="med7_description.urdf.xacro"/>
-
-    <xacro:arg name="robot_name" default="lbr"/>
-    <xacro:arg name="sim" default="true"/>
     
     <!-- fix to world -->
     <link name="world"/>
 
     <!-- med -->
-    <xacro:med7 parent="world" robot_name="$(arg robot_name)" sim="$(arg sim)"/>
+    <xacro:med7 parent="world" robot_name="lbr" sim="true"/>
 </robot>

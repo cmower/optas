@@ -257,7 +257,15 @@ class RobotModel(Model):
         # If xacro is passed then convert to urdf string
         self._xacro_filename = xacro_filename
         if xacro_filename is not None:
-            urdf_string = xacro.process(xacro_filename)
+            try:
+                urdf_string = xacro.process(xacro_filename)
+            except AttributeError:
+                from io import StringIO
+
+                xml = xacro.process_file(xacro_filename)
+                str_io = StringIO()
+                xml.writexml(str_io)
+                urdf_string = str_io.getvalue()
 
         # Load URDF
         self._urdf = None
