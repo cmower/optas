@@ -41,5 +41,8 @@ def test_derive_jacobian_and_hessian_functions():
         assert isclose(Jac(x, p).toarray(), Jac_known(x, p).toarray())
         assert isclose(Hes(x, p).toarray(), Hes_known(x, p).toarray())
 
+
 def test_vertcon():
-    pass
+    x = optas.SX.sym("x", 2)
+    p = optas.SX.sym("p", 2)
+
