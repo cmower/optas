@@ -139,6 +139,11 @@ Other examples can be found in the [example/](example) directory.
 
 - Loading robot models from xacro files is supported, however there can be issues if you are running this in a ROS agnositic environment. If you do not have ROS installed, then the xacro file should not contain ROS-specific features. For further details see [here](https://github.com/cmower/optas/issues/78).
 
+## Run tests
+
+1. `$ cd /path/to/optas`
+2. `$ pytest`
+
 # Citation
 
 If you use OpTaS in your work, please consider including the following citation.
