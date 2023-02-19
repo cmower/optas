@@ -198,13 +198,13 @@ class Quaternion:
 
     """Quaternion class"""
 
-    def __init__(self, x, y=None, z=None, w=None):
+    def __init__(self, x, y, z, w):
         """Quaternion constructor.
 
         Syntax
         ------
 
-        quat = Quaternion(x, y=None, z=None, w=None)
+        quat = Quaternion(x, y, z, w)
 
         Parameters
         ----------
@@ -212,23 +212,17 @@ class Quaternion:
         x (number, array)
             Either the x-value of the quaternion or a 4-vector containing the quaternion.
 
-        y (number, None)
+        y (number)
             y-value of quaternion.
 
-        z (number, None)
+        z (number)
             z-value of quaternion.
 
-        w (number, None)
+        w (number)
             w-value of quaternion.
 
         """
-        if y is None:
-            # assumes x/w are none also
-            x_ = cs.vec(x)
-            assert x.shape[0] == 4, "quaternion requires 4 elements"
-            self._q = x
-        else:
-            self._q = cs.vertcat(x, y, z, w)
+        self._q = cs.vertcat(x, y, z, w)
 
     def split(self):
         """Split the quaternion into its xyzw parts."""
@@ -254,7 +248,7 @@ class Quaternion:
         """Quaternion inverse"""
         q = self.getquat()
         qinv = cs.vertcat(-q[:3], q[3]) / self.sumsqr()
-        return Quaternion(qinv)
+        return Quaternion(qinv[0], qinv[1], qinv[2], qinv[3])
 
     @staticmethod
     def fromrpy(rpy):
