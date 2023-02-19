@@ -253,7 +253,6 @@ class RobotModel(Model):
         T=None,
         param_joints=[],
     ):
-
         # If xacro is passed then convert to urdf string
         self._xacro_filename = xacro_filename
         if xacro_filename is not None:
@@ -442,6 +441,11 @@ class RobotModel(Model):
             return 1e9
         return joint.limit.upper
 
+    def get_velocity_joint_limit(self, joint):
+        if joint.limit is None:
+            return 1e9
+        return joint.limit.velocity
+
     @property
     def lower_actuated_joint_limits(self):
         return cs.DM(
@@ -462,11 +466,6 @@ class RobotModel(Model):
             ]
         )
 
-    def get_velocity_joint_limit(self, joint):
-        if joint.limit is None:
-            return 1e9
-        return joint.limit.velocity
-
     @property
     def velocity_actuated_joint_limits(self):
         return cs.DM(
@@ -481,7 +480,7 @@ class RobotModel(Model):
     def lower_optimized_joint_limits(self):
         return cs.DM(
             [
-                jnt.limit.lower
+                self.get_joint_lower_limit(jnt)
                 for jnt in self._urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
@@ -491,7 +490,7 @@ class RobotModel(Model):
     def upper_optimized_joint_limits(self):
         return cs.DM(
             [
-                jnt.limit.upper
+                self.get_joint_upper_limit(jnt)
                 for jnt in self._urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
@@ -501,67 +500,7 @@ class RobotModel(Model):
     def velocity_optimized_joint_limits(self):
         return cs.DM(
             [
-                jnt.limit.velocity
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def lower_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.lower
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def upper_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.upper
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def velocity_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.velocity
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def lower_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.lower
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def upper_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.upper
-                for jnt in self._urdf.joints
-                if jnt.name in self.optimized_joint_names
-            ]
-        )
-
-    @property
-    def velocity_optimized_joint_limits(self):
-        return cs.DM(
-            [
-                jnt.limit.velocity
+                self.get_velocity_joint_limit(jnt)
                 for jnt in self._urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
@@ -1221,8 +1160,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_link_axis_jacobian(self, link, q, axis, base_link):
-        q_sym = cs.SX.sym("q_sym", self.ndof)
+    def get_link_axis(self, link, q, axis, base_link):
         Tf = self.get_link_transform(link, q, base_link)
 
         axis2index = {"x": 0, "y": 1, "z": 2}
@@ -1242,6 +1180,28 @@ class RobotModel(Model):
 
         else:
             raise ValueError(f"did not recognize input for axis: {axis}")
+
+        return vector
+
+    def get_link_axis_function(self, link, axis, base_link, n=1):
+        return self._make_function(
+            "a", link, self.get_link_axis, n=n, base_link=base_link
+        )
+
+    @arrayify_args
+    @listify_output
+    def get_global_link_axis(self, link, q, axis):
+        return self.get_link_axis(link, q, axis, self.get_root_link())
+
+    def get_global_link_axis_function(self, link, axis, n=1):
+        get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
+        return self._make_function("a", link, get_global_link_axis, n=n)
+
+    @arrayify_args
+    @listify_output
+    def get_link_axis_jacobian(self, link, q, axis, base_link):
+        q_sym = cs.SX.sym("q_sym", self.ndof)
+        vector = self.get_link_axis(link, q, axis, base_link)
 
         # Compute jacobian
         Jv = cs.jacobian(vector, q_sym)
