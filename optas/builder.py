@@ -2,6 +2,7 @@ import casadi as cs
 from .sx_container import SXContainer
 from .spatialmath import arrayify_args
 from .optimization import *
+from .models import RobotModel
 
 
 class OptimizationBuilder:
@@ -73,27 +74,29 @@ class OptimizationBuilder:
         is_unique_names = len(model_names) == len(set(model_names))
         assert is_unique_names, "each model should have a unique name"
 
-        # Setup decision variables
+        # Setup containers for decision variables, parameters, cost terms, ineq/eq constraints
         self._decision_variables = SXContainer()
-        for model in self._models:
-            for d in model.time_derivs:
-                n = model.state_name(d)
-                if model.T is None:
-                    t = T - d if not derivs_align else T
-                else:
-                    t = model.T
-                self.add_decision_variables(n, model.dim, t)
-
-        if optimize_time:
-            self.add_decision_variables("dt", T - 1)
-
-        # Setup containers for parameters, cost terms, ineq/eq constraints
         self._parameters = SXContainer()
         self._cost_terms = SXContainer()
         self._lin_eq_constraints = SXContainer()
         self._lin_ineq_constraints = SXContainer()
         self._ineq_constraints = SXContainer()
         self._eq_constraints = SXContainer()
+
+        # Setup decision variables and parameters
+        for model in self._models:
+            for d in model.time_derivs:
+                n_s_x = model.state_optimized_name(d)
+                t = T - d if not derivs_align else T
+                if isinstance(model, RobotModel):
+                    self.add_decision_variables(n_s_x, model.num_opt_joints, t)
+                    n_s_p = model.state_parameter_name(d)
+                    self.add_parameter(n_s_p, model.num_param_joints, t)
+                else:
+                    self.add_decision_variables(n_s_x, model.dim, t)
+
+        if optimize_time:
+            self.add_decision_variables("dt", T - 1)
 
     def get_model_names(self):
         """Return the names of each model."""
@@ -203,8 +206,112 @@ class OptimizationBuilder:
         assert (
             time_deriv in model.time_derivs
         ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
-        name = model.state_name(time_deriv)
+        name = model.state_optimized_name(time_deriv)
         return self._decision_variables[name]
+
+    def get_model_parameters(self, name, time_deriv=0):
+        """Get the array of parameters for a given model.
+
+        Syntax
+        ------
+
+        parameters = builder.get_model_parameters(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        parameters (casadi.SX, with shape dim-by-T)
+            The array of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
+
+        """
+        model = self.get_model(name)
+        assert (
+            time_deriv in model.time_derivs
+        ), f"model '{name}', was not specified with time derivative to order {time_deriv}"
+        name = model.state_parameter_name(time_deriv)
+        return self._parameters[name]
+
+    def get_model_parameter(self, name, t, time_deriv=0):
+        """Get the model parameter at a given time.
+
+        Syntax
+        ------
+
+        parameter = builder.get_model_parameter(name, t, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        t (int)
+            Index of the desired parameter.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        parameter (casadi.SX, with shape dim-by-1)
+            The parameter vector where dim is the model number of parameters
+
+        """
+        parameters = self.get_model_parameters(name, time_deriv)
+        return parameters[:, t]
+
+    def get_robot_states_and_parameters(self, name, time_deriv=0):
+        """Get the vector of states and parameters for a given model.
+
+        Note that method only applies to to RobotModel.
+        To be replaced by get_model_states_and_parameters once parameters are added to base class Model.
+
+        Syntax
+        ------
+
+        parameters = builder.get_robot_states_and_parameters(name, time_deriv=0)
+
+        Parameters
+        ----------
+
+        name (string)
+            Name of the model.
+
+        time_deriv (int)
+            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+
+        Returns
+        -------
+
+        states and parameters (casadi.SX, with shape dim-by-T)
+            The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
+
+        """
+        states = self.get_model_states(name, time_deriv=time_deriv)
+        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
+
+        model = self.get_model(name)
+
+        assert isinstance(model, RobotModel), "this method only applies to robot models"
+
+        states_and_params = cs.SX.zeros(model.dim, max(1, self.T - time_deriv))
+        for idx in range(model.num_param_joints):
+            states_and_params[model.parameter_joint_indexes[idx], :] = parameters[
+                idx, :
+            ]
+        for idx in range(model.num_opt_joints):
+            states_and_params[model.optimized_joint_indexes[idx], :] = states[idx, :]
+        return states_and_params
 
     def get_dt(self):
         """When optimizing time, then this method returns the trajectory of dt variables."""
@@ -508,7 +615,10 @@ class OptimizationBuilder:
                 dt = dt * cs.DM.ones(n - 1)
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
-        integr = self._integr(model.dim, n - 1)
+        if isinstance(model, RobotModel):
+            integr = self._integr(model.num_opt_joints, n - 1)
+        else:
+            integr = self._integr(model.dim, n - 1)
         name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
@@ -671,5 +781,7 @@ class OptimizationBuilder:
                     self._parameters,
                     self._cost_terms,
                 )
+
+        opt.set_models(self._models)
 
         return opt

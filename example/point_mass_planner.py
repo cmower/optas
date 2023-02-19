@@ -77,8 +77,8 @@ class Planner:
     def plan(self, init, goal):
         self.solver.reset_parameters({'init': init, 'goal': goal})
         solution = self.solver.solve()
-        plan_x = self.solver.interpolate(solution[f'{self.pm_name}/x'], self.duration)
-        plan_dx = self.solver.interpolate(solution[f'{self.pm_name}/dx'], self.duration)
+        plan_x = self.solver.interpolate(solution[f'{self.pm_name}/y'], self.duration)
+        plan_dx = self.solver.interpolate(solution[f'{self.pm_name}/dy'], self.duration)
         return plan_x, plan_dx
 
 class Animate:

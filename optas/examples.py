@@ -123,10 +123,10 @@ class SimpleJointMotionPlanner:
             for i in range(self.T):
                 alpha = float(i) / float(self.T - 1)
                 Q0[:, i] = qa * (1 - alpha) + qb * alpha
-            self.solver.reset_initial_seed({f"{self.name}/q": Q0})
+            self.solver.reset_initial_seed({f"{self.name}/q/x": Q0})
         solution = self.solver.solve()
         success = self.solver.did_solve()
         plan = self.solver.interpolate(
-            solution[f"{self.name}/q"], 1.0, fill_value="extrapolate"
+            solution[f"{self.name}/q/x"], 1.0, fill_value="extrapolate"
         )
         return success, plan

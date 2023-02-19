@@ -175,7 +175,7 @@ class TOMPCCPlanner:
             state_x_init[2, k] = GthetaS0 * (1-alpha) + alpha * GthetaST
 
         self.solver.reset_initial_seed({
-            'state/x': state_x_init,
+            'state/y/x': state_x_init,
             'control/u': 0.01*optas.DM.ones(4, self.T-1)
         })
 
@@ -188,7 +188,7 @@ class TOMPCCPlanner:
 
         solution = self.solver.solve()
         optas.np.set_printoptions(suppress=True, precision=3, linewidth=1000)
-        slider_traj = solution['state/x']
+        slider_traj = solution['state/y']
         slider_plan = self.solver.interpolate(slider_traj, self.Tmax)
         return slider_plan
 

@@ -77,9 +77,9 @@ class Planner:
     def plan(self, init, goal):
         self.solver.reset_parameters({'init': init, 'goal': goal})
         solution = self.solver.solve()
-        plan_x = self.solver.interpolate(solution[f'{self.pm_name}/x'], self.duration)
-        plan_dx = self.solver.interpolate(solution[f'{self.pm_name}/dx'], self.duration)
-        return plan_x, plan_dx
+        plan_y = self.solver.interpolate(solution[f'{self.pm_name}/y'], self.duration)
+        plan_dy = self.solver.interpolate(solution[f'{self.pm_name}/dy'], self.duration)
+        return plan_y, plan_dy
 
 class Controller:
 
@@ -158,9 +158,9 @@ class Controller:
                 for vc in vc_collection:
                     print(vc)
             raise RuntimeError("solver failed")
-        plan_x = self.solver.interpolate(self.solution[f'{self.pm_name}/x'], self.duration)
-        plan_dx = self.solver.interpolate(self.solution[f'{self.pm_name}/dx'], self.duration)
-        return plan_x(2*self.dt), plan_dx(2*self.dt), plan_x, plan_dx
+        plan_y = self.solver.interpolate(self.solution[f'{self.pm_name}/y'], self.duration)
+        plan_dy = self.solver.interpolate(self.solution[f'{self.pm_name}/dy'], self.duration)
+        return plan_y(2*self.dt), plan_dy(2*self.dt), plan_y, plan_dy
 
 class Animate:
 
@@ -170,7 +170,7 @@ class Animate:
         self.planner = Planner()
         self.init = [-1, -1]
         self.goal = [1, 1]
-        self.plan_x, self.plan_dx = self.planner.plan(self.init, self.goal)
+        self.plan_y, self.plan_dy = self.planner.plan(self.init, self.goal)
 
         # Setup current state and controller
         self.curr = self.init
@@ -179,8 +179,8 @@ class Animate:
 
         # Setup figure
         self.t = optas.np.linspace(0, self.planner.duration, self.planner.T)
-        self.X = self.plan_x(self.t)
-        self.dX = self.plan_dx(self.t)
+        self.X = self.plan_y(self.t)
+        self.dX = self.plan_dy(self.t)
 
         self.fig, self.ax = plt.subplot_mosaic([['birdseye', 'position'],
                                                 ['birdseye', 'velocity']],
@@ -281,18 +281,18 @@ class Animate:
         for i in range(self.controller.T):
             ti = t + self.controller.dt*i
             try:
-                g = self.plan_x(ti).flatten()
+                g = self.plan_y(ti).flatten()
                 goal.append(g.tolist())
             except ValueError:
                 goal.append(g.tolist()) # i.e. previous goal
 
         goal = optas.np.array(goal).T
 
-        self.curr, self.dcurr, plan_x, plan_dx = self.controller.next_state(self.curr, self.dcurr, goal, obs)
+        self.curr, self.dcurr, plan_y, plan_dy = self.controller.next_state(self.curr, self.dcurr, goal, obs)
 
         mpc_plan = []
         for i in range(self.controller.T):
-            xmpc = plan_x(i*self.controller.dt)
+            xmpc = plan_y(i*self.controller.dt)
             mpc_plan.append(xmpc.flatten().tolist())
         mpc_plan = optas.np.array(mpc_plan).T
 
