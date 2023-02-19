@@ -13,6 +13,10 @@ Otherwise, you can install VTK using `$ pip install vtk`.
 
 ## Examples
 
+### Position IK
+
+The `example.py` script showcases some of the main features of OpTaS.
+
 ### Figure of Eight Planning
 
 This script, `figure_eight_plan.py`, demonstrates how to implement a simple planner.
