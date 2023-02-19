@@ -30,7 +30,8 @@ where
 * $p_g\in\mathbb{R}^3$ is a goal position, and
 * $q^-, q^+\in\mathbb{R}^n$ is the lower and upper joint position limits respectively.
 
-The nominal configuration $q_N$ is used as the initial seed for the problem.
+The example problem has a quadratic cost function with nonlinear constraints.
+We use the nominal configuration $q_N$ as the initial seed for the problem.
 
 The following example script showcases some of the main features of OpTaS:
 creating a robot model,
