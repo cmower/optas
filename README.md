@@ -19,18 +19,18 @@ In this example we implement an optimization-based IK problem.
 The problem computes an optimal joint configuration $q^*\in\mathbb{R}^n$ given by
 
 $$
-q^* = \underset{q}{\text{arg}\min}~\|\|q - q_n\|\|^2\quad\text{subject to}\quad p(q) = p_g, q^-\leq q \leq q^+
+q^* = \underset{q}{\text{arg}\min}~\|\|q - q_N\|\|^2\quad\text{subject to}\quad p(q) = p_g, q^-\leq q \leq q^+
 $$
 
 where
 * $q\in\mathbb{R}^n$ is the joint configuration for an $n$-dof robot (in our example, we use the KUKA LWR in the above figure with $n=7$),
-* $q_n\in\mathbb{R}^n$ is a nominal joint configuration,
+* $q_N\in\mathbb{R}^n$ is a nominal joint configuration,
 * $\|\|\cdot\|\|$ is the Euclidean norm,
 * $p: \mathbb{R}^n\rightarrow\mathbb{R}^3$ computes the end-effector position via the forward kinematics,
 * $p_g\in\mathbb{R}^3$ is a goal position, and
 * $q^-, q^+\in\mathbb{R}^n$ is the lower and upper joint position limits respectively.
 
-The nominal configuration $q_n$ is used as the initial seed for the problem.
+The nominal configuration $q_N$ is used as the initial seed for the problem.
 
 The following example script showcases some of the main features of OpTaS:
 creating a robot model,
