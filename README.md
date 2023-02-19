@@ -113,7 +113,7 @@ vis.start()
 ```
 
 Run the example script [example.py](example/example.py).
-Other examples can be found in the [example/](example) directory.
+Other examples, including dual-arm planning, Model Predictive Control, Trajectory Optimization, etc can be found in the [example/](example) directory.
 
 # Install
 
