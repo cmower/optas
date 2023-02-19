@@ -15,22 +15,21 @@ https://github.com/petercorke/spatialmath-matlab
 pi = cs.np.pi
 eps = cs.np.finfo(float).eps
 
-_arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
-
-
-def _handle_arraylike_args(args, handle):
-    """Helper method that applies the handle to array like arguments."""
-    args_out = []
-    for a in args:
-        if isinstance(a, _arraylike_types):
-            args_out.append(handle(a))
-        else:
-            args_out.append(a)
-    return args_out
-
 
 def arrayify_args(fun):
     """Decorator that ensures all input arguments are casadi arrays (i.e. either DM or SX)"""
+
+    _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
+
+    def _handle_arraylike_args(args, handle):
+        """Helper method that applies the handle to array like arguments."""
+        args_out = []
+        for a in args:
+            if isinstance(a, _arraylike_types):
+                args_out.append(handle(a))
+            else:
+                args_out.append(a)
+        return args_out
 
     @functools.wraps(fun)
     def wrap(*args, **kwargs):
