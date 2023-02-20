@@ -1,6 +1,7 @@
 import os
 import warnings
 import functools
+import pathlib
 
 import casadi as cs
 
@@ -310,9 +311,9 @@ class RobotModel(Model):
 
     def get_urdf_dirname(self):
         if self._urdf_filename is not None:
-            return os.path.dirname(self._urdf_filename)
+            return pathlib.Path(os.path.dirname(self._urdf_filename))
         elif self._xacro_filename is not None:
-            return os.path.dirname(self._xacro_filename)
+            return pathlib.Path(os.path.dirname(self._xacro_filename))
 
     @property
     def joint_names(self):
