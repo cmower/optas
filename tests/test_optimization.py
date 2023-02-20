@@ -90,28 +90,452 @@ def test_optimization():
     ]
 
     opt = optas.optimization.Optimization(dv, pr, ct)
+
     opt.set_models(models)
-
     assert opt.models == models
-    assert opt.nx == 6
-    assert opt.np == 1
 
-    assert opt.f([1, 2, 3, 4, 5, 6], [3]) == 273
+    def fun_known(x, p):
+        return p * np.sum(x.flatten() ** 2)
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 0,
+        "na": 0,
+        "ng": 0,
+        "nh": 0,
+        "nv": 0,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_QuadraticCostUnconstrained():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x)
+
+    opt = optas.optimization.QuadraticCostUnconstrained(dv, pr, ct)
+
+    def fun_known(x, p):
+        return p * np.sum(x.flatten() ** 2)
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        P = opt.P(p).toarray()
+        q = opt.q(p).toarray().flatten()
+
+        f = x.T @ P @ x + np.dot(q, x)
+
+        assert isclose(f, fun_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 0,
+        "na": 0,
+        "ng": 0,
+        "nh": 0,
+        "nv": 0,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_QuadraticCostLinearConstraints():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x)
+
+    lec = SXContainer()
+    lec["lec"] = x[0] - 2.0 * x[1]
+
+    lic = SXContainer()
+    lic["lic1"] = x[2] + 3.0 * x[4]
+    lic["lic2"] = -2.0 * x[5] + x[2]
+
+    opt = optas.optimization.QuadraticCostLinearConstraints(dv, pr, ct, lec, lic)
+
+    def fun_known(x, p):
+        return p * np.sum(x.flatten() ** 2)
+
+    def k_known(x, p):
+        return np.array([x[2] + 3.0 * x[4], -2.0 * x[5] + x[2]])
+
+    def a_known(x, p):
+        return np.array(
+            [
+                x[0] - 2.0 * x[1],
+            ]
+        )
+
+    def v_known(x, p):
+        a = a_known(x, p)
+        return np.concatenate([k_known(x, p), a, -a])
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        P = opt.P(p).toarray()
+        q = opt.q(p).toarray().flatten()
+
+        f = x.T @ P @ x + np.dot(q, x)
+
+        assert isclose(f, fun_known(x, p))
+
+        M = opt.M(p).toarray()
+        c = opt.c(p).toarray()
+
+        assert isclose(M @ x + c, k_known(x, p))
+
+        A = opt.A(p).toarray()
+        b = opt.b(p).toarray()
+
+        assert isclose(A @ x + b, a_known(x, p))
+
+        v = opt.v(x, p).toarray().flatten()
+        assert isclose(v, v_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 2,
+        "na": 1,
+        "ng": 0,
+        "nh": 0,
+        "nv": 4,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_QuadraticCostNonlinearConstraints():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x)
+
+    lec = SXContainer()
+    lec["lec"] = x[0] - 2.0 * x[1]
+
+    lic = SXContainer()
+    lic["lic1"] = x[2] + 3.0 * x[4]
+    lic["lic2"] = -2.0 * x[5] + x[2]
+
+    ec = SXContainer()
+    ec["e1"] = x[3] ** 2 - x[1] * x[2]
+    ec["e2"] = x[0] - 2.0 * x[1] * x[4]
+
+    ic = SXContainer()
+    ic["ic"] = x[1] + x[2] * x[0]
+
+    opt = optas.optimization.QuadraticCostNonlinearConstraints(
+        dv, pr, ct, lec, lic, ec, ic
+    )
+
+    def fun_known(x, p):
+        return p * np.sum(x.flatten() ** 2)
+
+    def k_known(x, p):
+        return np.array([x[2] + 3.0 * x[4], -2.0 * x[5] + x[2]])
+
+    def a_known(x, p):
+        return np.array(
+            [
+                x[0] - 2.0 * x[1],
+            ]
+        )
+
+    def g_known(x, p):
+        return np.array([x[1] + x[2] * x[0]])
+
+    def h_known(x, p):
+        return np.array(
+            [
+                x[3] ** 2 - x[1] * x[2],
+                x[0] - 2.0 * x[1] * x[4],
+            ]
+        )
+
+    def v_known(x, p):
+        a = a_known(x, p)
+        h = h_known(x, p)
+        return np.concatenate([k_known(x, p), g_known(x, p), a, -a, h, -h])
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        P = opt.P(p).toarray()
+        q = opt.q(p).toarray().flatten()
+
+        f = x.T @ P @ x + np.dot(q, x)
+
+        assert isclose(f, fun_known(x, p))
+
+        M = opt.M(p).toarray()
+        c = opt.c(p).toarray()
+
+        assert isclose(M @ x + c, k_known(x, p))
+
+        A = opt.A(p).toarray()
+        b = opt.b(p).toarray()
+
+        assert isclose(A @ x + b, a_known(x, p))
+
+        v = opt.v(x, p).toarray().flatten()
+        assert isclose(v, v_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 2,
+        "na": 1,
+        "ng": 1,
+        "nh": 2,
+        "nv": 9,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_NonlinearCostUnconstrained():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x) + x[0] * x[1] + 2.0 * (optas.cos(x[3]) - 1.0) ** 2
+
+    opt = optas.optimization.NonlinearCostUnconstrained(dv, pr, ct)
+
+    def fun_known(x, p):
+        return (
+            p * np.sum(x.flatten() ** 2) + x[0] * x[1] + 2.0 * (np.cos(x[3]) - 1.0) ** 2
+        )
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 0,
+        "na": 0,
+        "ng": 0,
+        "nh": 0,
+        "nv": 0,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_NonlinearCostLinearConstraints():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x) + x[0] * x[1] + 2.0 * (optas.cos(x[3]) - 1.0) ** 2
+
+    lec = SXContainer()
+    lec["lec"] = x[0] - 2.0 * x[1]
+
+    lic = SXContainer()
+    lic["lic1"] = x[2] + 3.0 * x[4]
+    lic["lic2"] = -2.0 * x[5] + x[2]
+
+    opt = optas.optimization.NonlinearCostLinearConstraints(dv, pr, ct, lec, lic)
+
+    def fun_known(x, p):
+        return (
+            p * np.sum(x.flatten() ** 2) + x[0] * x[1] + 2.0 * (np.cos(x[3]) - 1.0) ** 2
+        )
+
+    def k_known(x, p):
+        return np.array([x[2] + 3.0 * x[4], -2.0 * x[5] + x[2]])
+
+    def a_known(x, p):
+        return np.array(
+            [
+                x[0] - 2.0 * x[1],
+            ]
+        )
+
+    def v_known(x, p):
+        a = a_known(x, p)
+        return np.concatenate([k_known(x, p), a, -a])
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        M = opt.M(p).toarray()
+        c = opt.c(p).toarray()
+
+        assert isclose(M @ x + c, k_known(x, p))
+
+        A = opt.A(p).toarray()
+        b = opt.b(p).toarray()
+
+        assert isclose(A @ x + b, a_known(x, p))
+
+        v = opt.v(x, p).toarray().flatten()
+        assert isclose(v, v_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 2,
+        "na": 1,
+        "ng": 0,
+        "nh": 0,
+        "nv": 4,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
 
 def test_NonlinearCostNonlinearConstraints():
-    pass
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x) + x[0] * x[1] + 2.0 * (optas.cos(x[3]) - 1.0) ** 2
+
+    lec = SXContainer()
+    lec["lec"] = x[0] - 2.0 * x[1]
+
+    lic = SXContainer()
+    lic["lic1"] = x[2] + 3.0 * x[4]
+    lic["lic2"] = -2.0 * x[5] + x[2]
+
+    ec = SXContainer()
+    ec["e1"] = x[3] ** 2 - x[1] * x[2]
+    ec["e2"] = x[0] - 2.0 * x[1] * x[4]
+
+    ic = SXContainer()
+    ic["ic"] = x[1] + x[2] * x[0]
+
+    opt = optas.optimization.NonlinearCostNonlinearConstraints(
+        dv, pr, ct, lec, lic, ec, ic
+    )
+
+    def fun_known(x, p):
+        return (
+            p * np.sum(x.flatten() ** 2) + x[0] * x[1] + 2.0 * (np.cos(x[3]) - 1.0) ** 2
+        )
+
+    def k_known(x, p):
+        return np.array([x[2] + 3.0 * x[4], -2.0 * x[5] + x[2]])
+
+    def a_known(x, p):
+        return np.array(
+            [
+                x[0] - 2.0 * x[1],
+            ]
+        )
+
+    def g_known(x, p):
+        return np.array([x[1] + x[2] * x[0]])
+
+    def h_known(x, p):
+        return np.array(
+            [
+                x[3] ** 2 - x[1] * x[2],
+                x[0] - 2.0 * x[1] * x[4],
+            ]
+        )
+
+    def v_known(x, p):
+        a = a_known(x, p)
+        h = h_known(x, p)
+        return np.concatenate([k_known(x, p), g_known(x, p), a, -a, h, -h])
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(6,))
+        p = np.random.uniform(-10, 10)
+
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        P = opt.P(p).toarray()
+        q = opt.q(p).toarray().flatten()
+
+        f = x.T @ P @ x + np.dot(q, x)
+
+        assert isclose(f, fun_known(x, p))
+
+        M = opt.M(p).toarray()
+        c = opt.c(p).toarray()
+
+        assert isclose(M @ x + c, k_known(x, p))
+
+        A = opt.A(p).toarray()
+        b = opt.b(p).toarray()
+
+        assert isclose(A @ x + b, a_known(x, p))
+
+        v = opt.v(x, p).toarray().flatten()
+        assert isclose(v, v_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 6,
+        "np": 1,
+        "nk": 2,
+        "na": 1,
+        "ng": 1,
+        "nh": 2,
+        "nv": 9,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
