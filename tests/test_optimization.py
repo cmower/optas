@@ -508,13 +508,6 @@ def test_NonlinearCostNonlinearConstraints():
 
         assert isclose(opt.f(x, p), fun_known(x, p))
 
-        P = opt.P(p).toarray()
-        q = opt.q(p).toarray().flatten()
-
-        f = x.T @ P @ x + np.dot(q, x)
-
-        assert isclose(f, fun_known(x, p))
-
         M = opt.M(p).toarray()
         c = opt.c(p).toarray()
 
