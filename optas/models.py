@@ -217,7 +217,7 @@ class Model:
     def in_limit(self, x, time_deriv):
         """True when x is within limits for a given time derivative, False otherwise. The return type uses CasADi, so this can be used in the formulation."""
         lo, up = self.get_limits(time_deriv)
-        return cs.logic_all(cs.logical_and(lo <= x, x <= up))
+        return cs.logic_all(cs.logic_and(lo <= x, x <= up))
 
 
 class TaskModel(Model):
