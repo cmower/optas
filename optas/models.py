@@ -336,8 +336,7 @@ class RobotModel(Model):
     @property
     def optimized_joint_indexes(self):
         return [
-            self.get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
+            self.get_actuated_joint_index(joint) for joint in self.optimized_joint_names
         ]
 
     @property
@@ -351,8 +350,7 @@ class RobotModel(Model):
     @property
     def parameter_joint_indexes(self):
         return [
-            self.get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
+            self.get_actuated_joint_index(joint) for joint in self.parameter_joint_names
         ]
 
     def extract_parameter_dimensions(self, values):
@@ -543,6 +541,7 @@ class RobotModel(Model):
         self, n=1, xlim=None, ylim=None, zlim=None, base_link=None
     ):
         """Return a random array with joint positions within the actuator limits."""
+
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
 
