@@ -779,8 +779,8 @@ class RobotModel(Model):
     @listify_output
     def get_link_quaternion(self, link, q, base_link):
         """Get the quaternion defined in a given base frame."""
-        quat_L_W = Quaternion(self.get_global_link_quaternion(link, q))
-        quat_B_W = Quaternion(self.get_global_link_quaternion(base_link, q))
+        quat_L_W = Quaternion.fromvec(self.get_global_link_quaternion(link, q))
+        quat_B_W = Quaternion.fromvec(self.get_global_link_quaternion(base_link, q))
         return (quat_L_W * quat_B_W.inv()).getquat()
 
     def get_link_quaternion_function(self, link, base_link, n=1):
@@ -793,7 +793,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_rpy(self, link, q):
         """Get the Roll-Pitch-Yaw angles in the global frame."""
-        return Quaternion(self.get_global_link_quaternion(link, q)).getrpy()
+        return Quaternion.fromvec(self.get_global_link_quaternion(link, q)).getrpy()
 
     def get_global_link_rpy_function(self, link, n=1):
         """Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
@@ -803,7 +803,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_rpy(self, link, q, base_link):
         """Get the the Roll-Pitch-Yaw angles defined in a given base frame."""
-        return Quaternion(self.get_link_quaternion(link, q, base_link)).getrpy()
+        return Quaternion.fromvec(self.get_link_quaternion(link, q, base_link)).getrpy()
 
     def get_link_rpy_function(self, link, base_link, n=1):
         """Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame."""

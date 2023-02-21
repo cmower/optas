@@ -268,6 +268,14 @@ class Quaternion:
         return Quaternion(x / n, y / n, z / n, w / n)
 
     @staticmethod
+    def fromvec(q):
+        x = q[0]
+        y = q[1]
+        z = q[2]
+        w = q[3]
+        return Quaternion(x, y, z, w)
+
+    @staticmethod
     def fromangvec(theta, v):
         """Return a quaternion from angle-vector form."""
         w = cos(0.5 * theta)
