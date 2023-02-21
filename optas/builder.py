@@ -59,7 +59,7 @@ class OptimizationBuilder:
         self.derivs_align = derivs_align
 
         # Ensure T is sufficiently large
-        if not derivs_align:
+        if not derivs_align and len(self._models) > 0:
             # Get max time deriv
             all_time_derivs = []
             for m in self._models:
