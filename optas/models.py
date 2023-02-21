@@ -334,10 +334,10 @@ class RobotModel(Model):
         ]
 
     @property
-    def parameter_joint_indexes(self):
+    def optimized_joint_indexes(self):
         return [
             self._get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
+            for joint in self.optimized_joint_names
         ]
 
     @property
@@ -346,47 +346,6 @@ class RobotModel(Model):
             joint
             for joint in self.actuated_joint_names
             if joint not in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
-
-    @property
-    def parameter_joint_names(self):
-        return [
-            joint for joint in self.actuated_joint_names if joint in self.param_joints
-        ]
-
-    @property
-    def parameter_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_names(self):
-        return [
-            joint
-            for joint in self.actuated_joint_names
-            if joint not in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
-
-    @property
-    def parameter_joint_names(self):
-        return [
-            joint for joint in self.actuated_joint_names if joint in self.param_joints
         ]
 
     @property
@@ -398,21 +357,6 @@ class RobotModel(Model):
 
     def extract_parameter_dimensions(self, values):
         return values[self.parameter_joint_indexes, :]
-
-    @property
-    def optimized_joint_names(self):
-        return [
-            joint
-            for joint in self.actuated_joint_names
-            if joint not in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
 
     def extract_optimized_dimensions(self, values):
         return values[self.optimized_joint_indexes, :]
