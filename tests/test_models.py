@@ -7,7 +7,6 @@ import scipy.linalg as linalg
 import urdf_parser_py.urdf as urdf
 from scipy.spatial.transform import Rotation as Rot
 
-
 from .tester_robot_model import RobotModelTester
 
 NUM_RANDOM = 100
