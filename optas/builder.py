@@ -560,15 +560,6 @@ class OptimizationBuilder:
         ), "optimize_time should be True in the OptimizationBuilder interface"
         self.add_geq_inequality_constraint("__ensure_positive_dt__", self.get_dt())
 
-    def _integr(self, m, n):
-        """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
-        xd = cs.SX.sym("xd", m)
-        x0 = cs.SX.sym("x0", m)
-        x1 = cs.SX.sym("x1", m)
-        dt = cs.SX.sym("dt")
-        integr = cs.Function("integr", [x0, x1, xd, dt], [x0 + dt * xd - x1])
-        return integr.map(n)
-
     def integrate_model_states(self, name, time_deriv, dt=None):
         """Integrates the model states over time.
 
@@ -590,6 +581,15 @@ class OptimizationBuilder:
             Integration time step.
 
         """
+
+        def integr(m, n):
+            """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
+            xd = cs.SX.sym("xd", m)
+            x0 = cs.SX.sym("x0", m)
+            x1 = cs.SX.sym("x1", m)
+            dt = cs.SX.sym("dt")
+            integr = cs.Function("integr", [x0, x1, xd, dt], [x0 + dt * xd - x1])
+            return integr.map(n)
 
         if self.optimize_time and dt is not None:
             raise ValueError("dt is given but user specified optimize_time as True")
@@ -616,9 +616,9 @@ class OptimizationBuilder:
         dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
 
         if isinstance(model, RobotModel):
-            integr = self._integr(model.num_opt_joints, n - 1)
+            integr = integr(model.num_opt_joints, n - 1)
         else:
-            integr = self._integr(model.dim, n - 1)
+            integr = integr(model.dim, n - 1)
         name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 
