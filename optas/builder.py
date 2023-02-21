@@ -328,7 +328,7 @@ class OptimizationBuilder:
         """Return the parameters as a casadi.SX vector."""
         return self._parameters.vec()
 
-    def _is_linear(self, y):
+    def _is_linear_in_x(self, y):
         """Returns true if y is a linear function of the decision variables."""
         return cs.is_linear(y, self._x())
 
@@ -486,7 +486,7 @@ class OptimizationBuilder:
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff >= 0
-        if self._is_linear(diff):
+        if self._is_linear_in_x(diff):
             self._lin_ineq_constraints[name] = diff
         else:
             self._ineq_constraints[name] = diff
@@ -544,7 +544,7 @@ class OptimizationBuilder:
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
-        if self._is_linear(diff):
+        if self._is_linear_in_x(diff):
             self._lin_eq_constraints[name] = diff
         else:
             self._eq_constraints[name] = diff
