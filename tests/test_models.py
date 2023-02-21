@@ -877,18 +877,16 @@ class TestRobotModel:
         pass  # TODO
 
     def test_get_global_link_manipulability_function(self):
-        pass # TODO
-
+        pass  # TODO
 
     def test_get_link_manipulability(self):
         pass  # TODO
 
     def test_get_link_manipulability_function(self):
-        pass # TODO
+        pass  # TODO
 
     def test_get_global_link_linear_manipulability(self):
         pass  # TODO
-
 
     def test_get_global_link_linear_manipulability_function(self):
         pass  # TODO
@@ -903,11 +901,10 @@ class TestRobotModel:
         pass  # TODO
 
     def test_get_global_link_angular_manipulability_function(self):
-        pass # TODO
+        pass  # TODO
 
     def test_get_link_angular_manipulability(self):
-        pass # TODO
-
+        pass  # TODO
 
     def test_get_link_angular_manipulability_function(self):
         pass  # TODO
