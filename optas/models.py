@@ -477,37 +477,37 @@ class RobotModel(Model):
         )
         self._urdf.add_joint(joint)
 
-    def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
-        """Add a fixed link"""
+    # def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
+    #     """Add a fixed link"""
 
-        assert link not in self.link_names, f"'{link}' already exists"
-        assert (
-            parent_link in self.link_names
-        ), f"{parent_link=}, does not appear in link names"
+    #     assert link not in self.link_names, f"'{link}' already exists"
+    #     assert (
+    #         parent_link in self.link_names
+    #     ), f"{parent_link=}, does not appear in link names"
 
-        child_link = link
+    #     child_link = link
 
-        if xyz is None:
-            xyz = [0.0] * 3
+    #     if xyz is None:
+    #         xyz = [0.0] * 3
 
-        if rpy is None:
-            rpy = [0.0] * 3
+    #     if rpy is None:
+    #         rpy = [0.0] * 3
 
-        if not isinstance(joint_name, str):
-            joint_name = parent_link + "_and_" + child_link + "_joint"
+    #     if not isinstance(joint_name, str):
+    #         joint_name = parent_link + "_and_" + child_link + "_joint"
 
-        self._urdf.add_link(Link(name=child_link))
+    #     self._urdf.add_link(Link(name=child_link))
 
-        origin = Pose(xyz=xyz, rpy=rpy)
-        self._urdf.add_joint(
-            Joint(
-                name=joint_name,
-                parent=parent_link,
-                child=child_link,
-                joint_type="fixed",
-                origin=origin,
-            )
-        )
+    #     origin = Pose(xyz=xyz, rpy=rpy)
+    #     self._urdf.add_joint(
+    #         Joint(
+    #             name=joint_name,
+    #             parent=parent_link,
+    #             child=child_link,
+    #             joint_type="fixed",
+    #             origin=origin,
+    #         )
+    #     )
 
     def get_root_link(self):
         """Return the root link"""
