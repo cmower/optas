@@ -336,7 +336,7 @@ class RobotModel(Model):
     @property
     def optimized_joint_indexes(self):
         return [
-            self._get_actuated_joint_index(joint)
+            self.get_actuated_joint_index(joint)
             for joint in self.optimized_joint_names
         ]
 
@@ -351,7 +351,7 @@ class RobotModel(Model):
     @property
     def parameter_joint_indexes(self):
         return [
-            self._get_actuated_joint_index(joint)
+            self.get_actuated_joint_index(joint)
             for joint in self.parameter_joint_names
         ]
 
@@ -536,7 +536,7 @@ class RobotModel(Model):
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1.0, 0.0, 0.0])
         return unit(axis)
 
-    def _get_actuated_joint_index(self, joint_name):
+    def get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
 
     def get_random_joint_positions(
@@ -658,7 +658,7 @@ class RobotModel(Model):
                 T = T @ rt2tr(rpy2r(rpy), xyz)
                 continue
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             T = T @ rt2tr(rpy2r(rpy), xyz)
@@ -757,7 +757,7 @@ class RobotModel(Model):
                 quat = Quaternion.fromrpy(rpy) * quat
                 continue
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             quat = Quaternion.fromrpy(rpy) * quat
@@ -838,7 +838,7 @@ class RobotModel(Model):
             if joint.child == link:
                 past_in_chain = True
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             joint_index_order.append(joint_index)
             qi = q[joint_index]
 
