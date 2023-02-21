@@ -4,6 +4,7 @@ import optas
 import pathlib
 import numpy as np
 import urdf_parser_py.urdf as urdf
+
 from .tester_robot_model import RobotModelTester
 
 NUM_RANDOM = 100
@@ -175,18 +176,59 @@ def test_TaskModel():
 
 
 class TestRobotModel:
-    expected_joint_names = [
-        "joint0",
-        "joint1",
-        "joint3",
-        "eff_joint",
-    ]
-
-    expected_link_names = ["world", "link1", "link2", "link3", "eff"]
-
+    # Setup path to tester robot URDF
     cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
     urdf_filename = "tester_robot.urdf"
-    model = optas.RobotModel(urdf_filename=os.path.join(cwd, urdf_filename))
+    urdf_path = os.path.join(cwd, urdf_filename)
+
+    # Setup model (with no parameterized joints)
+    model = optas.RobotModel(urdf_filename=urdf_path)
+
+    model_expected_joint_names = [
+        "joint0",
+        "joint1",
+        "joint2",
+        "eff_joint",
+    ]
+    model_expected_link_names = ["world", "link1", "link2", "link3", "eff"]
+    model_expected_actuated_joint_names = ["joint0", "joint1", "joint2"]
+    model_expected_parameter_joint_names = []
+    model_expected_optimized_joint_indexes = [0, 1, 2]
+    model_expected_optimized_joint_names = ["joint0", "joint1", "joint2"]
+    model_expected_parameter_joint_indexes = []
+
+    model_expected_lower_actuated_joint_limits = [-1e9, -1, 0]
+    model_expected_upper_actuated_joint_limits = [1e9, 1, 1]
+    model_expected_velocity_actuated_joint_limits = [1e9, 1, 1]
+    model_expected_lower_optimized_joint_limits = [-1e9, -1, 0]
+    model_expected_upper_optimized_joint_limits = [1e9, 1, 1]
+    model_expected_velocity_optimized_joint_limits = [1e9, 1, 1]
+
+    # Setup model (with parameterized joints)
+    model_p = optas.RobotModel(
+        urdf_filename=os.path.join(cwd, urdf_filename),
+        param_joints=["joint0"],
+    )
+
+    model_p_expected_joint_names = [
+        "joint0",
+        "joint1",
+        "joint2",
+        "eff_joint",
+    ]
+    model_p_expected_link_names = ["world", "link1", "link2", "link3", "eff"]
+    model_p_expected_actuated_joint_names = ["joint0", "joint1", "joint2"]
+    model_p_expected_parameter_joint_names = ["joint0"]
+    model_p_expected_optimized_joint_indexes = [1, 2]
+    model_p_expected_optimized_joint_names = ["joint1", "joint2"]
+    model_p_expected_parameter_joint_indexes = [0]
+
+    model_p_expected_lower_actuated_joint_limits = [-1e9, -1, 0]
+    model_p_expected_upper_actuated_joint_limits = [1e9, 1, 1]
+    model_p_expected_velocity_actuated_joint_limits = [1e9, 1, 1]
+    model_p_expected_lower_optimized_joint_limits = [-1, 0]
+    model_p_expected_upper_optimized_joint_limits = [1, 1]
+    model_p_expected_velocity_optimized_joint_limits = [1, 1]
 
     def test_init(self):
         with pytest.raises(AssertionError):
@@ -200,25 +242,123 @@ class TestRobotModel:
         assert isinstance(urdf_dirname, pathlib.Path)
         assert urdf_dirname == self.cwd
 
+    def check_items(self, items_label):
+        for model_name in ("model", "model_p"):
+            model = getattr(self, model_name)
+            items = getattr(model, items_label)
+
+            expected_items_label = model_name + "_expected_" + items_label
+            expected_items = getattr(self, expected_items_label)
+
+            if isinstance(items, list):
+                assert len(items) == len(expected_items)
+                for item, expected_item in zip(items, expected_items):
+                    assert item == expected_item
+            elif isinstance(items, optas.DM):
+                assert items.shape[0] == len(expected_items)
+                for i in range(len(expected_items)):
+                    assert isclose(items[i].toarray().flatten(), expected_items[i])
+
     def test_joint_names(self):
-        for joint_name, expected_joint_name in zip(
-            self.model.joint_names, self.expected_joint_names
-        ):
-            assert joint_name == expected_joint_name
+        self.check_items("joint_names")
 
     def test_link_names(self):
-        for link_name, expected_link_name in zip(
-            self.model.link_names, self.expected_link_names
-        ):
-            assert link_name == expected_link_name
+        self.check_items("link_names")
 
-    def test_actuated_joint_names(self):        
-        for joint_name, expected_joint_name in zip(
-            self.model.joint_names, self.expected_joint_names
-        ):
-            if expected_joint_name == 'eff_joint':
-                # i.e. eff_joint is fixed
-                continue
-            assert joint_name == expected_joint_name
+    def test_actuated_joint_names(self):
+        self.check_items("actuated_joint_names")
 
-    
+    def test_parameter_joint_names(self):
+        self.check_items("parameter_joint_names")
+
+    def test_optimized_joint_indexes(self):
+        self.check_items("optimized_joint_indexes")
+
+    def test_optimized_joint_names(self):
+        self.check_items("optimized_joint_names")
+
+    def test_parameter_joint_indexes(self):
+        self.check_items("parameter_joint_indexes")
+
+    def test_extract_parameter_dimensions(self):
+        q = optas.DM([1, 2, 3])
+        qp = self.model_p.extract_parameter_dimensions(q)
+        assert isclose(q[0].toarray().flatten(), qp.toarray().flatten())
+
+    def test_extract_optimized_dimensions(self):
+        q = optas.DM([1, 2, 3])
+        qopt = self.model_p.extract_optimized_dimensions(q)
+        assert isclose(q[1:].toarray().flatten(), qopt.toarray().flatten())
+
+    def check_num(self, label, expected_nums):
+        for model_name, expected_num in zip(("model", "model_p"), expected_nums):
+            model = getattr(self, model_name)
+            assert getattr(model, label) == expected_num
+
+    def test_ndof(self):
+        self.check_num("ndof", [3, 3])
+
+    def test_num_opt_joints(self):
+        self.check_num("num_opt_joints", [3, 2])
+
+    def test_num_param_joints(self):
+        self.check_num("num_param_joints", [0, 1])
+
+    def test_get_joint_lower_limit(self):
+        joint_null = urdf.Joint()
+        assert isclose(self.model.get_joint_lower_limit(joint_null), -1e9)
+
+        expected_limits = (-1e9, -1, 0, -1e9)
+        for joint, expected_limit in zip(self.model.get_urdf().joints, expected_limits):
+            limit = self.model.get_joint_lower_limit(joint)
+            assert isclose(limit, expected_limit)
+
+    def test_get_joint_lower_limit(self):
+        joint_null = urdf.Joint()
+        assert isclose(self.model.get_joint_upper_limit(joint_null), 1e9)
+
+        expected_limits = (1e9, 1, 1, 1e9)
+        for joint, expected_limit in zip(self.model.get_urdf().joints, expected_limits):
+            limit = self.model.get_joint_upper_limit(joint)
+            assert isclose(limit, expected_limit)
+
+    def test_get_velocity_joint_limit(self):
+        joint_null = urdf.Joint()
+        assert isclose(self.model.get_velocity_joint_limit(joint_null), 1e9)
+
+        expected_limits = (1e9, 1, 1, 1e9)
+        for joint, expected_limit in zip(self.model.get_urdf().joints, expected_limits):
+            limit = self.model.get_velocity_joint_limit(joint)
+            assert isclose(limit, expected_limit)
+
+    def test_lower_actuated_joint_limits(self):
+        self.check_items("lower_actuated_joint_limits")
+
+    def test_upper_actuated_joint_limits(self):
+        self.check_items("upper_actuated_joint_limits")
+
+    def test_velocity_actuated_joint_limits(self):
+        self.check_items("velocity_actuated_joint_limits")
+
+    def test_lower_optimized_joint_limits(self):
+        self.check_items("lower_optimized_joint_limits")
+
+    def test_upper_optimized_joint_limits(self):
+        self.check_items("upper_optimized_joint_limits")
+
+    def test_velocity_optimized_joint_limits(self):
+        self.check_items("velocity_optimized_joint_limits")
+
+    def test_add_base_frame(self):
+        model = optas.RobotModel(urdf_filename=self.urdf_path)
+        assert model.get_root_link() == 'world'
+        
+        model.add_base_frame(
+            "test_world",
+            xyz=[1, 2, 3],
+            rpy=[0, 0, 0.5 * np.pi],
+            joint_name="test_joint_name",
+        )
+        assert model.get_root_link() == 'test_world'
+
+    def test_
