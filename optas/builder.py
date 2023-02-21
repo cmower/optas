@@ -297,12 +297,12 @@ class OptimizationBuilder:
             The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
 
         """
-        states = self.get_model_states(name, time_deriv=time_deriv)
-        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
 
         model = self.get_model(name)
-
         assert isinstance(model, RobotModel), "this method only applies to robot models"
+
+        states = self.get_model_states(name, time_deriv=time_deriv)
+        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
 
         states_and_params = cs.SX.zeros(model.dim, max(1, self.T - time_deriv))
         for idx in range(model.num_param_joints):
