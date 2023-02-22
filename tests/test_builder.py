@@ -14,7 +14,6 @@ class Test_OptimizationBuilder:
         builder = optas.OptimizationBuilder(T)
         assert builder.T == T
         assert len(builder._models) == 0
-        assert builder.optimize_time == False
         assert builder.derivs_align == False
 
     def test_init_models(self):
@@ -181,19 +180,6 @@ class Test_OptimizationBuilder:
             builder = optas.OptimizationBuilder(T, tasks=task_model)
             states_and_parameters = builder.get_robot_states_and_parameters("test")
 
-    def test_get_dt_optimize_time(self):
-        T = 10
-        builder = optas.OptimizationBuilder(T, optimize_time=True)
-        dt = builder.get_dt()
-        assert isinstance(dt, optas.SX)
-        assert optas.vec(dt).numel() == 9
-
-    def test_get_dt_no_optimize_time(self):
-        T = 10
-        builder = optas.OptimizationBuilder(T, optimize_time=False)
-        with pytest.raises(AssertionError):
-            dt = builder.get_dt()
-
     def test_x(self):
         T = 10
         task_model = optas.TaskModel("test", 3)
@@ -311,44 +297,123 @@ class Test_OptimizationBuilder:
         assert builder._lin_eq_constraints.numel() == 30
         assert builder._eq_constraints.numel() == 1
 
-    def test_ensure_positive_dt(self):
-        T = 10
-        builder = optas.OptimizationBuilder(T, optimize_time=True)
-        builder.ensure_positive_dt()
-        assert builder._lin_ineq_constraints.numel() == T - 1
-
-    def test_ensure_positive_dt_error(self):
-        T = 10
-        builder = optas.OptimizationBuilder(T, optimize_time=False)
-        with pytest.raises(AssertionError):
-            builder.ensure_positive_dt()
-
     def test_integrate_model_states(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model)
+        builder.integrate_model_states("test", 1, 1)
+        assert builder._lin_eq_constraints.numel() == 2 * (T - 1)
+
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        builder.integrate_model_states("test", 1, 1)
+        assert builder._lin_eq_constraints.numel() == 2 * (T - 1)
 
     def test_enforce_model_limits(self):
-        pass
+        cwd = pathlib.Path(
+            __file__
+        ).parent.resolve()  # path to current working directory
+        urdf_filename = "tester_robot.urdf"
+        urdf_path = os.path.join(cwd, urdf_filename)
+
+        model = optas.RobotModel(urdf_filename=urdf_path)
+        name = model.get_name()
+
+        T = 10
+        builder = optas.OptimizationBuilder(T, robots=model)
+        builder.enforce_model_limits(name)
+        assert builder._lin_ineq_constraints.numel() == 60
 
     def test_initial_configuration(self):
-        pass
+        cwd = pathlib.Path(
+            __file__
+        ).parent.resolve()  # path to current working directory
+        urdf_filename = "tester_robot.urdf"
+        urdf_path = os.path.join(cwd, urdf_filename)
+
+        model = optas.RobotModel(urdf_filename=urdf_path)
+        name = model.get_name()
+
+        T = 10
+        builder = optas.OptimizationBuilder(T, robots=model)
+        builder.initial_configuration(name)
+        assert builder._lin_eq_constraints.numel() == 3
 
     def test_fix_configuration(self):
-        pass
+        cwd = pathlib.Path(
+            __file__
+        ).parent.resolve()  # path to current working directory
+        urdf_filename = "tester_robot.urdf"
+        urdf_path = os.path.join(cwd, urdf_filename)
+
+        model = optas.RobotModel(urdf_filename=urdf_path)
+        name = model.get_name()
+
+        T = 10
+        builder = optas.OptimizationBuilder(T, robots=model)
+        builder.fix_configuration(name)
+        assert builder._lin_eq_constraints.numel() == 3
 
     def test_build_QuadraticCostUnconstrained(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term", optas.sumsqr(X))
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.QuadraticCostUnconstrained)
 
     def test_build_QuadraticCostLinearConstraints(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term", optas.sumsqr(X))
+        builder.add_bound_inequality_constraint("test_limits", -100, X, 100)
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.QuadraticCostLinearConstraints)
 
     def test_build_QuadraticCostNonlinearConstraints(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term", optas.sumsqr(X))
+        builder.add_bound_inequality_constraint("test_limits", -100, X, 100)
+        builder.add_equality_constraint("test_eq_constraints", X[0] * X[1])
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.QuadraticCostNonlinearConstraints)
 
     def test_build_NonlinearCostUnconstrained(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term1", optas.sumsqr(X))
+        builder.add_cost_term("test_term2", optas.cos(X[0] * X[1]))
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.NonlinearCostUnconstrained)
 
     def test_build_NonlinearCostLinearConstraints(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term1", optas.sumsqr(X))
+        builder.add_cost_term("test_term2", optas.cos(X[0] * X[1]))
+        builder.add_bound_inequality_constraint("test_limits", -100, X, 100)
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.NonlinearCostLinearConstraints)
 
     def test_build_NonlinearCostNonlinearConstraints(self):
-        pass
+        T = 10
+        task_model = optas.TaskModel("test", 2, time_derivs=[0, 1])
+        builder = optas.OptimizationBuilder(T, tasks=task_model, derivs_align=True)
+        X = builder.get_model_states("test")
+        builder.add_cost_term("test_term1", optas.sumsqr(X))
+        builder.add_cost_term("test_term2", optas.cos(X[0] * X[1]))
+        builder.add_bound_inequality_constraint("test_limits", -100, X, 100)
+        builder.add_equality_constraint("test_eq_constraints", X[0] * X[1])
+        opt = builder.build()
+        assert isinstance(opt, optas.optimization.NonlinearCostNonlinearConstraints)
