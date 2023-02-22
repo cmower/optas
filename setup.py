@@ -28,5 +28,6 @@ setup(
         "vtk",
         "pyyaml",
         "pybullet",
+        "roboticstoolbox-python",
     ],
 )
