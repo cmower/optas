@@ -143,7 +143,7 @@ Other examples, including dual-arm planning, Model Predictive Control, Trajector
 # Known Issues
 
 - Loading robot models from xacro files is supported, however there can be issues if you are running this in a ROS agnositic environment. If you do not have ROS installed, then the xacro file should not contain ROS-specific features. For further details see [here](https://github.com/cmower/optas/issues/78).
-- An error is thrown when attempting to solve an unconstrained QP problem with the OSQP interface. The reason is due to the version of NumPy, see details [here](https://github.com/osqp/osqp-python/issues/104).
+- If NumPy ver 1.24 is installed, an `AttributeError` error is thrown when you try to solve an unconstrained problem with the OSQP interface. A temporary workaround is to add a constraint, e.g. `x >= -1e9` where `x` is a decision variable. See details on the issue [here](https://github.com/osqp/osqp-python/issues/104) and pull request [here](https://github.com/osqp/osqp-python/pull/105).
 
 # Citation
 
