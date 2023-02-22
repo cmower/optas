@@ -583,7 +583,9 @@ class OptimizationBuilder:
         """
 
         def integr(m, n):
-            """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
+            """Returns an integration function where m is the state dimension,
+            and n is the number of trajectory points.
+            """
             xd = cs.SX.sym("xd", m)
             x0 = cs.SX.sym("x0", m)
             x1 = cs.SX.sym("x1", m)
@@ -604,7 +606,9 @@ class OptimizationBuilder:
             xd = xd[:, :-1]
 
         if self.optimize_time:
-            dt = self.get_dt()[:n]
+            dt = self.get_dt()
+            if self.derivs_align:
+                dt = dt[:n-1]
         else:
             dt = cs.vec(dt)
             assert dt.shape[0] in {
