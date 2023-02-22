@@ -11,9 +11,15 @@ import pybullet_api
 import optas
 from optas.spatialmath import *
 
+from scipy.spatial.transform import Rotation as Rot
+
 
 def yaw2quat(angle):
-    return Quaternion.fromrpy(tr2eul(rotz(angle))).getquat()
+    return optas.DM(Rot.from_euler("z", angle).as_quat())
+
+
+def rot2(angle):
+    return cs.DM(Rot.from_euler("z", angle).as_matrix()[:2, :2])
 
 
 ######################################
