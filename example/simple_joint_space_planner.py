@@ -94,10 +94,10 @@ class SimpleJointSpacePlanner(Manager):
         return plan
 
 
-def main():
+def main(gui=False):
     hz = 250
     dt = 1.0 / float(hz)
-    pb = PyBullet(dt)
+    pb = PyBullet(dt, gui=gui)
     kuka = KukaLBR()
 
     q0 = np.deg2rad([0, 45, 0, -90, 0, -45, 0])
@@ -125,8 +125,9 @@ def main():
             print("Completed motion")
             break
 
-    while True:
-        pass
+    if gui:
+        while True:
+            pass
 
     pb.stop()
     pb.close()

@@ -196,10 +196,10 @@ class KukaLBR(FixedBaseRobot):
         os.remove(urdf_filename)
 
 
-def main():
+def main(gui=True):
     hz = 250
     dt = 1.0 / float(hz)
-    pb = PyBullet(dt)
+    pb = PyBullet(dt, gui=gui)
     # robot = KukaLWR()
     # robot = KukaLBR()
     robot = R2D2([0, 0, 0.5])
@@ -214,11 +214,13 @@ def main():
     while alpha < 1.0:
         q = (1.0 - alpha) * q0 + alpha * qF
         robot.cmd(q)
-        time.sleep(dt)
+        time.sleep(dt*float(gui))
         alpha += 0.05 * dt
 
     pb.stop()
     pb.close()
+
+    return 0
 
 
 if __name__ == "__main__":

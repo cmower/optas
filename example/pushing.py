@@ -298,7 +298,7 @@ class IK:
         return solution[f"{self.kuka_name}/dq"].toarray().flatten()
 
 
-def main():
+def main(gui=True):
     # Setup PyBullet
     qc = -optas.np.deg2rad([0, 30, 0, -90, 0, 60, 0])
     q = qc.copy()
@@ -310,6 +310,7 @@ def main():
         camera_distance=0.5,
         camera_target_position=[0.3, 0.2, 0.0],
         camera_yaw=135,
+        gui=gui,
     )
     kuka = pybullet_api.KukaLWR()
     kuka.reset(qc)
@@ -360,7 +361,7 @@ def main():
         dqgoal = ik.compute_target_velocity(q, pginit)
         q += dt * dqgoal
         kuka.cmd(q)
-        pybullet_api.time.sleep(dt)
+        pybullet_api.time.sleep(dt * float(gui))
 
     # Plan a trajectory
     GpS0 = [GxS0, GyS0]
@@ -391,7 +392,7 @@ def main():
             base_orientation=yaw2quat(state[2]).toarray().flatten(),
         )
         kuka.cmd(q)
-        pybullet_api.time.sleep(dt)
+        pybullet_api.time.sleep(dt * float(gui))
 
     pb.stop()
     pb.close()
