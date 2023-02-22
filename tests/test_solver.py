@@ -16,8 +16,9 @@ def isclose(A: np.ndarray, B: np.ndarray):
 #
 
 
-class TestSolver:
-    def setup_optimization(self, constraint=False):
+class _SolverTester:
+    @staticmethod
+    def setup_builder(constraint=False):
         # Booth function
         # https://www.sfu.ca/~ssurjano/booth.html
         # https://en.wikipedia.org/wiki/Test_functions_for_optimization
@@ -25,14 +26,25 @@ class TestSolver:
         builder = optas.OptimizationBuilder(T)
         x = builder.add_decision_variables("x")
         y = builder.add_decision_variables("y")
-        f = (x + 2 * y - 7) ** 2 + (2 * x + y - 5) ** 2
+        a = builder.add_parameter("a")
+        b = builder.add_parameter("b")
+        f = (x + a * y - b) ** 2 + (2.0 * x + y - 5.0) ** 2
         builder.add_cost_term("f", f)
         if constraint:
             builder.add_bound_inequality_constraint("bnd", -1e9, x, 1e9)
-        return builder.build()
+        return builder
 
     @staticmethod
+    def setup_optimization(constraint=False):
+        builder = _SolverTester.setup_builder(constraint=constraint)
+        return builder.build()
+
+
+class TestSolverInterface(_SolverTester):
+    @staticmethod
     def solve_and_check_solution(solver, solver_name=""):
+        solver.reset_initial_seed({"x": 0, "y": 0})
+        solver.reset_parameters({"a": 2.0, "b": 7.0})
         name = ""
         if solver_name:
             name += solver_name + " "
@@ -49,7 +61,7 @@ class TestSolver:
             self.solve_and_check_solution(solver)
 
     def test_osqp_interface(self):
-        opt = self.setup_optimization(True)
+        opt = self.setup_optimization(True)  # OSQP fails for unconstrained
         solver = optas.OSQPSolver(opt).setup(True)
         self.solve_and_check_solution(solver)
 
