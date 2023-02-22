@@ -2,15 +2,11 @@ import functools
 import casadi as cs
 from casadi import sin, cos, vec
 
-"""
 
-This is a partial port to Python/CasADi, with some modifications and
-additions, of the Spatial Math Toolbox for MATLAB. See the following.
+# This is a partial port to Python/CasADi, with some modifications and
+# additions, of the Spatial Math Toolbox for MATLAB. See the following.
+# https://github.com/petercorke/spatialmath-matlab
 
-
-https://github.com/petercorke/spatialmath-matlab
-
-"""
 
 pi = cs.np.pi
 eps = cs.np.finfo(float).eps
@@ -138,7 +134,7 @@ def rpy2r(rpy, opt="zyx"):
     elif opt in {"yxz", "camera"}:
         return roty(y) @ rotx(p) @ rotz(r)
     else:
-        raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
+        raise ValueError(f"didn't recognize given option {opt}, only allowed {order}")
 
 
 @arrayify_args

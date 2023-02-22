@@ -66,7 +66,7 @@ class TestSolverInterface(_SolverTester):
         self.solve_and_check_solution(solver)
 
     def test_cvxopt_interface(self):
-        opt = self.setup_optimization(True)
+        opt = self.setup_optimization()
         solver = optas.CVXOPTSolver(opt).setup()
         self.solve_and_check_solution(solver)
 
