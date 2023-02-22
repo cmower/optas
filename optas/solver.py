@@ -42,7 +42,7 @@ class Solver(ABC):
 
     """Base solver interface class"""
 
-    def __init__(self, optimization, throw_error_when_solver_failed=False):
+    def __init__(self, optimization, error_on_fail=False):
         """Constructor for the base Solver class.
 
         Parameters
@@ -52,7 +52,7 @@ class Solver(ABC):
             The optimization problem created by calling the build
             method of the OptimizationBuilder class.
 
-        throw_error_when_solver_failed
+        error_on_fail
             When True, after solve() is called, if the solver did not
             converge then a RuntimeError is thrown.
 
@@ -61,7 +61,7 @@ class Solver(ABC):
         self.x0 = cs.DM.zeros(optimization.nx)
         self.p = cs.DM.zeros(optimization.np)
         self._p_dict = {}
-        self._throw_error_when_solver_failed = throw_error_when_solver_failed
+        self._error_on_fail = error_on_fail
 
     @property
     def opt_type(self):
@@ -107,7 +107,7 @@ class Solver(ABC):
         """Solve the optimization problem."""
         solution = self.opt.decision_variables.vec2dict(self._solve())
 
-        if self._throw_error_when_solver_failed and (not self.did_solve()):
+        if self._error_on_fail and (not self.did_solve()):
             raise RuntimeError("Solver failed!")
 
         # Add full model state to the solution dictionary
