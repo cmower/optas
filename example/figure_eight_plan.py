@@ -147,7 +147,7 @@ class Planner(Manager):
         return Plan(self.kuka, plan)
 
 
-def main():
+def main(gui=True):
     # Initialize planner
     planner = Planner()
 
@@ -159,7 +159,7 @@ def main():
     # Setup PyBullet
     hz = 50
     dt = 1.0 / float(hz)
-    pb = pybullet_api.PyBullet(dt)
+    pb = pybullet_api.PyBullet(dt, gui=gui)
     if planner.kuka_name == "med7":
         kuka = pybullet_api.KukaLBR()
     else:
@@ -175,7 +175,7 @@ def main():
         if t > planner.Tmax:
             break
         kuka.cmd(plan(t))
-        pybullet_api.time.sleep(dt)
+        pybullet_api.time.sleep(dt*float(gui))
 
     pb.stop()
     pb.close()

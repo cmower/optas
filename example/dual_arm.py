@@ -168,12 +168,12 @@ class DualKukaPlanner(Manager):
         return planl, planr
 
 
-def main():
+def main(gui=True):
     dual_kuka_planner = DualKukaPlanner()
 
     hz = 50
     dt = 1.0 / float(hz)
-    pb = pybullet_api.PyBullet(dt)
+    pb = pybullet_api.PyBullet(dt, gui=gui)
 
     box = pybullet_api.DynamicBox(
         base_position=[0.75, 0, 0.15], half_extents=[0.15, 0.15, 0.15]
@@ -201,9 +201,9 @@ def main():
         kukal.cmd(planl(t))
         kukar.cmd(planr(t))
 
-        pybullet_api.time.sleep(dt)
+        pybullet_api.time.sleep(dt*float(gui))
 
-    pybullet_api.time.sleep(10.0)
+    pybullet_api.time.sleep(10.0*float(gui))
 
     pb.stop()
     pb.close()

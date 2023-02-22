@@ -131,6 +131,8 @@ def main():
     pb.stop()
     pb.close()
 
+    return 0
+
 
 if __name__ == "__main__":
     main()

@@ -351,11 +351,15 @@ class Animate:
         plt.show()
 
 
-def main():
+def main(show=True):
     from sys import argv
 
     animate = "--noanimate" not in argv
-    Animate(animate).show()
+    anim = Animate(animate)
+    if show:
+        anim.show()
+
+    return 0
 
 
 if __name__ == "__main__":

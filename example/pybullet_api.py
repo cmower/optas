@@ -19,6 +19,7 @@ class PyBullet:
         camera_pitch=-40,
         camera_target_position=[0, 0, 0.5],
         record_video=False,
+        gui=True,
     ):
         connect_kwargs = {}
         if record_video:
@@ -26,7 +27,10 @@ class PyBullet:
             video_filename = pathlib.Path.home() / "Videos" / f"optas_video_{stamp}.mp4"
             connect_kwargs["options"] = f"--mp4={video_filename.absolute()}"
 
-        self.client_id = p.connect(p.GUI, **connect_kwargs)
+        if gui:
+            self.client_id = p.connect(p.GUI, **connect_kwargs)
+        else:
+            self.client_id = p.connect(p.DIRECT, **connect_kwargs)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
         p.setGravity(gravX=0.0, gravY=0.0, gravZ=-9.81)
