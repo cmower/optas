@@ -214,7 +214,7 @@ def main(gui=True):
     while alpha < 1.0:
         q = (1.0 - alpha) * q0 + alpha * qF
         robot.cmd(q)
-        time.sleep(dt*float(gui))
+        time.sleep(dt * float(gui))
         alpha += 0.05 * dt
 
     pb.stop()

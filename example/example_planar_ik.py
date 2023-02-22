@@ -7,8 +7,8 @@ import pathlib
 # OpTaS
 import optas
 
-def main():
 
+def main():
     cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
 
     urdf_filename = os.path.join(cwd, "robots", "planar_3dof.urdf")
@@ -68,5 +68,6 @@ def main():
 
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
