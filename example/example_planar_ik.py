@@ -66,5 +66,7 @@ def main():
     print(solution_slsqp[f"{robot_name}/q"] * (180.0 / optas.pi))
     print(fk(solution_slsqp[f"{robot_name}/q"]))
 
+    return 0
+
 if __name__ == '__main__':
     main()
