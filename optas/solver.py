@@ -556,11 +556,12 @@ class ScipyMinimizeSolver(Solver):
         self._constraints = {}
         if method in ScipyMinimizeSolver.methods_handle_constraints:
             if method != "trust-constr":
-                self._constraints["constr"] = {
-                    "type": "ineq",
-                    "fun": self.v,
-                    "jac": self.dv,
-                }
+                if self.opt_type in CONSTRAINED_OPT:
+                    self._constraints["constr"] = {
+                        "type": "ineq",
+                        "fun": self.v,
+                        "jac": self.dv,
+                    }
             else:
                 if self.opt.nk:
                     self._constraints["k"] = LinearConstraint(
