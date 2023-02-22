@@ -57,7 +57,6 @@ class Test_rad2deg(_Test_angle_conv):
 
 
 class Test_clip:
-    
     def test_numerical_output_scalar_bounds(self):
         for _ in range(NUM_RANDOM):
             n = np.random.randint(1, 10)
@@ -133,7 +132,7 @@ class Test_clip:
     def test_symbolic_output_scalar_bounds(self):
         for _ in range(NUM_RANDOM):
             n = np.random.randint(1, 10)
-            x = optas.SX.sym('x', n)
+            x = optas.SX.sym("x", n)
             lo = np.random.uniform(0, 1)
             hi = np.random.uniform(2, 3)
             assert isinstance(optas.clip(x, lo, hi), optas.SX)
@@ -141,7 +140,7 @@ class Test_clip:
     def test_symbolic_output_scalar_lower_bound_vector_upper_bound(self):
         for _ in range(NUM_RANDOM):
             n = np.random.randint(1, 10)
-            x = optas.SX.sym('x', n)            
+            x = optas.SX.sym("x", n)
             lo = np.random.uniform(0, 1)
             hi = np.random.uniform(2, 3, size=(n,))
             assert isinstance(optas.clip(x, lo, hi), optas.SX)
@@ -149,7 +148,7 @@ class Test_clip:
     def test_symbolic_output_vector_lower_bound_scalar_upper_bound(self):
         for _ in range(NUM_RANDOM):
             n = np.random.randint(1, 10)
-            x = optas.SX.sym('x', n)            
+            x = optas.SX.sym("x", n)
             lo = np.random.uniform(0, 1, size=(n,))
             hi = np.random.uniform(2, 3)
             assert isinstance(optas.clip(x, lo, hi), optas.SX)
@@ -157,7 +156,7 @@ class Test_clip:
     def test_symbolic_output_vector_bounds(self):
         for _ in range(NUM_RANDOM):
             n = np.random.randint(1, 10)
-            x = optas.SX.sym('x', n)                        
+            x = optas.SX.sym("x", n)
             lo = np.random.uniform(0, 1, size=(n,))
             hi = np.random.uniform(2, 3, size=(n,))
-            assert isinstance(optas.clip(x, lo, hi), optas.SX)            
+            assert isinstance(optas.clip(x, lo, hi), optas.SX)
