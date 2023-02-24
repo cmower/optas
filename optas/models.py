@@ -962,10 +962,10 @@ class RobotModel(Model):
     def get_analytical_jacobian_function(self, link, base_link):
         pass
 
-    def get_link_analytical_jacobian_function(self, link, base_link):
+    def get_link_analytical_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the analytical jacobian in a given base frame."""
         return self._make_function(
-            "J_a", link, self.get_link_analytical_jacobian, base_link=base_link
+            "J_a", link, self.get_link_analytical_jacobian, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_linear_jacobian")
