@@ -1144,33 +1144,6 @@ class RobotModel(Model):
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
         return self._make_function("a", link, get_global_link_axis, n=n)
 
-    @arrayify_args
-    @listify_output
-    def get_link_axis_jacobian(self, link, q, axis, base_link):
-        q_sym = cs.SX.sym("q_sym", self.ndof)
-        vector = self.get_link_axis(link, q, axis, base_link)
-
-        # Compute jacobian
-        Jv = cs.jacobian(vector, q_sym)
-
-        # Functionize
-        J = cs.Function("Ja", [q_sym], [Jv])
-
-        return J(q)
-
-    def get_link_axis_jacobian_function(self, link, axis, base_link, n=1):
-        return self._make_function(
-            "Ja", link, self.get_link_axis_jacobian, n=n, base_link=base_link
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_axis_jacobian(self, link, q, axis):
-        return self.get_link_axis_jacobian(link, q, axis, self.get_root_link())
-
-    def get_global_link_axis_jacobian_function(self, link, axis, n=1):
-        return self._make_function("Ja", link, self.get_global_link_axis_jacobian, n=n)
-
     def _manipulability(self, J):
         """Computes the manipulability given a jacobian array."""
         return cs.sqrt(cs.det(J @ J.T))
