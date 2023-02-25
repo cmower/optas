@@ -1045,10 +1045,13 @@ class RobotModel(Model):
     def get_global_angular_analytical_jacobian_function(self, link):
         pass
 
-    def get_global_link_angular_analytical_jacobian_function(self, link):
+    def get_global_link_angular_analytical_jacobian_function(self, link, n=1):
         """Get the function that computes the angular part of the analytical jacobian in the global frame."""
         return self._make_function(
-            "Ja", link, self.get_global_link_angular_analytical_jacobian
+            "Ja",
+            link,
+            self.get_global_link_angular_analytical_jacobian,
+            n=n,
         )
 
     @deprecation_warning("get_link_angular_geometric_jacobian")
