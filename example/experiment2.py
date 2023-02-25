@@ -79,7 +79,8 @@ class OpTaSIK(ExprIK):
         p = pc + dt * Jp @ qd
         Ja = robot.get_global_angular_geometric_jacobian(ee_link, qc)
         va = Ja @ qd
-        manip = robot.get_global_manipulability(ee_link, qF)
+        Jg = robot.get_global_link_geometric_jacobian(ee_link, qF)
+        manip = cs.sqrt(cs.det(Jg @ Jg.T))
 
         # Cost term
         builder.add_cost_term("min_qd", optas.sumsqr(qc - qF))
