@@ -138,7 +138,15 @@ Other examples, including dual-arm planning, Model Predictive Control, Trajector
 ## Run tests
 
 1. `$ cd /path/to/optas`
-2. `$ pytest`
+2. Each test can be run as follows
+   - `$ pytest tests/test_builder.py`
+   - `$ pytest tests/test_examples.py`
+   - `$ pytest tests/test_models.py`
+   - `$ pytest tests/test_optas_utils.py`
+   - `$ pytest tests/test_optimization.py`
+   - `$ pytest tests/test_solver.py`
+   - `$ pytest tests/test_spatialmath.py`
+   - `$ pytest tests/test_sx_container.py`
 
 # Known Issues
 
