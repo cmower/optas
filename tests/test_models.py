@@ -448,11 +448,6 @@ class TestRobotModel:
                 T = self.model.get_random_pose_in_global_link(link_name)
                 assert np.linalg.norm(T[:3, 3].toarray().flatten()) <= max_radius
 
-    # No need to test _make_function specifically, when all the
-    # *_function methods are tested that use this function.
-    def test_make_function(self):
-        pass
-
     def test_get_global_link_transform(self):
         for _ in range(NUM_RANDOM):
             q = self.model.get_random_joint_positions().toarray().flatten()
@@ -783,127 +778,204 @@ class TestRobotModel:
                 J_expc = tester_robot_model.jacobe(qi)
                 assert isclose(J_test, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_link_analytical_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_link_geometric_jacobian(
+                "eff", q, self.model.get_root_link()
+            )
 
-    # This method makes simple use of already tested methods
+            _J_expc = tester_robot_model.jacob0_analytical(q)
+            J_expc = np.zeros_like(_J_expc)
+            J_expc[:3, :] = _J_expc[:3, :]
+            J_expc[3:, :] = _J_expc[3:, :][::-1, :]
+            assert isclose(J.toarray(), J_expc)
+
     def test_get_link_analytical_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_link_analytical_jacobian_function(
+                "eff", self.model.get_root_link(), n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                _J_expc = tester_robot_model.jacob0_analytical(qi)
+                J_expc = np.zeros_like(_J_expc)
+                J_expc[:3, :] = _J_expc[:3, :]
+                J_expc[3:, :] = _J_expc[3:, :][::-1, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_global_link_linear_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_global_link_linear_jacobian("eff", q).toarray()
+            J_expc = tester_robot_model.jacob0(q)[:3, :]
+            assert isclose(J, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_global_link_linear_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_global_link_linear_jacobian_function("eff", n=n)
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0(qi)[:3, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_link_linear_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_link_linear_jacobian(
+                "eff", q, self.model.get_root_link()
+            ).toarray()
+            J_expc = tester_robot_model.jacob0(q)[:3, :]
+            assert isclose(J, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_link_linear_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_link_linear_jacobian_function(
+                "eff", self.model.get_root_link(), n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0(qi)[:3, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_global_link_angular_geometric_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_global_link_angular_geometric_jacobian(
+                "eff", q
+            ).toarray()
+            J_expc = tester_robot_model.jacob0(q)[3:, :]
+            assert isclose(J, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_global_link_angular_geometric_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_global_link_angular_geometric_jacobian_function(
+                "eff", n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0(qi)[3:, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_global_link_angular_analytical_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_global_link_angular_analytical_jacobian(
+                "eff", q
+            ).toarray()
+            J_expc = tester_robot_model.jacob0_analytical(q)[3:, :][::-1, :]
+            assert isclose(J, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_global_link_angular_analytical_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_global_link_angular_analytical_jacobian_function(
+                "eff", n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0_analytical(qi)[3:, :][::-1, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_link_angular_geometric_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_link_angular_geometric_jacobian(
+                "eff",
+                q,
+                self.model.get_root_link(),
+            ).toarray()
+            J_expc = tester_robot_model.jacob0(q)[3:, :]
+            assert isclose(J, J_expc)
 
-    # This method makes simple use of already tested methods
     def test_get_link_angular_geometric_jacobian_function(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
 
-    # This method makes simple use of already tested methods
+            J = self.model.get_link_angular_geometric_jacobian_function(
+                "eff", self.model.get_root_link(), n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0(qi)[3:, :]
+                assert isclose(J_test, J_expc)
+
     def test_get_link_angular_analytical_jacobian(self):
-        pass
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            J = self.model.get_link_angular_analytical_jacobian(
+                "eff",
+                q,
+                self.model.get_root_link(),
+            ).toarray()
+            J_expc = tester_robot_model.jacob0_analytical(q)[3:, :][::-1, :]
+            assert isclose(J, J_expc)
 
     def test_get_link_angular_analytical_jacobian_function(self):
-        pass  # TODO
+        for _ in range(NUM_RANDOM):
+            n = np.random.randint(2, 10)
+            q = self.model.get_random_joint_positions(n=n).toarray()
+
+            J = self.model.get_link_angular_analytical_jacobian_function(
+                "eff", self.model.get_root_link(), n=n
+            )
+            Js = J(q)
+
+            for i in range(n):
+                qi = q[:, i].flatten()
+                J_test = Js[i].toarray()
+                J_expc = tester_robot_model.jacob0_analytical(qi)[3:, :][::-1, :]
+                assert isclose(J_test, J_expc)
 
     def test_get_link_axis(self):
-        pass  # TODO
+        q = optas.SX.sym("q", self.model.ndof)
+        axis = self.model.get_link_axis("eff", q, "x", self.model.get_root_link())
+        assert isinstance(axis, optas.SX)
 
     def test_get_link_axis_function(self):
-        pass  # TODO
+        q = optas.SX.sym("q", self.model.ndof)
+        axis = self.model.get_link_axis_function("eff", "x", self.model.get_root_link())
+        assert isinstance(axis(q), optas.SX)
 
-    # This method makes simple use of already tested methods
     def test_get_global_link_axis(self):
-        pass
+        q = optas.SX.sym("q", self.model.ndof)
+        axis = self.model.get_global_link_axis("eff", q, "x")
+        assert isinstance(axis, optas.SX)
 
-    # This method makes simple use of already tested methods
     def test_get_global_link_axis_function(self):
-        pass
-
-    def test_get_link_axis_jacobian(self):
-        pass  # TODO
-
-    def test_get_link_axis_jacobian_function(self):
-        pass  # TODO
-
-    def test_get_global_link_axis_jacobian(self):
-        pass  # TODO
-
-    def test_get_global_link_axis_jacobian_function(self):
-        pass
-
-    # No need to test _manipulability specifically, when all the
-    # public manipulability methods are tested that use this function.
-    def test_manipulability(self):
-        pass
-
-    def test_get_global_link_manipulability(self):
-        pass  # TODO
-
-    def test_get_global_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_global_link_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_link_manipulability(self):
-        pass  # TODO
-
-    def test_get_link_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_global_link_linear_manipulability(self):
-        pass  # TODO
-
-    def test_get_global_link_linear_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_link_linear_manipulability(self):
-        pass  # TODO
-
-    def test_get_link_linear_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_global_link_angular_manipulability(self):
-        pass  # TODO
-
-    def test_get_global_link_angular_manipulability_function(self):
-        pass  # TODO
-
-    def test_get_link_angular_manipulability(self):
-        pass  # TODO
-
-    def test_get_link_angular_manipulability_function(self):
-        pass  # TODO
+        q = optas.SX.sym("q", self.model.ndof)
+        axis = self.model.get_global_link_axis_function("eff", "x")
+        assert isinstance(axis(q), optas.SX)
