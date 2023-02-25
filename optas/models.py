@@ -1104,10 +1104,14 @@ class RobotModel(Model):
     def get_angular_analytical_jacobian_function(self, link, base_link):
         pass
 
-    def get_link_angular_analytical_jacobian_function(self, link, base_link):
+    def get_link_angular_analytical_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
         return self._make_function(
-            "Ja", link, self.get_link_angular_analytical_jacobian, base_link=base_link
+            "Ja",
+            link,
+            self.get_link_angular_analytical_jacobian,
+            n=n,
+            base_link=base_link,
         )
 
     @arrayify_args
