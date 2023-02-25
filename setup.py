@@ -27,7 +27,5 @@ setup(
         "xacro",
         "vtk",
         "pyyaml",
-        "pybullet",
-        "roboticstoolbox-python",
     ],
 )

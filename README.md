@@ -117,16 +117,18 @@ Other examples, including dual-arm planning, Model Predictive Control, Trajector
 
 # Install
 
+Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`.
+
 ## Via pip
 1. `$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'`
 
 ## From source
 1. `$ git clone git@github.com:cmower/optas.git`
 2. `$ cd optas`
-3. `$ pip install --upgrade pip`, ensure `pip` is up-to-date
 4. `$ pip install .`
+5. (optional) If you want to run the examples/tests: `$ pip install -r requirements_all.txt`
 
-## Build documentation
+### Build documentation
 
 1. `$ cd /path/to/optas/doc`
 2. `$ sudo apt install doxygen`
@@ -135,7 +137,7 @@ Other examples, including dual-arm planning, Model Predictive Control, Trajector
    - `html/index.html`
    - `latex/refman.pdf`
 
-## Run tests
+### Run tests
 
 1. `$ cd /path/to/optas`
 2. Each test can be run as follows
