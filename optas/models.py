@@ -580,9 +580,11 @@ class RobotModel(Model):
         q = self.get_random_joint_positions()
         return self.get_global_link_transform(link, q)
 
-    def _make_function(self, label, link, method, n=1, base_link=None):
+    def _make_function(self, label, link, method, n=1, base_link=None, axis=None):
         q = cs.SX.sym("q", self.ndof)
-        args = (link, q)
+        args = [link, q]
+        if axis is not None:
+            args.append(axis)
         kwargs = {}
         if base_link is not None:
             kwargs["base_link"] = base_link
@@ -1135,7 +1137,12 @@ class RobotModel(Model):
 
     def get_link_axis_function(self, link, axis, base_link, n=1):
         return self._make_function(
-            "a", link, self.get_link_axis, n=n, base_link=base_link
+            "a",
+            link,
+            self.get_link_axis,
+            n=n,
+            base_link=base_link,
+            axis=axis,
         )
 
     @arrayify_args
