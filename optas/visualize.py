@@ -88,6 +88,51 @@ def sphere(
     return actor
 
 
+def sphere_traj(
+    position_traj,
+    radius=1.0,
+    rgb=None,
+    theta_resolution=20,
+    phi_resolution=20,
+    alpha_spec=None,
+):
+    default_alpha_spec = {"style": "A"}
+    if alpha_spec is None:
+        alpha_spec = default_alpha_spec.copy()
+
+    actors = []
+    n = position_traj.shape[1]
+
+    if alpha_spec["style"] == "A":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = np.linspace(alpha_min, alpha_max, n).tolist()
+    elif alpha_spec["style"] == "B":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = [alpha_min] * (n - 1) + [alpha_max]
+    elif alpha_spec["style"] == "C":
+        alpha_start = alpha_spec.get("alpha_start", 1.0)
+        alpha_mid = alpha_spec.get("alpha_mid", 0.1)
+        alpha_end = alpha_spec.get("alpha_end", 1.0)
+        alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
+
+    for i, alpha in enumerate(alphas):
+        position = position_traj[:, i].flatten().tolist()
+        actors.append(
+            sphere(
+                radius=radius,
+                position=position,
+                rgb=rgb,
+                alpha=alpha,
+                theta_resolution=theta_resolution,
+                phi_resolution=phi_resolution,
+            )
+        )
+
+    return actors
+
+
 def box(
     scale=[1, 1, 1],
     rgb=None,
