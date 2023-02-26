@@ -4,7 +4,7 @@
 
 # OpTaS
 
-OpTaS is an OPtimization-based TAsk Specification library for task and motion planning (TAMP), trajectory optimization, and model predictive control.
+OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
