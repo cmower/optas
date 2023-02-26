@@ -25,6 +25,6 @@ elif model == "lbr":
 vis = Visualizer(camera_position=[3, 3, 3])
 vis.append_actors(
     grid_floor(),
-    robot(robot_model, q=robot_model.get_random_joint_positions()),
+    robot(robot_model, q=robot_model.get_random_joint_positions(), show_links=True),
 )
 vis.start()

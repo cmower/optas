@@ -581,7 +581,7 @@ def stl(
     return actor
 
 
-def robot(robot_model, q=None, alpha=1.0):
+def robot(robot_model, q=None, alpha=1.0, show_links=False, link_axis_scale=0.2):
     actors = []
 
     urdf = robot_model.get_urdf()
@@ -606,31 +606,37 @@ def robot(robot_model, q=None, alpha=1.0):
     q = cs.SX.sym("q", robot_model.ndof)
     link_tf = {}
     visual_tf = {}
-    for link in urdf.links:
-        name = link.name
+    for urdf_link in urdf.links:
+        name = urdf_link.name
 
-        lnk_tf = robot_model.get_global_link_transform(link.name, q)
+        lnk_tf = robot_model.get_global_link_transform(urdf_link.name, q)
         link_tf[name] = cs.Function(f"link_tf_{name}", [q], [lnk_tf])
 
-        xyz, rpy = robot_model.get_link_visual_origin(link)
+        xyz, rpy = robot_model.get_link_visual_origin(urdf_link)
         visl_tf = rt2tr(rpy2r(rpy), xyz)
 
         tf = lnk_tf @ visl_tf
         visual_tf[name] = cs.Function(f"visual_tf_{name}", [q], [tf])
 
-    for link in urdf.links:
-        if link.visual is None:
+    for urdf_link in urdf.links:
+        if show_links:
+            actors += link(
+                link_tf[urdf_link.name](q_user_input).toarray(),
+                axis_scale=link_axis_scale,
+            )
+
+        if urdf_link.visual is None:
             continue
 
-        geometry = link.visual.geometry
-        tf = visual_tf[link.name](q_user_input).toarray()
+        geometry = urdf_link.visual.geometry
+        tf = visual_tf[urdf_link.name](q_user_input).toarray()
         position = tf[:3, 3].flatten().tolist()
         orientation = Rot.from_matrix(tf[:3, :3]).as_quat().tolist()
 
-        material = link.visual.material
+        material = urdf_link.visual.material
         rgb = None
         if isinstance(material.name, str) and material.name in material_names:
-            rgba = get_material_rgba(link.visual.material.name)
+            rgba = get_material_rgba(urdf_link.visual.material.name)
             rgb = rgba[:3]
 
         if isinstance(geometry, Mesh):
