@@ -581,7 +581,19 @@ def stl(
     return actor
 
 
-def robot(robot_model, q=None, alpha=1.0, show_links=False, link_axis_scale=0.2):
+def robot(
+    robot_model,
+    q=None,
+    alpha=1.0,
+    show_links=False,
+    link_axis_scale=0.2,
+    link_axis_linewidth=1.0,
+    link_center_radius=0.01,
+    link_center_alpha=None,
+):
+    if link_center_alpha is None:
+        link_center_alpha = alpha
+
     actors = []
 
     urdf = robot_model.get_urdf()
@@ -623,6 +635,9 @@ def robot(robot_model, q=None, alpha=1.0, show_links=False, link_axis_scale=0.2)
             actors += link(
                 link_tf[urdf_link.name](q_user_input).toarray(),
                 axis_scale=link_axis_scale,
+                axis_linewidth=link_axis_linewidth,
+                center_radius=link_center_radius,
+                link_center_alpha=link_center_alpha,
             )
 
         if urdf_link.visual is None:
