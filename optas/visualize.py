@@ -16,9 +16,7 @@ from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 from .spatialmath import *
 
 
-def line(
-    start=[0.0, 0.0, 0.0], end=[1.0, 0.0, 0.0], rgb=None, alpha=1.0, linewidth=1.0
-):
+def line(start, end, rgb, alpha, linewidth):
     points = vtk.vtkPoints()
     points.InsertNextPoint(*start)
     points.InsertNextPoint(*end)
@@ -53,14 +51,7 @@ def line(
     return actor
 
 
-def sphere(
-    radius=1.0,
-    position=[0.0, 0.0, 0.0],
-    rgb=None,
-    alpha=1.0,
-    theta_resolution=20,
-    phi_resolution=20,
-):
+def sphere(radius, position, rgb, alpha, theta_resolution, phi_resolution):
     sphere = vtkSphereSource()
     sphere.SetRadius(radius)
     sphere.SetThetaResolution(theta_resolution)
@@ -89,12 +80,7 @@ def sphere(
 
 
 def sphere_traj(
-    position_traj,
-    radius=1.0,
-    rgb=None,
-    theta_resolution=20,
-    phi_resolution=20,
-    alpha_spec=None,
+    position_traj, radius, rgb, theta_resolution, phi_resolution, alpha_spec
 ):
     default_alpha_spec = {"style": "A"}
     if alpha_spec is None:
@@ -133,15 +119,7 @@ def sphere_traj(
     return actors
 
 
-def box(
-    scale=[1, 1, 1],
-    rgb=None,
-    alpha=1.0,
-    position=[0.0, 0.0, 0.0],
-    orientation=[0.0, 0.0, 0.0],
-    euler_seq="xyz",
-    euler_degrees=False,
-):
+def box(scale, rgb, alpha, position, orientation, euler_seq, euler_degrees):
     cube = vtk.vtkCubeSource()
     cube.SetBounds(
         -0.5 * scale[0],
@@ -189,15 +167,15 @@ def box(
 
 
 def cylinder(
-    radius=1.0,
-    height=1.0,
-    rgb=None,
-    alpha=1.0,
-    resolution=20,
-    position=[0.0, 0.0, 0.0],
-    orientation=[0.0, 0.0, 0.0],
-    euler_seq="xyz",
-    euler_degrees=False,
+    radius,
+    height,
+    rgb,
+    alpha,
+    resolution,
+    position,
+    orientation,
+    euler_seq,
+    euler_degrees,
 ):
     cylinder = vtkCylinderSource()
     cylinder.SetRadius(radius)
@@ -293,17 +271,10 @@ def cylinder_urdf(
     return actor
 
 
-def text(
-    camera,
-    text="Hello, world!",
-    position=[0.0, 0.0, 0.0],
-    scale=[1.0, 1.0, 1.0],
-    rgb=None,
-    alpha=1.0,
-):
+def text(camera, msg, position, scale, rgb, alpha):
     # Create a text source to generate the text
     textSource = vtk.vtkTextSource()
-    textSource.SetText(text)
+    textSource.SetText(msg)
     textSource.Update()
 
     # Create a mapper to map the text source to graphics primitives
@@ -321,14 +292,7 @@ def text(
     return follower
 
 
-def link(
-    T=None,
-    axis_scale=0.1,
-    axis_linewidth=1.0,
-    center_radius=0.01,
-    center_rgb=None,
-    center_alpha=1.0,
-):
+def link(T, axis_scale, axis_linewidth, center_radius, center_rgb, center_alpha):
     if T is None:
         T = np.eye(4)
 
@@ -344,6 +308,7 @@ def link(
             start=p.tolist(),
             end=(p + axis_scale * x).tolist(),
             rgb=[1, 0, 0],
+            alpha=1.0,
             linewidth=axis_linewidth,
         )
     )
@@ -353,6 +318,7 @@ def link(
             start=p.tolist(),
             end=(p + axis_scale * y).tolist(),
             rgb=[0, 1, 0],
+            alpha=1.0,
             linewidth=axis_linewidth,
         )
     )
@@ -362,6 +328,7 @@ def link(
             start=p.tolist(),
             end=(p + axis_scale * z).tolist(),
             rgb=[0, 0, 1],
+            alpha=1.0,
             linewidth=axis_linewidth,
         )
     )
@@ -372,6 +339,8 @@ def link(
             position=p,
             rgb=center_rgb,
             alpha=center_alpha,
+            theta_resolution=20,
+            phi_resolution=20,
         )
     )
 
@@ -379,16 +348,16 @@ def link(
 
 
 def grid_floor(
-    num_cells=10,
-    rgb=None,
-    alpha=1.0,
-    linewidth=3.0,
-    inner_rgb=None,
-    inner_alpha=None,
-    inner_linewidth=1.0,
-    stride=1.0,
-    euler=[0, 0, 0],
-    euler_degrees=True,
+    num_cells,
+    rgb,
+    alpha,
+    linewidth,
+    inner_rgb,
+    inner_alpha,
+    inner_linewidth,
+    stride,
+    euler,
+    euler_degrees,
 ):
     assert num_cells > 0, "num_cells must be a positive number!"
     assert num_cells % 2 == 0, "num_cells must be even!"
@@ -464,12 +433,7 @@ def grid_floor(
 
 
 def obj(
-    obj_filename,
-    png_texture_filename=None,
-    position=[0.0, 0.0, 0.0],
-    orientation=[0.0, 0.0, 0.0],
-    euler_seq="xyz",
-    euler_degrees=False,
+    obj_filename, png_texture_filename, position, orientation, euler_seq, euler_degrees
 ):
     # Create a renderer, render window, and interactor
     renderer = vtk.vtkRenderer()
@@ -519,16 +483,7 @@ def obj(
     return actor
 
 
-def stl(
-    filename,
-    scale=None,
-    rgb=None,
-    alpha=1.0,
-    position=[0.0, 0.0, 0.0],
-    orientation=[0.0, 0.0, 0.0],
-    euler_seq="xyz",
-    euler_degrees=False,
-):
+def stl(filename, scale, rgb, alpha, position, orientation, euler_seq, euler_degrees):
     reader = vtk.vtkSTLReader()
     reader.SetFileName(filename)
 
@@ -583,13 +538,19 @@ def stl(
 
 def robot(
     robot_model,
-    q=None,
-    alpha=1.0,
-    show_links=False,
-    link_axis_scale=0.2,
-    link_axis_linewidth=1.0,
-    link_center_radius=0.01,
-    link_center_alpha=None,
+    q,
+    alpha,
+    show_links,
+    link_axis_scale,
+    link_axis_linewidth,
+    link_center_rgb,
+    link_center_alpha,
+    link_center_radius,
+    display_link_names,
+    link_names_scale,
+    link_names_rgb,
+    link_names_alpha,
+    camera,
 ):
     if link_center_alpha is None:
         link_center_alpha = alpha
@@ -631,22 +592,30 @@ def robot(
         visual_tf[name] = cs.Function(f"visual_tf_{name}", [q], [tf])
 
     for urdf_link in urdf.links:
-        if show_links:
-            actors += link(
-                link_tf[urdf_link.name](q_user_input).toarray(),
-                axis_scale=link_axis_scale,
-                axis_linewidth=link_axis_linewidth,
-                center_radius=link_center_radius,
-                link_center_alpha=link_center_alpha,
-            )
-
-        if urdf_link.visual is None:
-            continue
-
         geometry = urdf_link.visual.geometry
         tf = visual_tf[urdf_link.name](q_user_input).toarray()
         position = tf[:3, 3].flatten().tolist()
         orientation = Rot.from_matrix(tf[:3, :3]).as_quat().tolist()
+
+        if show_links:
+            actors += link(
+                tf,
+                axis_scale=link_axis_scale,
+                axis_linewidth=link_axis_linewidth,
+                center_radius=link_center_radius,
+                center_rgb=link_center_rgb,
+                center_alpha=link_center_alpha,
+            )
+
+        if display_link_names:
+            actors.append(
+                text(
+                    camera, position, link_names_scale, link_names_rgb, link_names_alpha
+                )
+            )
+
+        if urdf_link.visual is None:
+            continue
 
         material = urdf_link.visual.material
         rgb = None
@@ -670,10 +639,12 @@ def robot(
                     stl(
                         filename,
                         scale=scale,
+                        rgb=rgb,
+                        alpha=alpha,
                         position=position,
                         orientation=orientation,
-                        alpha=alpha,
-                        rgb=rgb,
+                        euler_seq="xyz",
+                        euler_degrees=True,
                     )
                 )
 
@@ -681,9 +652,11 @@ def robot(
             actors.append(
                 sphere(
                     radius=geometry.radius,
-                    rgb=rgb,
                     position=position,
+                    rgb=rgb,
                     alpha=alpha,
+                    theta_resolution=20,
+                    phi_resolution=20,
                 )
             )
 
@@ -702,7 +675,22 @@ def robot(
     return actors
 
 
-def robot_traj(robot_model, Q, alpha_spec=None):
+def robot_traj(
+    robot_model,
+    Q,
+    alpha_spec,
+    show_links,
+    link_axis_scale,
+    link_axis_linewidth,
+    link_center_rgb,
+    link_center_alpha,
+    link_center_radius,
+    display_link_names,
+    link_names_scale,
+    link_names_rgb,
+    link_names_alpha,
+    camera,
+):
     default_alpha_spec = {"style": "A"}
     if alpha_spec is None:
         alpha_spec = default_alpha_spec.copy()
@@ -725,7 +713,22 @@ def robot_traj(robot_model, Q, alpha_spec=None):
         alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
 
     for i, alpha in enumerate(alphas):
-        actors += robot(robot_model, q=Q[:, i], alpha=alpha)
+        actors += robot(
+            robot_model,
+            Q[:, i],
+            alpha,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            camera,
+        )
     return actors
 
 
@@ -757,12 +760,273 @@ class Visualizer:
 
         self.actors = []
 
-    def append_actors(self, *actors):
-        for actor in actors:
-            if isinstance(actor, list):
-                self.actors += actor  # assume actor is a list of actors
-            else:
-                self.actors.append(actor)  # assume actor is a single actor
+    # def append_actors(self, *actors):
+    #     for actor in actors:
+    #         if isinstance(actor, list):
+    #             self.actors += actor  # assume actor is a list of actors
+    #         else:
+    #             self.actors.append(actor)  # assume actor is a single actor
+
+    def line(
+        self,
+        start=[0.0, 0.0, 0.0],
+        end=[1.0, 0.0, 0.0],
+        rgb=None,
+        alpha=1.0,
+        linewidth=1.0,
+    ):
+        self.actors.append(line(start, end, rgb, alpha, linewidth))
+
+    def sphere(
+        self,
+        radius=1.0,
+        position=[0.0, 0.0, 0.0],
+        rgb=None,
+        alpha=1.0,
+        theta_resolution=20,
+        phi_resolution=20,
+    ):
+        self.actors.append(
+            sphere(radius, position, rgb, alpha, theta_resolution, phi_resolution)
+        )
+
+    def sphere_traj(
+        self,
+        position_traj,
+        radius=1.0,
+        rgb=None,
+        theta_resolution=20,
+        phi_resolution=20,
+        alpha_spec=None,
+    ):
+        self.actors += sphere_traj(
+            position_traj, radius, rgb, theta_resolution, phi_resolution, alpha_spec
+        )
+
+    def box(
+        self,
+        scale=[1, 1, 1],
+        rgb=None,
+        alpha=1.0,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            box(scale, rgb, alpha, position, orientation, euler_seq, euler_degrees)
+        )
+
+    def cylinder(
+        self,
+        radius=1.0,
+        height=1.0,
+        rgb=None,
+        alpha=1.0,
+        resolution=20,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            cylinder(
+                radius,
+                height,
+                rgb,
+                alpha,
+                resolution,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
+
+    def cylinder_urdf(
+        self,
+        radius=1.0,
+        height=1.0,
+        rgb=None,
+        alpha=1.0,
+        resolution=20,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            cylinder_urdf(
+                radius,
+                height,
+                rgb,
+                alpha,
+                resolution,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
+
+    def text(
+        self,
+        msg="Hello, world!",
+        position=[0.0, 0.0, 0.0],
+        scale=[1.0, 1.0, 1.0],
+        rgb=None,
+        alpha=1.0,
+    ):
+        self.actors.append(text(self.camera, msg, position, scale, rgb, alpha))
+
+    def link(
+        self,
+        T=None,
+        axis_scale=0.1,
+        axis_linewidth=1.0,
+        center_radius=0.01,
+        center_rgb=None,
+        center_alpha=1.0,
+    ):
+        self.actors += link(
+            T, axis_scale, axis_linewidth, center_radius, center_rgb, center_alpha
+        )
+
+    def grid_floor(
+        self,
+        num_cells=10,
+        rgb=None,
+        alpha=1.0,
+        linewidth=3.0,
+        inner_rgb=None,
+        inner_alpha=None,
+        inner_linewidth=1.0,
+        stride=1.0,
+        euler=[0, 0, 0],
+        euler_degrees=True,
+    ):
+        self.actors += grid_floor(
+            num_cells,
+            rgb,
+            alpha,
+            linewidth,
+            inner_rgb,
+            inner_alpha,
+            inner_linewidth,
+            stride,
+            euler,
+            euler_degrees,
+        )
+
+    def obj(
+        self,
+        obj_filename,
+        png_texture_filename=None,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            obj(
+                obj_filename,
+                png_texture_filename,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
+
+    def stl(
+        self,
+        filename,
+        scale=None,
+        rgb=None,
+        alpha=1.0,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            stl(
+                filename,
+                scale,
+                rgb,
+                alpha,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
+
+    def robot(
+        self,
+        robot_model,
+        q=None,
+        alpha=1.0,
+        show_links=False,
+        link_axis_scale=0.2,
+        link_axis_linewidth=1.0,
+        link_center_radius=0.01,
+        link_center_rgb=None,
+        link_center_alpha=None,
+        display_link_names=False,
+        link_names_scale=[0.01, 0.01, 0.01],
+        link_names_rgb=[1, 1, 1],
+        link_names_alpha=1.0,
+    ):
+        self.actors += robot(
+            robot_model,
+            q,
+            alpha,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            self.camera,
+        )
+
+    def robot_traj(
+        self,
+        robot_model,
+        Q,
+        alpha_spec=None,
+        show_links=False,
+        link_axis_scale=0.2,
+        link_axis_linewidth=1.0,
+        link_center_rgb=1,
+        link_center_alpha=None,
+        link_center_radius=0.01,
+        display_link_names=False,
+        link_names_scale=[0.01, 0.01, 0.01],
+        link_names_rgb=[1, 1, 1],
+        link_names_alpha=1.0,
+    ):
+        self.actors += robot_traj(
+            robot_model,
+            Q,
+            alpha_spec,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            self.camera,
+        )
 
     def start(self):
         for actor in self.actors:

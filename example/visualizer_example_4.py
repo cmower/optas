@@ -3,7 +3,7 @@ import sys
 import pathlib
 
 import optas
-from optas.visualize import Visualizer, robot_traj, grid_floor
+from optas.visualize import Visualizer
 
 cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
 
@@ -31,8 +31,6 @@ for i in range(n):
     Q[:, i] = (1-alpha)*qS + alpha*qG
 
 vis = Visualizer(camera_position=[3, 3, 3])
-vis.append_actors(
-    grid_floor(),
-    robot_traj(robot_model, Q=Q, alpha_spec={'style': 'A'}),
-)
+vis.grid_floor()
+vis.robot_traj(robot_model, Q, alpha_spec={'style': 'A'})
 vis.start()

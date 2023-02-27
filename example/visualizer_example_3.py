@@ -3,7 +3,7 @@ import sys
 import pathlib
 
 import optas
-from optas.visualize import Visualizer, robot, grid_floor
+from optas.visualize import Visualizer
 
 cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
 
@@ -23,8 +23,6 @@ elif model == "lbr":
     robot_model = optas.RobotModel(xacro_filename=xacro_filename)
 
 vis = Visualizer(camera_position=[3, 3, 3])
-vis.append_actors(
-    grid_floor(),
-    robot(robot_model, q=robot_model.get_random_joint_positions(), show_links=True),
-)
+vis.grid_floor()
+vis.robot(robot_model, q=robot_model.get_random_joint_positions(), show_links=True)
 vis.start()
