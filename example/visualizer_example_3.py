@@ -24,5 +24,5 @@ elif model == "lbr":
 
 vis = Visualizer(camera_position=[3, 3, 3])
 vis.grid_floor()
-vis.robot(robot_model, q=robot_model.get_random_joint_positions(), show_links=True)
+vis.robot(robot_model, q=robot_model.get_random_joint_positions(), show_links=True, display_link_names=True, link_names_alpha=0.4)
 vis.start()
