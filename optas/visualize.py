@@ -610,7 +610,12 @@ def robot(
         if display_link_names:
             actors.append(
                 text(
-                    camera, urdf_link.name, position, link_names_scale, link_names_rgb, link_names_alpha
+                    camera,
+                    urdf_link.name,
+                    position,
+                    link_names_scale,
+                    link_names_rgb,
+                    link_names_alpha,
                 )
             )
 
