@@ -13,7 +13,7 @@ class OptimizationBuilder:
 
     """
 
-    def __init__(self, T, robots=[], tasks=[], optimize_time=False, derivs_align=False):
+    def __init__(self, T, robots=[], tasks=[], derivs_align=False):
         """OptimizationBuilder constructor.
 
         Syntax
@@ -33,10 +33,6 @@ class OptimizationBuilder:
         tasks (list):
           A list of task models.
 
-        optimize_time (bool):
-          When true, a trajectory of dt variables are included in the
-          decision variables. Default is False.
-
         derivs_align (bool):
           When true, the time derivatives align for each time
           step. Default is False.
@@ -55,11 +51,10 @@ class OptimizationBuilder:
         # Class attributes
         self.T = T
         self._models = robots + tasks
-        self.optimize_time = optimize_time
         self.derivs_align = derivs_align
 
         # Ensure T is sufficiently large
-        if not derivs_align:
+        if not derivs_align and len(self._models) > 0:
             # Get max time deriv
             all_time_derivs = []
             for m in self._models:
@@ -94,9 +89,6 @@ class OptimizationBuilder:
                     self.add_parameter(n_s_p, model.num_param_joints, t)
                 else:
                     self.add_decision_variables(n_s_x, model.dim, t)
-
-        if optimize_time:
-            self.add_decision_variables("dt", T - 1)
 
     def get_model_names(self):
         """Return the names of each model."""
@@ -297,12 +289,12 @@ class OptimizationBuilder:
             The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
 
         """
-        states = self.get_model_states(name, time_deriv=time_deriv)
-        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
 
         model = self.get_model(name)
-
         assert isinstance(model, RobotModel), "this method only applies to robot models"
+
+        states = self.get_model_states(name, time_deriv=time_deriv)
+        parameters = self.get_model_parameters(name, time_deriv=time_deriv)
 
         states_and_params = cs.SX.zeros(model.dim, max(1, self.T - time_deriv))
         for idx in range(model.num_param_joints):
@@ -313,13 +305,6 @@ class OptimizationBuilder:
             states_and_params[model.optimized_joint_indexes[idx], :] = states[idx, :]
         return states_and_params
 
-    def get_dt(self):
-        """When optimizing time, then this method returns the trajectory of dt variables."""
-        assert (
-            self.optimize_time
-        ), "to call get_dt(..), optimize_time should be True in the OptimizationBuilder interface"
-        return self._decision_variables["dt"]
-
     def _x(self):
         """Return the decision variables as a casadi.SX vector."""
         return self._decision_variables.vec()
@@ -328,7 +313,7 @@ class OptimizationBuilder:
         """Return the parameters as a casadi.SX vector."""
         return self._parameters.vec()
 
-    def _is_linear(self, y):
+    def _is_linear_in_x(self, y):
         """Returns true if y is a linear function of the decision variables."""
         return cs.is_linear(y, self._x())
 
@@ -486,7 +471,7 @@ class OptimizationBuilder:
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff >= 0
-        if self._is_linear(diff):
+        if self._is_linear_in_x(diff):
             self._lin_ineq_constraints[name] = diff
         else:
             self._ineq_constraints[name] = diff
@@ -544,7 +529,7 @@ class OptimizationBuilder:
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
-        if self._is_linear(diff):
+        if self._is_linear_in_x(diff):
             self._lin_eq_constraints[name] = diff
         else:
             self._eq_constraints[name] = diff
@@ -553,23 +538,7 @@ class OptimizationBuilder:
     # Common constraints
     #
 
-    def ensure_positive_dt(self):
-        """Specifies the constraint dt >= 0 when optimize_time=True."""
-        assert (
-            self.optimize_time
-        ), "optimize_time should be True in the OptimizationBuilder interface"
-        self.add_geq_inequality_constraint("__ensure_positive_dt__", self.get_dt())
-
-    def _integr(self, m, n):
-        """Returns an integration function where m is the state dimension, and n is the number of trajectory points."""
-        xd = cs.SX.sym("xd", m)
-        x0 = cs.SX.sym("x0", m)
-        x1 = cs.SX.sym("x1", m)
-        dt = cs.SX.sym("dt")
-        integr = cs.Function("integr", [x0, x1, xd, dt], [x0 + dt * xd - x1])
-        return integr.map(n)
-
-    def integrate_model_states(self, name, time_deriv, dt=None):
+    def integrate_model_states(self, name, time_deriv, dt):
         """Integrates the model states over time.
 
         Syntax
@@ -586,39 +555,52 @@ class OptimizationBuilder:
         time_deriv (int)
             The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
 
-        dt (None, float, or array-like: casadi.SX, casadi.DM, or list or numpy.ndarray)
-            Integration time step.
+        dt (float, casadi.SX, casadi.DM, list, tuple, or numpy.ndarray)
+            Integration time step. If the value is a scalar then the
+            value is used as the time step for the trajectory. When an
+            array is passed, it should have the correct length:
+
+              n = T - (1 if derivs_align else time_deriv)
+
+            where T and derivs_align are flags passed to the
+            optimization builder constructor.
 
         """
 
-        if self.optimize_time and dt is not None:
-            raise ValueError("dt is given but user specified optimize_time as True")
-        if not self.optimize_time and dt is None:
-            raise ValueError("dt is not given")
+        def setup_integr_func(dim, n):
+            """Returns an integration function where m is the state dimension,
+            and n is the number of trajectory points.
+            """
+            xd = cs.SX.sym("xd", dim)
+            x0 = cs.SX.sym("x0", dim)
+            x1 = cs.SX.sym("x1", dim)
+            dt = cs.SX.sym("dt")
+            integr = cs.Function("integr", [x0, x1, xd, dt], [x0 + dt * xd - x1])
+            return integr.map(n)
 
+        # Ensure dt is an 1-by-n array
+        n = self.T - (1 if self.derivs_align else time_deriv)
+        if isinstance(dt, (float, int)):
+            dt = dt * cs.DM.ones(n)
+
+        dt = cs.vec(dt).T
+        assert (
+            dt.shape[1] == n
+        ), f"The array for dt has an incorrect length, expected {n}, got {dt.shape[1]}"
+
+        # Extract model states
         model = self.get_model(name)
         xd = self.get_model_states(name, time_deriv)
         x = self.get_model_states(name, time_deriv - 1)
-        n = x.shape[1]
+
         if self.derivs_align:
             xd = xd[:, :-1]
 
-        if self.optimize_time:
-            dt = self.get_dt()[:n]
-        else:
-            dt = cs.vec(dt)
-            assert dt.shape[0] in {
-                1,
-                n - 1,
-            }, f"dt should be scalar or have {n-1} elements"
-            if dt.shape[0] == 1:
-                dt = dt * cs.DM.ones(n - 1)
-        dt = cs.vec(dt).T  # ensure dt is 1-by-(n-1) array
-
+        # Integrate states
         if isinstance(model, RobotModel):
-            integr = self._integr(model.num_opt_joints, n - 1)
+            integr = setup_integr_func(model.num_opt_joints, n)
         else:
-            integr = self._integr(model.dim, n - 1)
+            integr = setup_integr_func(model.dim, n)
         name = f"__integrate_model_states_{name}_{time_deriv}__"
         self.add_equality_constraint(name, integr(x[:, :-1], x[:, 1:], xd, dt))
 

@@ -2,57 +2,62 @@ import functools
 import casadi as cs
 from casadi import sin, cos, vec
 
-"""
 
-This is a partial port to Python/CasADi, with some modifications and
-additions, of the Spatial Math Toolbox for MATLAB. See the following.
+# This is a partial port to Python/CasADi, with some modifications and
+# additions, of the Spatial Math Toolbox for MATLAB. See the following.
+# https://github.com/petercorke/spatialmath-matlab
 
-
-https://github.com/petercorke/spatialmath-matlab
-
-"""
 
 pi = cs.np.pi
 eps = cs.np.finfo(float).eps
-
-_arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
-
-
-def _handle_arraylike_args(args, handle):
-    """Helper method that applies the handle to array like arguments."""
-    args_out = []
-    for a in args:
-        if isinstance(a, _arraylike_types):
-            args_out.append(handle(a))
-        else:
-            args_out.append(a)
-    return args_out
 
 
 def arrayify_args(fun):
     """Decorator that ensures all input arguments are casadi arrays (i.e. either DM or SX)"""
 
+    _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
+
+    def _handle_arraylike_args(args, handle):
+        """Helper method that applies the handle to array like arguments."""
+        args_out = []
+
+        for a in args:
+            if isinstance(a, _arraylike_types):
+                args_out.append(handle(a))
+            else:
+                args_out.append(a)
+        return args_out
+
+    def _handle_arraylike_kwargs(kwargs, handle, default_kwargs):
+        kwargs_out = {}
+
+        for label, value in kwargs.items():
+            if isinstance(value, _arraylike_types):
+                kwargs_out[label] = handle(value)
+            else:
+                kwargs_out[label] = value
+
+        for label, default_value in default_kwargs.items():
+            if label not in kwargs_out and isinstance(default_value, _arraylike_types):
+                kwargs_out[label] = handle(default_value)
+
+        return kwargs_out
+
     @functools.wraps(fun)
     def wrap(*args, **kwargs):
+        # Extract default values for kwargs from fun
+        arg_names = fun.__code__.co_varnames[: fun.__code__.co_argcount]
+        arg_defaults = fun.__defaults__
+        if arg_defaults is not None:
+            default_kwargs = dict(zip(arg_names[-len(arg_defaults) :], arg_defaults))
+        else:
+            default_kwargs = {}
+
         args_use = _handle_arraylike_args(args, cs.horzcat)
-        return fun(*args_use, **kwargs)
+        kwargs_use = _handle_arraylike_kwargs(kwargs, cs.horzcat, default_kwargs)
+        return fun(*args_use, **kwargs_use)
 
     return wrap
-
-
-def _is_shape(M, s1, s2):
-    """Abstract method for checking if an array has a given shape."""
-    return M.shape[0] == s1 and M.shape[1] == s2
-
-
-def is_2x2(M):
-    """Returns true if M is a 2-by-2 array, false otherwise."""
-    return _is_shape(M, 2, 2)
-
-
-def is_3x3(M):
-    """Returns true if M is a 3-by-3 array, false otherwise."""
-    return _is_shape(M, 3, 3)
 
 
 def I3():
@@ -74,91 +79,11 @@ def angvec2r(theta, v):
 
 
 @arrayify_args
-def angvec2tr(theta, v):
-    """Convert angle and vector orientation to a homogeneous transform"""
-    return r2t(angvec2r(theta, v))
-
-
-@arrayify_args
-def delta2tr(d):
-    """Convert differential motion  to SE(3) homogeneous transform"""
-    up = cs.horzcat(skew(d[3:6]), d[:3])
-    lo = cs.DM.zeros(1, 4)
-    return I4() + cs.vertcat(up, lo)
-
-
-@arrayify_args
-def e2h(e):
-    """Euclidean to homogeneous"""
-    ones = cs.DM.ones(1, e.shape[1])
-    return cs.vertcat(e, ones)
-
-
-@arrayify_args
-def eul2jac(phi, theta, psi):
-    """Euler angle rate Jacobian"""
-    sphi, cphi = sin(phi), cos(phi)
-    stheta, ctheta = sin(theta), cos(theta)
-    return cs.vertcat(
-        cs.horzcat(0.0, -sphi, cphi * stheta),
-        cs.horzcat(0.0, cphi, sphi * stheta),
-        cs.horzcat(1.0, 0.0, ctheta),
-    )
-
-
-@arrayify_args
-def eul2r(phi, theta, psi):
-    """Convert Euler angles to rotation matrix"""
-    return rotz(phi) @ roty(theta) @ rotz(psi)
-
-
-@arrayify_args
-def eul2tr(phi, theta, psi):
-    """Convert Euler angles to homogeneous transform"""
-    return r2t(eul2r(phi, theta, psi))
-
-
-@arrayify_args
-def h2e(h):
-    """Homogeneous to Euclidean"""
-    return h[:-1, :] / cs.repmat(h[-1, :], h.shape[0] - 1, 1)
-
-
-@arrayify_args
-def oa2r(o, a):
-    """Convert orientation and approach vectors to rotation matrix"""
-    n = cs.cross(o, a)
-    o = cs.cross(a, n)
-    return cs.horzcat(unit(vec(n)), unit(vec(o)), unit(vec(a)))
-
-
-@arrayify_args
-def oa2tr(o, a):
-    """Convert orientation and approach vectors to homogeneous transformation"""
-    n = cs.cross(o, a)
-    o = cs.cross(a, n)
-    return cs.vertcat(
-        cs.horzcat(unit(vec(n)), unit(vec(o)), unit(vec(a)), cs.DM.zeros(3)),
-        cs.DM([[0.0, 0.0, 0.0, 1]]),
-    )
-
-
-@arrayify_args
 def r2t(R):
     """Convert rotation matrix to a homogeneous transform"""
     return cs.vertcat(
         cs.horzcat(R, cs.DM.zeros(3)),
         cs.DM([[0.0, 0.0, 0.0, 1]]),
-    )
-
-
-@arrayify_args
-def rot2(theta):
-    """SO(2) rotation matrix"""
-    ct, st = cos(theta), sin(theta)
-    return cs.vertcat(
-        cs.horzcat(ct, -st),
-        cs.horzcat(st, ct),
     )
 
 
@@ -196,39 +121,6 @@ def rotz(theta):
 
 
 @arrayify_args
-def rpy2jac(rpy, opt="zyx"):
-    """Jacobian from RPY angle rates to angular velocity"""
-
-    order = ["zyx", "xyz", "yxz"]
-    r, p, y = cs.vertsplit(rpy)
-
-    sr, cr = sin(r), cos(r)
-    sp, cp = sin(p), cos(p)
-    sy, cy = sin(y), cos(y)
-
-    if opt == "xyz":
-        return cs.vertcat(
-            cs.horzcat(sp, 0.0, 1.0),
-            cs.horzcat(-cp * sy, cy, 0.0),
-            cs.horzcat(cp * cy, sy, 0.0),
-        )
-    elif opt == "zyx":
-        return cs.vertcat(
-            cs.horzcat(cp * cy, -sy, 0.0),
-            cs.horzcat(cp * sy, cy, 0.0),
-            cs.horzcat(-sp, 0.0, 1.0),
-        )
-    elif opt == "yxz":
-        return cs.vertcat(
-            cs.horzcat(cp * sy, cy, 0.0),
-            cs.horzcat(-sp, 0.0, 1.0),
-            cs.horzcat(cp * cy, -sy, 0.0),
-        )
-    else:
-        raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
-
-
-@arrayify_args
 def rpy2r(rpy, opt="zyx"):
     """Roll-pitch-yaw angles to SO(3) rotation matrix"""
 
@@ -242,13 +134,7 @@ def rpy2r(rpy, opt="zyx"):
     elif opt in {"yxz", "camera"}:
         return roty(y) @ rotx(p) @ rotz(r)
     else:
-        raise ValueError(f"didn't recognize given option {opt=}, only allowed {order}")
-
-
-@arrayify_args
-def rpy2tr(rpy, opt="zyx"):
-    """Roll-pitch-yaw angles to SE(3) homogeneous transform"""
-    return r2t(rpy2r(rpy, opt=opt))
+        raise ValueError(f"didn't recognize given option {opt}, only allowed {order}")
 
 
 @arrayify_args
@@ -279,23 +165,6 @@ def skew(v):
 
 
 @arrayify_args
-def skewa(v):
-    """Create augmented skew-symmetric matrix"""
-    if v.shape[0] == 3:
-        return cs.vertcat(
-            cs.horzcat(skew(s[2]), s[:2]),
-            cs.DM.zeros(1, 3),
-        )
-    elif v.shape[0] == 6:
-        return cs.vertcat(
-            cs.horzcat(skew(s[3:6]), s[:3]),
-            cs.DM.zeros(1, 4),
-        )
-    else:
-        raise ValueError(f"expecting a 3- or 6-vector")
-
-
-@arrayify_args
 def t2r(T):
     """Rotational submatrix"""
     return T[:3, :3]
@@ -310,117 +179,9 @@ def invt(T):
 
 
 @arrayify_args
-def tr2angvec(T):
-    """Convert rotation matrix to angle-vector form"""
-    return trlog(t2r(T))
-
-
-@arrayify_args
-def tr2delta(T0, T1):
-    """Convert SE(3) homogeneous transform to differential motion"""
-    TD = cs.inv(T0) @ T1
-    return cs.vertcat(
-        transl(TD),
-        vex(t2r(TD) - I3()),
-    )
-
-
-@arrayify_args
-def tr2eul(R, flip=False):
-    """Convert SO(3) or SE(3) matrix to Euler angles"""
-
-    cond = cs.logic_and(
-        cs.fabs(R[0, 2]) < eps,
-        cs.fabs(R[1, 2]) < eps,
-    )
-
-    eul_true = cs.vertcat(
-        0.0,
-        cs.atan2(R[0, 2], R[2, 2]),
-        cs.atan2(R[1, 0], R[1, 1]),
-    )
-
-    eul0_false = cs.atan2(-R[1, 2], -R[0, 2]) if flip else cs.atan2(R[1, 2], R[0, 2])
-    sp, cp = sin(eul0_false), cos(eul0_false)
-
-    eul_false = cs.vertcat(
-        eul0_false,
-        cs.atan2(cp * R[0, 2] + sp * R[1, 2], R[2, 2]),
-        cs.atan2(-sp * R[0, 0] + cp * R[1, 0], -sp * R[0, 1] + cp * R[1, 1]),
-    )
-
-    return cs.if_else(cond, eul_true, eul_false)
-
-
-@arrayify_args
-def tr2jac(T, samebody=False):
-    """Jacobian for differential motion"""
-    R = t2r(T)
-    if samebody:
-        return cs.vertcat(
-            cs.horzcat(R.T, (skew(transl(T)) @ R).T),
-            cs.horzcat(cs.DM.zeros(3, 3), R.T),
-        )
-    else:
-        return cs.vertcat(
-            cs.horzcat(R.T, cs.DM.zeros(3, 3)),
-            cs.horzcat(cs.DM.zeros(3, 3), R.T),
-        )
-
-
-@arrayify_args
-def tr2rpy(T):
-    """Convert SO(3) or SE(3) matrix to roll-pitch-yaw angles"""
-    raise NotImplementedError()
-
-
-@arrayify_args
-def tr2rt(T):
-    """Convert homogeneous transform to rotation and translation"""
-    return t2r(T), transl(T)
-
-
-@arrayify_args
 def transl(T):
     """SE(3) translational homogeneous transform"""
     return T[:3, 3]
-
-
-@arrayify_args
-def transl2(T):
-    """SE(2) translational homogeneous transform"""
-    return T[:2, 2]
-
-
-@arrayify_args
-def trexp(S, theta):
-    """Matrix exponential for so(3) and se(3)"""
-    raise NotImplementedError()
-
-
-@arrayify_args
-def trlog(R):
-    """Logarithm of SO(3) or SE(3) matrix"""
-    theta = cs.acos(0.5 * (cs.trace(R) - 1.0))
-    return theta, vex((R - R.T) / 2.0 / sin(theta))
-
-
-@arrayify_args
-def trotx(theta):
-    """SE(3) rotation about X axis"""
-    return r2t(rotx(theta))
-
-
-@arrayify_args
-def troty(theta):
-    """SE(3) rotation about Y axis"""
-    return r2t(roty(theta))
-
-
-@arrayify_args
-def trotz(theta):
-    """SE(3) rotation about Z axis"""
-    return r2t(rotz(theta))
 
 
 @arrayify_args
@@ -429,41 +190,17 @@ def unit(v):
     return v / cs.norm_fro(v)
 
 
-@arrayify_args
-def vex(S):
-    """Convert skew-symmetric matrix to vector"""
-    if is_2x2(S):
-        return 0.5 * (S[1, 0] - S[0, 1])
-    elif is_3x3(S):
-        return 0.5 * cs.vertcat(S[2, 1] - S[1, 2], S[0, 2] - S[2, 0], S[1, 0] - S[0, 1])
-    else:
-        raise ValueError(
-            f"input must be a 2-by-2 or 3-by-3 matrix, not {S.shape[0]}-by-{S.shape[1]}"
-        )
-
-
-@arrayify_args
-def vexa(S):
-    """Convert augmented skew-symmetric matrix to vector"""
-    if S.shape == [3, 3]:
-        return cs.vertcat(transl(S), vex(S[:3, :3]))
-    elif S.shape == [4, 4]:
-        return cs.vertcat(trasnl2(S), vex(S[:2, :2]))
-    else:
-        raise ValueError("input must be a 3-by-3 or 4-by-4 matrix")
-
-
 class Quaternion:
 
     """Quaternion class"""
 
-    def __init__(self, x, y=None, z=None, w=None):
+    def __init__(self, x, y, z, w):
         """Quaternion constructor.
 
         Syntax
         ------
 
-        quat = Quaternion(x, y=None, z=None, w=None)
+        quat = Quaternion(x, y, z, w)
 
         Parameters
         ----------
@@ -471,23 +208,17 @@ class Quaternion:
         x (number, array)
             Either the x-value of the quaternion or a 4-vector containing the quaternion.
 
-        y (number, None)
+        y (number)
             y-value of quaternion.
 
-        z (number, None)
+        z (number)
             z-value of quaternion.
 
-        w (number, None)
+        w (number)
             w-value of quaternion.
 
         """
-        if y is None:
-            # assumes x/w are none also
-            x_ = cs.vec(x)
-            assert x.shape[0] == 4, "quaternion requires 4 elements"
-            self._q = x
-        else:
-            self._q = cs.vertcat(x, y, z, w)
+        self._q = cs.vertcat(x, y, z, w)
 
     def split(self):
         """Split the quaternion into its xyzw parts."""
@@ -513,7 +244,7 @@ class Quaternion:
         """Quaternion inverse"""
         q = self.getquat()
         qinv = cs.vertcat(-q[:3], q[3]) / self.sumsqr()
-        return Quaternion(qinv)
+        return Quaternion(qinv[0], qinv[1], qinv[2], qinv[3])
 
     @staticmethod
     def fromrpy(rpy):
@@ -531,6 +262,14 @@ class Quaternion:
 
         n = cs.sqrt(x * x + y * y + z * z + w * w)
         return Quaternion(x / n, y / n, z / n, w / n)
+
+    @staticmethod
+    def fromvec(q):
+        x = q[0]
+        y = q[1]
+        z = q[2]
+        w = q[3]
+        return Quaternion(x, y, z, w)
 
     @staticmethod
     def fromangvec(theta, v):

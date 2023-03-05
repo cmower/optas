@@ -19,6 +19,7 @@ class PyBullet:
         camera_pitch=-40,
         camera_target_position=[0, 0, 0.5],
         record_video=False,
+        gui=True,
     ):
         connect_kwargs = {}
         if record_video:
@@ -26,7 +27,10 @@ class PyBullet:
             video_filename = pathlib.Path.home() / "Videos" / f"optas_video_{stamp}.mp4"
             connect_kwargs["options"] = f"--mp4={video_filename.absolute()}"
 
-        self.client_id = p.connect(p.GUI, **connect_kwargs)
+        if gui:
+            self.client_id = p.connect(p.GUI, **connect_kwargs)
+        else:
+            self.client_id = p.connect(p.DIRECT, **connect_kwargs)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation()
         p.setGravity(gravX=0.0, gravY=0.0, gravZ=-9.81)
@@ -192,10 +196,10 @@ class KukaLBR(FixedBaseRobot):
         os.remove(urdf_filename)
 
 
-def main():
+def main(gui=True):
     hz = 250
     dt = 1.0 / float(hz)
-    pb = PyBullet(dt)
+    pb = PyBullet(dt, gui=gui)
     # robot = KukaLWR()
     # robot = KukaLBR()
     robot = R2D2([0, 0, 0.5])
@@ -210,11 +214,13 @@ def main():
     while alpha < 1.0:
         q = (1.0 - alpha) * q0 + alpha * qF
         robot.cmd(q)
-        time.sleep(dt)
+        time.sleep(dt * float(gui))
         alpha += 0.05 * dt
 
     pb.stop()
     pb.close()
+
+    return 0
 
 
 if __name__ == "__main__":

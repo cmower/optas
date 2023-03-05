@@ -16,7 +16,6 @@ import optas
 
 class Planner:
     def __init__(self):
-
         cwd = pathlib.Path(
             __file__
         ).parent.resolve()  # path to current working directory
@@ -99,7 +98,6 @@ class Planner:
         self.solver = optas.CasADiSolver(optimization).setup("ipopt")
 
     def plan(self, qc):
-
         # Set initial seed, note joint velocity will be set to zero
         Q0 = optas.diag(qc) @ optas.DM.ones(self.kuka.ndof, self.T)
         self.solver.reset_initial_seed(
@@ -138,8 +136,7 @@ class Planner:
         return Plan(self.kuka, plan)
 
 
-def main():
-
+def main(gui=True):
     # Initialize planner
     planner = Planner()
 
@@ -150,7 +147,7 @@ def main():
     # Setup PyBullet
     hz = 50
     dt = 1.0 / float(hz)
-    pb = pybullet_api.PyBullet(dt)
+    pb = pybullet_api.PyBullet(dt, gui=gui)
     kuka = pybullet_api.KukaLWR()
     kuka.reset(plan(0.0))
     pb.start()
@@ -169,7 +166,7 @@ def main():
         kuka.cmd(plan(t))
         # js_pub.publish(plan(t))
         # rate.sleep()
-        pybullet_api.time.sleep(dt)
+        pybullet_api.time.sleep(dt * float(gui))
 
     pb.stop()
     pb.close()

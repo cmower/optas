@@ -6,9 +6,9 @@ def _derive_jacobian_and_hessian_functions(name, fun, x, p):
     fun_input = [x, p]
     jac = cs.jacobian(fun(x, p), x)
     hes = cs.jacobian(jac, x)
-    return cs.Function("d" + name, fun_input, [jac]), cs.Function(
-        "dd" + name, fun_input, [hes]
-    )
+    Jac = cs.Function("d" + name, fun_input, [jac])
+    Hes = cs.Function("dd" + name, fun_input, [hes])
+    return Jac, Hes
 
 
 def _vertcon(x, p, ineq=[], eq=[]):

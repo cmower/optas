@@ -1,6 +1,7 @@
 import os
 import warnings
 import functools
+import pathlib
 
 import casadi as cs
 
@@ -217,7 +218,7 @@ class Model:
     def in_limit(self, x, time_deriv):
         """True when x is within limits for a given time derivative, False otherwise. The return type uses CasADi, so this can be used in the formulation."""
         lo, up = self.get_limits(time_deriv)
-        return cs.logic_all(cs.logical_and(lo <= x, x <= up))
+        return cs.logic_all(cs.logic_and(lo <= x, x <= up))
 
 
 class TaskModel(Model):
@@ -310,9 +311,9 @@ class RobotModel(Model):
 
     def get_urdf_dirname(self):
         if self._urdf_filename is not None:
-            return os.path.dirname(self._urdf_filename)
+            return pathlib.Path(os.path.dirname(self._urdf_filename))
         elif self._xacro_filename is not None:
-            return os.path.dirname(self._xacro_filename)
+            return pathlib.Path(os.path.dirname(self._xacro_filename))
 
     @property
     def joint_names(self):
@@ -333,10 +334,9 @@ class RobotModel(Model):
         ]
 
     @property
-    def parameter_joint_indexes(self):
+    def optimized_joint_indexes(self):
         return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
+            self.get_actuated_joint_index(joint) for joint in self.optimized_joint_names
         ]
 
     @property
@@ -348,70 +348,13 @@ class RobotModel(Model):
         ]
 
     @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
-
-    @property
-    def parameter_joint_names(self):
-        return [
-            joint for joint in self.actuated_joint_names if joint in self.param_joints
-        ]
-
-    @property
     def parameter_joint_indexes(self):
         return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_names(self):
-        return [
-            joint
-            for joint in self.actuated_joint_names
-            if joint not in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
-
-    @property
-    def parameter_joint_names(self):
-        return [
-            joint for joint in self.actuated_joint_names if joint in self.param_joints
-        ]
-
-    @property
-    def parameter_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.parameter_joint_names
+            self.get_actuated_joint_index(joint) for joint in self.parameter_joint_names
         ]
 
     def extract_parameter_dimensions(self, values):
         return values[self.parameter_joint_indexes, :]
-
-    @property
-    def optimized_joint_names(self):
-        return [
-            joint
-            for joint in self.actuated_joint_names
-            if joint not in self.parameter_joint_names
-        ]
-
-    @property
-    def optimized_joint_indexes(self):
-        return [
-            self._get_actuated_joint_index(joint)
-            for joint in self.optimized_joint_names
-        ]
 
     def extract_optimized_dimensions(self, values):
         return values[self.optimized_joint_indexes, :]
@@ -532,37 +475,37 @@ class RobotModel(Model):
         )
         self._urdf.add_joint(joint)
 
-    def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
-        """Add a fixed link"""
+    # def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
+    #     """Add a fixed link"""
 
-        assert link not in self.link_names, f"'{link}' already exists"
-        assert (
-            parent_link in self.link_names
-        ), f"{parent_link=}, does not appear in link names"
+    #     assert link not in self.link_names, f"'{link}' already exists"
+    #     assert (
+    #         parent_link in self.link_names
+    #     ), f"{parent_link=}, does not appear in link names"
 
-        child_link = link
+    #     child_link = link
 
-        if xyz is None:
-            xyz = [0.0] * 3
+    #     if xyz is None:
+    #         xyz = [0.0] * 3
 
-        if rpy is None:
-            rpy = [0.0] * 3
+    #     if rpy is None:
+    #         rpy = [0.0] * 3
 
-        if not isinstance(joint_name, str):
-            joint_name = parent_link + "_and_" + child_link + "_joint"
+    #     if not isinstance(joint_name, str):
+    #         joint_name = parent_link + "_and_" + child_link + "_joint"
 
-        self._urdf.add_link(Link(name=child_link))
+    #     self._urdf.add_link(Link(name=child_link))
 
-        origin = Pose(xyz=xyz, rpy=rpy)
-        self._urdf.add_joint(
-            Joint(
-                name=joint_name,
-                parent=parent_link,
-                child=child_link,
-                joint_type="fixed",
-                origin=origin,
-            )
-        )
+    #     origin = Pose(xyz=xyz, rpy=rpy)
+    #     self._urdf.add_joint(
+    #         Joint(
+    #             name=joint_name,
+    #             parent=parent_link,
+    #             child=child_link,
+    #             joint_type="fixed",
+    #             origin=origin,
+    #         )
+    #     )
 
     def get_root_link(self):
         """Return the root link"""
@@ -591,13 +534,14 @@ class RobotModel(Model):
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1.0, 0.0, 0.0])
         return unit(axis)
 
-    def _get_actuated_joint_index(self, joint_name):
+    def get_actuated_joint_index(self, joint_name):
         return self.actuated_joint_names.index(joint_name)
 
     def get_random_joint_positions(
         self, n=1, xlim=None, ylim=None, zlim=None, base_link=None
     ):
         """Return a random array with joint positions within the actuator limits."""
+
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
 
@@ -636,9 +580,11 @@ class RobotModel(Model):
         q = self.get_random_joint_positions()
         return self.get_global_link_transform(link, q)
 
-    def _make_function(self, label, link, method, n=1, base_link=None):
+    def _make_function(self, label, link, method, n=1, base_link=None, axis=None):
         q = cs.SX.sym("q", self.ndof)
-        args = (link, q)
+        args = [link, q]
+        if axis is not None:
+            args.append(axis)
         kwargs = {}
         if base_link is not None:
             kwargs["base_link"] = base_link
@@ -713,7 +659,7 @@ class RobotModel(Model):
                 T = T @ rt2tr(rpy2r(rpy), xyz)
                 continue
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             T = T @ rt2tr(rpy2r(rpy), xyz)
@@ -812,7 +758,7 @@ class RobotModel(Model):
                 quat = Quaternion.fromrpy(rpy) * quat
                 continue
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
             quat = Quaternion.fromrpy(rpy) * quat
@@ -835,8 +781,8 @@ class RobotModel(Model):
     @listify_output
     def get_link_quaternion(self, link, q, base_link):
         """Get the quaternion defined in a given base frame."""
-        quat_L_W = Quaternion(self.get_global_link_quaternion(link, q))
-        quat_B_W = Quaternion(self.get_global_link_quaternion(base_link, q))
+        quat_L_W = Quaternion.fromvec(self.get_global_link_quaternion(link, q))
+        quat_B_W = Quaternion.fromvec(self.get_global_link_quaternion(base_link, q))
         return (quat_L_W * quat_B_W.inv()).getquat()
 
     def get_link_quaternion_function(self, link, base_link, n=1):
@@ -849,7 +795,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_rpy(self, link, q):
         """Get the Roll-Pitch-Yaw angles in the global frame."""
-        return Quaternion(self.get_global_link_quaternion(link, q)).getrpy()
+        return Quaternion.fromvec(self.get_global_link_quaternion(link, q)).getrpy()
 
     def get_global_link_rpy_function(self, link, n=1):
         """Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
@@ -859,7 +805,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_rpy(self, link, q, base_link):
         """Get the the Roll-Pitch-Yaw angles defined in a given base frame."""
-        return Quaternion(self.get_link_quaternion(link, q, base_link)).getrpy()
+        return Quaternion.fromvec(self.get_link_quaternion(link, q, base_link)).getrpy()
 
     def get_link_rpy_function(self, link, base_link, n=1):
         """Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame."""
@@ -893,7 +839,7 @@ class RobotModel(Model):
             if joint.child == link:
                 past_in_chain = True
 
-            joint_index = self._get_actuated_joint_index(joint.name)
+            joint_index = self.get_actuated_joint_index(joint.name)
             joint_index_order.append(joint_index)
             qi = q[joint_index]
 
@@ -960,10 +906,13 @@ class RobotModel(Model):
     def get_global_analytical_jacobian_function(self, link):
         pass
 
-    def get_global_link_analytical_jacobian_function(self, link):
+    def get_global_link_analytical_jacobian_function(self, link, n=1):
         """Get the function that computes the analytical jacobian in the global frame."""
         return self._make_function(
-            "J_a", link, self.get_global_link_analytical_jacobian
+            "J_a",
+            link,
+            self.get_global_link_analytical_jacobian,
+            n=n,
         )
 
     @deprecation_warning("get_link_geometric_jacobian")
@@ -1015,10 +964,10 @@ class RobotModel(Model):
     def get_analytical_jacobian_function(self, link, base_link):
         pass
 
-    def get_link_analytical_jacobian_function(self, link, base_link):
+    def get_link_analytical_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the analytical jacobian in a given base frame."""
         return self._make_function(
-            "J_a", link, self.get_link_analytical_jacobian, base_link=base_link
+            "J_a", link, self.get_link_analytical_jacobian, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_linear_jacobian")
@@ -1098,10 +1047,13 @@ class RobotModel(Model):
     def get_global_angular_analytical_jacobian_function(self, link):
         pass
 
-    def get_global_link_angular_analytical_jacobian_function(self, link):
+    def get_global_link_angular_analytical_jacobian_function(self, link, n=1):
         """Get the function that computes the angular part of the analytical jacobian in the global frame."""
         return self._make_function(
-            "Ja", link, self.get_global_link_angular_analytical_jacobian
+            "Ja",
+            link,
+            self.get_global_link_angular_analytical_jacobian,
+            n=n,
         )
 
     @deprecation_warning("get_link_angular_geometric_jacobian")
@@ -1152,10 +1104,14 @@ class RobotModel(Model):
     def get_angular_analytical_jacobian_function(self, link, base_link):
         pass
 
-    def get_link_angular_analytical_jacobian_function(self, link, base_link):
+    def get_link_angular_analytical_jacobian_function(self, link, base_link, n=1):
         """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
         return self._make_function(
-            "Ja", link, self.get_link_angular_analytical_jacobian, base_link=base_link
+            "Ja",
+            link,
+            self.get_link_angular_analytical_jacobian,
+            n=n,
+            base_link=base_link,
         )
 
     @arrayify_args
@@ -1185,7 +1141,12 @@ class RobotModel(Model):
 
     def get_link_axis_function(self, link, axis, base_link, n=1):
         return self._make_function(
-            "a", link, self.get_link_axis, n=n, base_link=base_link
+            "a",
+            link,
+            self.get_link_axis,
+            n=n,
+            base_link=base_link,
+            axis=axis,
         )
 
     @arrayify_args
@@ -1196,158 +1157,3 @@ class RobotModel(Model):
     def get_global_link_axis_function(self, link, axis, n=1):
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
         return self._make_function("a", link, get_global_link_axis, n=n)
-
-    @arrayify_args
-    @listify_output
-    def get_link_axis_jacobian(self, link, q, axis, base_link):
-        q_sym = cs.SX.sym("q_sym", self.ndof)
-        vector = self.get_link_axis(link, q, axis, base_link)
-
-        # Compute jacobian
-        Jv = cs.jacobian(vector, q_sym)
-
-        # Functionize
-        J = cs.Function("Ja", [q_sym], [Jv])
-
-        return J(q)
-
-    def get_link_axis_jacobian_function(self, link, axis, base_link, n=1):
-        return self._make_function(
-            "Ja", link, self.get_link_axis_jacobian, n=n, base_link=base_link
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_axis_jacobian(self, link, q, axis):
-        return self.get_link_axis_jacobian(link, q, axis, self.get_root_link())
-
-    def get_global_link_axis_jacobian_function(self, link, axis, n=1):
-        return self._make_function("Ja", link, self.get_global_link_axis_jacobian, n=n)
-
-    def _manipulability(self, J):
-        """Computes the manipulability given a jacobian array."""
-        return cs.sqrt(cs.det(J @ J.T))
-
-    @deprecation_warning("get_global_link_manipulability")
-    def get_global_manipulability(self, link, q):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_manipulability(self, link, q):
-        """Get the manipulability measure in the global frame"""
-        J = self.get_global_link_geometric_jacobian(link, q)
-        return self._manipulability(J)
-
-    @deprecation_warning("get_global_link_manipulability_function")
-    def get_global_manipulability_function(self, link, n=1):
-        pass
-
-    def get_global_link_manipulability_function(self, link, n=1):
-        """Get the function that computes the manipulability measure in the global frame."""
-        return self._make_function("m", link, self.get_global_link_manipulability, n=n)
-
-    @deprecation_warning("get_link_manipulability")
-    def get_manipulability(self, link, q, base_link):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_link_manipulability(self, link, q, base_link):
-        """Get the manipulability measure in a given base frame"""
-        J = self.get_link_geometric_jacobian(link, q, base_link)
-        return self._manipulability(J)
-
-    @deprecation_warning("get_link_manipulability_function")
-    def get_manipulability_function(self, link, base_link, n=1):
-        pass
-
-    def get_link_manipulability_function(self, link, base_link, n=1):
-        """Get the function that computes the manipulability measure in a given base frame"""
-        return self._make_function(
-            "m", link, self.get_link_manipulability, n=n, base_link=base_link
-        )
-
-    @deprecation_warning("get_global_link_linear_manipulability")
-    def get_global_linear_manipulability(self, link, q):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_linear_manipulability(self, link, q):
-        """Get the manipulability measure for the linear dimensions in the global frame."""
-        Jl = self.get_global_link_linear_jacobian(link, q)
-        return self._manipulability(Jl)
-
-    @deprecation_warning("get_global_link_linear_manipulability_function")
-    def get_global_linear_manipulability_function(self, link, n=1):
-        pass
-
-    def get_global_link_linear_manipulability_function(self, link, n=1):
-        """Get the function that computes the manipulability measrure for the linear dimension in the global frame."""
-        return self._make_function(
-            "ml", link, self.get_global_link_linear_manipulability, n=n
-        )
-
-    @deprecation_warning("get_link_linear_manipulability")
-    def get_linear_manipulability(self, link, q, base_link):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_link_linear_manipulability(self, link, q, base_link):
-        """Get the linear part of the manipulability measure in a given base frame"""
-        Jl = self.get_link_linear_jacobian(link, q, base_link)
-        return self._manipulability(Jl)
-
-    @deprecation_warning("get_link_linear_manipulability_function")
-    def get_linear_manipulability_function(self, link, base_link, n=1):
-        pass
-
-    def get_link_linear_manipulability_function(self, link, base_link, n=1):
-        """Get the function that computes the linear part of the manipulability measure in a given base frame"""
-        return self._make_function(
-            "ml", link, self.get_link_linear_manipulability, n=n, base_link=base_link
-        )
-
-    @deprecation_warning("get_global_link_angular_manipulability")
-    def get_global_angular_manipulability(self, link, q):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_angular_manipulability(self, link, q):
-        """Get the angular part of the manipulability measure in the global frame"""
-        Ja = self.get_global_link_angular_geometric_jacobian(link, q)
-        return self._manipulability(Ja)
-
-    @deprecation_warning("get_global_link_angular_manipulability_function")
-    def get_global_angular_manipulability_function(self, link, n=1):
-        pass
-
-    def get_global_link_angular_manipulability_function(self, link, n=1):
-        """Get the function that computes the angular part of the manipulability measure in a given base frame"""
-        return self._make_function(
-            "ma", link, self.get_global_link_angular_manipulability, n=n
-        )
-
-    @deprecation_warning("get_link_angular_manipulability")
-    def get_angular_manipulability(self, link, q, base_link):
-        pass
-
-    @arrayify_args
-    @listify_output
-    def get_link_angular_manipulability(self, link, q, base_link):
-        """Get the angular part of the manipulability measure in a given base frame"""
-        Ja = self.get_link_angular_geometric_jacobian(link, q, base_link)
-        return self._manipulability(Ja)
-
-    @deprecation_warning("get_link_angular_manipulability_function")
-    def get_angular_manipulability_function(self, link, base_link, n=1):
-        pass
-
-    def get_link_angular_manipulability_function(self, link, base_link, n=1):
-        """Get the function that computes the angular part of the manipulability measure in a given base frame"""
-        return self._make_function(
-            "ma", link, self.get_link_angular_manipulability, n=n, base_link=base_link
-        )

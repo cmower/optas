@@ -6,7 +6,7 @@
 
 OpTaS is an OPtimization-based TAsk Specification library for task and motion planning (TAMP), trajectory optimization, and model predictive control.
 
-The library used to support ROS, this functionality has now been moved to the dedicated [optas_ros](https://github.com/cmower/optas_ros) repository.
+In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
 # Example
 
@@ -113,9 +113,11 @@ vis.start()
 ```
 
 Run the example script [example.py](example/example.py).
-Other examples can be found in the [example/](example) directory.
+Other examples, including dual-arm planning, Model Predictive Control, Trajectory Optimization, etc can be found in the [example/](example) directory.
 
 # Install
+
+Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`.
 
 ## Via pip
 1. `$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'`
@@ -123,10 +125,10 @@ Other examples can be found in the [example/](example) directory.
 ## From source
 1. `$ git clone git@github.com:cmower/optas.git`
 2. `$ cd optas`
-3. `$ pip install --upgrade pip`, ensure `pip` is up-to-date
 4. `$ pip install .`
+5. (optional) If you want to run the examples/tests: `$ pip install -r requirements_all.txt`
 
-## Build documentation
+### Build documentation
 
 1. `$ cd /path/to/optas/doc`
 2. `$ sudo apt install doxygen`
@@ -135,9 +137,23 @@ Other examples can be found in the [example/](example) directory.
    - `html/index.html`
    - `latex/refman.pdf`
 
+### Run tests
+
+1. `$ cd /path/to/optas`
+2. Each test can be run as follows
+   - `$ pytest tests/test_builder.py`
+   - `$ pytest tests/test_examples.py`
+   - `$ pytest tests/test_models.py`
+   - `$ pytest tests/test_optas_utils.py`
+   - `$ pytest tests/test_optimization.py`
+   - `$ pytest tests/test_solver.py`
+   - `$ pytest tests/test_spatialmath.py`
+   - `$ pytest tests/test_sx_container.py`
+
 # Known Issues
 
 - Loading robot models from xacro files is supported, however there can be issues if you are running this in a ROS agnositic environment. If you do not have ROS installed, then the xacro file should not contain ROS-specific features. For further details see [here](https://github.com/cmower/optas/issues/78).
+- If NumPy ver 1.24 is installed, an `AttributeError` error is thrown when you try to solve an unconstrained problem with the OSQP interface. A temporary workaround is to add a constraint, e.g. `x >= -1e9` where `x` is a decision variable. See details on the issue [here](https://github.com/osqp/osqp-python/issues/104) and pull request [here](https://github.com/osqp/osqp-python/pull/105).
 
 # Citation
 
