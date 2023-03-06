@@ -1,451 +1,1041 @@
 import os
+
 import vtk
-import casadi as cs
 from vtkmodules.vtkFiltersSources import (
     vtkCylinderSource,
     vtkSphereSource,
     vtkCubeSource,
 )
-from .spatialmath import *
+
+import casadi as cs
+import numpy as np
+from scipy.spatial.transform import Rotation as Rot
+
 from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
-default_configurable_parameters = {
-    "show_global_link": True,
-    "alpha": 1.0,
-    "show_link_names": False,
-    "show_links": False,
-    "link_axis_scale": 0.1,
-    "link_center_radius": 0.01,
-}
+from .spatialmath import *
 
 
-class RobotVisualizer:
-    def __init__(self, robot, q=None, params=None):
-        # Specify parameters
-        user_defined_parameters = params.copy()
-        parameters = default_configurable_parameters.copy()
+def line(start, end, rgb, alpha, linewidth):
+    points = vtk.vtkPoints()
+    points.InsertNextPoint(*start)
+    points.InsertNextPoint(*end)
 
-        if isinstance(user_defined_parameters, dict):
-            # Overwrite parameters
-            for key, value in user_defined_parameters.items():
-                parameters[key] = value
+    line = vtk.vtkLine()
+    line.GetPointIds().SetId(0, 0)
+    line.GetPointIds().SetId(0, 1)
 
-        self.params = parameters
+    lines = vtk.vtkCellArray()
+    lines.InsertNextCell(line)
 
-        self.init_robot(robot)
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetLines(lines)
 
-        # Create a rendering window and renderer
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    actor.GetProperty().SetLineWidth(linewidth)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def sphere(radius, position, rgb, alpha, theta_resolution, phi_resolution):
+    sphere = vtkSphereSource()
+    sphere.SetRadius(radius)
+    sphere.SetThetaResolution(theta_resolution)
+    sphere.SetPhiResolution(phi_resolution)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(sphere.GetOutputPort())
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    if isinstance(position, list):
+        transform = vtk.vtkTransform()
+        transform.Translate(position)
+        actor.SetUserTransform(transform)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def sphere_traj(
+    position_traj, radius, rgb, theta_resolution, phi_resolution, alpha_spec
+):
+    default_alpha_spec = {"style": "A"}
+    if alpha_spec is None:
+        alpha_spec = default_alpha_spec.copy()
+
+    actors = []
+    n = position_traj.shape[1]
+
+    if alpha_spec["style"] == "A":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = np.linspace(alpha_min, alpha_max, n).tolist()
+    elif alpha_spec["style"] == "B":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = [alpha_min] * (n - 1) + [alpha_max]
+    elif alpha_spec["style"] == "C":
+        alpha_start = alpha_spec.get("alpha_start", 1.0)
+        alpha_mid = alpha_spec.get("alpha_mid", 0.1)
+        alpha_end = alpha_spec.get("alpha_end", 1.0)
+        alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
+
+    for i, alpha in enumerate(alphas):
+        position = position_traj[:, i].flatten().tolist()
+        actors.append(
+            sphere(
+                radius=radius,
+                position=position,
+                rgb=rgb,
+                alpha=alpha,
+                theta_resolution=theta_resolution,
+                phi_resolution=phi_resolution,
+            )
+        )
+
+    return actors
+
+
+def box(scale, rgb, alpha, position, orientation, euler_seq, euler_degrees):
+    cube = vtk.vtkCubeSource()
+    cube.SetBounds(
+        -0.5 * scale[0],
+        0.5 * scale[0],
+        -0.5 * scale[1],
+        0.5 * scale[1],
+        -0.5 * scale[2],
+        0.5 * scale[2],
+    )
+
+    # Create a vtkPolyDataMapper
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(cube.GetOutputPort())
+
+    # Create a vtkActor
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    if len(orientation) == 4:
+        R = Rot.from_quat(orientation)
+    elif len(orientation) == 3:
+        R = Rot.from_euler(euler_seq, orientation, degrees=euler_degrees)
+    else:
+        raise ValueError(
+            f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
+        )
+
+    tf = np.eye(4)
+    tf[:3, :3] = R.as_matrix()
+    tf[:3, 3] = position
+
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(tf.flatten().tolist())
+    actor.SetUserTransform(transform)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def cylinder(
+    radius,
+    height,
+    rgb,
+    alpha,
+    resolution,
+    position,
+    orientation,
+    euler_seq,
+    euler_degrees,
+):
+    cylinder = vtkCylinderSource()
+    cylinder.SetRadius(radius)
+    cylinder.SetHeight(height)
+    cylinder.SetResolution(resolution)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(cylinder.GetOutputPort())
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    if len(orientation) == 4:
+        R = Rot.from_quat(orientation)
+    elif len(orientation) == 3:
+        R = Rot.from_euler(euler_seq, orientation, degrees=euler_degrees)
+    else:
+        raise ValueError(
+            f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
+        )
+
+    tf = np.eye(4)
+    tf[:3, :3] = R.as_matrix()
+    tf[:3, 3] = position
+
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(tf.flatten().tolist())
+    actor.SetUserTransform(transform)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def cylinder_urdf(
+    radius=1.0,
+    height=1.0,
+    rgb=None,
+    alpha=1.0,
+    resolution=20,
+    position=[0.0, 0.0, 0.0],
+    orientation=[0.0, 0.0, 0.0],
+    euler_seq="xyz",
+    euler_degrees=False,
+):
+    cylinder = vtkCylinderSource()
+    cylinder.SetRadius(radius)
+    cylinder.SetHeight(height)
+    cylinder.SetResolution(resolution)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(cylinder.GetOutputPort())
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    if len(orientation) == 4:
+        R = Rot.from_quat(orientation)
+    elif len(orientation) == 3:
+        R = Rot.from_euler(euler_seq, orientation, degrees=euler_degrees)
+    else:
+        raise ValueError(
+            f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
+        )
+
+    tf_0 = np.eye(4)
+    tf_0[:3, :3] = Rot.from_euler("x", 90, degrees=True).as_matrix()
+
+    tf_1 = np.eye(4)
+    tf_1[:3, :3] = R.as_matrix()
+    tf_1[:3, 3] = position
+
+    tf = tf_1 @ tf_0
+
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(tf.flatten().tolist())
+    actor.SetUserTransform(transform)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def text(camera, msg, position, scale, rgb, alpha):
+    # Create a text source to generate the text
+    textSource = vtk.vtkTextSource()
+    textSource.SetText(msg)
+    textSource.Update()
+
+    # Create a mapper to map the text source to graphics primitives
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(textSource.GetOutputPort())
+
+    # Create a follower to position the text in 3D space
+    follower = vtk.vtkFollower()
+    follower.SetMapper(mapper)
+    follower.SetPosition(*position)
+    follower.SetScale(*scale)
+    follower.GetProperty().SetOpacity(alpha)
+    follower.SetCamera(camera)
+
+    return follower
+
+
+def link(T, axis_scale, axis_linewidth, center_radius, center_rgb, center_alpha):
+    if T is None:
+        T = np.eye(4)
+
+    p = T[:3, 3].flatten()
+    x = T[:3, 0].flatten()
+    y = T[:3, 1].flatten()
+    z = T[:3, 2].flatten()
+
+    actors = []
+
+    actors.append(
+        line(
+            start=p.tolist(),
+            end=(p + axis_scale * x).tolist(),
+            rgb=[1, 0, 0],
+            alpha=1.0,
+            linewidth=axis_linewidth,
+        )
+    )
+
+    actors.append(
+        line(
+            start=p.tolist(),
+            end=(p + axis_scale * y).tolist(),
+            rgb=[0, 1, 0],
+            alpha=1.0,
+            linewidth=axis_linewidth,
+        )
+    )
+
+    actors.append(
+        line(
+            start=p.tolist(),
+            end=(p + axis_scale * z).tolist(),
+            rgb=[0, 0, 1],
+            alpha=1.0,
+            linewidth=axis_linewidth,
+        )
+    )
+
+    actors.append(
+        sphere(
+            radius=center_radius,
+            position=p,
+            rgb=center_rgb,
+            alpha=center_alpha,
+            theta_resolution=20,
+            phi_resolution=20,
+        )
+    )
+
+    return actors
+
+
+def grid_floor(
+    num_cells,
+    rgb,
+    alpha,
+    linewidth,
+    inner_rgb,
+    inner_alpha,
+    inner_linewidth,
+    stride,
+    euler,
+    euler_degrees,
+):
+    assert num_cells > 0, "num_cells must be a positive number!"
+    assert num_cells % 2 == 0, "num_cells must be even!"
+
+    actors = []
+
+    num_lines = num_cells + 1
+
+    tf_0 = np.eye(4)
+    tf_0[:3, 3] = [
+        -0.5 * float(num_cells) * stride,
+        -0.5 * float(num_cells) * stride,
+        0,
+    ]
+
+    tf_1 = np.eye(4)
+    tf_1[:3, :3] = Rot.from_euler("xyz", euler, degrees=euler_degrees).as_matrix()
+
+    tf = tf_1 @ tf_0
+
+    offset = vtk.vtkTransform()
+    offset.SetMatrix(tf.flatten().tolist())
+
+    if inner_rgb is None:
+        inner_rgb = rgb
+
+    if inner_alpha is None:
+        inner_alpha = alpha
+
+    for i in range(num_cells):
+        actor = line(
+            start=[(float(i) + 0.5) * stride, 0, 0],
+            end=[(float(i) + 0.5) * stride, float(num_cells) * stride, 0],
+            linewidth=inner_linewidth,
+            alpha=inner_alpha,
+            rgb=inner_rgb,
+        )
+        actor.SetUserTransform(offset)
+        actors.append(actor)
+
+        actor = line(
+            start=[0, (float(i) + 0.5) * stride, 0],
+            end=[float(num_cells) * stride, (float(i) + 0.5) * stride, 0],
+            linewidth=inner_linewidth,
+            alpha=inner_alpha,
+            rgb=inner_rgb,
+        )
+        actor.SetUserTransform(offset)
+        actors.append(actor)
+
+    for i in range(num_lines):
+        actor = line(
+            start=[float(i) * stride, 0, 0],
+            end=[float(i) * stride, float(num_cells) * stride, 0],
+            rgb=rgb,
+            alpha=alpha,
+            linewidth=linewidth,
+        )
+        actor.SetUserTransform(offset)
+        actors.append(actor)
+
+        actor = line(
+            start=[0, float(i) * stride, 0],
+            end=[float(num_cells) * stride, float(i) * stride, 0],
+            rgb=rgb,
+            alpha=alpha,
+            linewidth=linewidth,
+        )
+        actor.SetUserTransform(offset)
+        actors.append(actor)
+
+    return actors
+
+
+def obj(
+    obj_filename, png_texture_filename, position, orientation, euler_seq, euler_degrees
+):
+    # Create a renderer, render window, and interactor
+    renderer = vtk.vtkRenderer()
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+
+    # Read the .obj file
+    reader = vtk.vtkOBJReader()
+    reader.SetFileName(obj_filename)
+    reader.Update()
+
+    # Create a mapper and actor
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(reader.GetOutputPort())
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    if isinstance(png_texture_filename, str):
+        # Create a texture from the png file
+        texture = vtk.vtkTexture()
+        texture_image = vtk.vtkPNGReader()
+        texture_image.SetFileName(png_texture_filename)
+        texture_image.Update()
+        texture.SetInputConnection(texture_image.GetOutputPort())
+
+        actor.SetTexture(texture)
+
+    if len(orientation) == 4:
+        R = Rot.from_quat(orientation)
+    elif len(orientation) == 3:
+        R = Rot.from_euler(euler_seq, orientation, degrees=euler_degrees)
+    else:
+        raise ValueError(
+            f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
+        )
+
+    tf = np.eye(4)
+    tf[:3, :3] = R.as_matrix()
+    tf[:3, 3] = position
+
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(tf.flatten().tolist())
+    actor.SetUserTransform(transform)
+
+    return actor
+
+
+def stl(filename, scale, rgb, alpha, position, orientation, euler_seq, euler_degrees):
+    reader = vtk.vtkSTLReader()
+    reader.SetFileName(filename)
+
+    if scale is None:
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(reader.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+    else:
+        transform = vtk.vtkTransform()
+        transform.Scale(*scale)
+
+        transformFilter = vtk.vtkTransformPolyDataFilter()
+        transformFilter.SetTransform(transform)
+        transformFilter.SetInputConnection(reader.GetOutputPort())
+
+        # Visualize the object
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(transformFilter.GetOutputPort())
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+    if len(orientation) == 4:
+        R = Rot.from_quat(orientation)
+    elif len(orientation) == 3:
+        R = Rot.from_euler(euler_seq, orientation, degrees=euler_degrees)
+    else:
+        raise ValueError(
+            f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
+        )
+
+    tf = np.eye(4)
+    tf[:3, :3] = R.as_matrix()
+    tf[:3, 3] = np.array(position).flatten()
+
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(tf.flatten().tolist())
+    actor.SetUserTransform(transform)
+
+    if isinstance(rgb, list):
+        assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
+        actor.GetProperty().SetColor(*rgb)
+
+    if alpha < 1.0:
+        assert alpha >= 0.0, "the scalar alpha must be in the range [0, 1]"
+        actor.GetProperty().SetOpacity(alpha)
+
+    return actor
+
+
+def robot(
+    robot_model,
+    q,
+    alpha,
+    show_links,
+    link_axis_scale,
+    link_axis_linewidth,
+    link_center_rgb,
+    link_center_alpha,
+    link_center_radius,
+    display_link_names,
+    link_names_scale,
+    link_names_rgb,
+    link_names_alpha,
+    camera,
+):
+    if link_center_alpha is None:
+        link_center_alpha = alpha
+
+    actors = []
+
+    urdf = robot_model.get_urdf()
+
+    material_names = [m.name for m in urdf.materials]
+
+    def get_material_rgba(name):
+        try:
+            idx = material_names.index(name)
+        except ValueError:
+            return None
+        material = urdf.materials[idx]
+        if material.color is not None:
+            return material.color.rgba
+
+    if q is None:
+        q_user_input = [0.0] * robot_model.ndof
+    else:
+        q_user_input = cs.vec(q)
+
+    # Setup functions to compute visual origins in global frame
+    q = cs.SX.sym("q", robot_model.ndof)
+    link_tf = {}
+    visual_tf = {}
+    for urdf_link in urdf.links:
+        name = urdf_link.name
+
+        lnk_tf = robot_model.get_global_link_transform(urdf_link.name, q)
+        link_tf[name] = cs.Function(f"link_tf_{name}", [q], [lnk_tf])
+
+        xyz, rpy = robot_model.get_link_visual_origin(urdf_link)
+        visl_tf = rt2tr(rpy2r(rpy), xyz)
+
+        tf = lnk_tf @ visl_tf
+        visual_tf[name] = cs.Function(f"visual_tf_{name}", [q], [tf])
+
+    for urdf_link in urdf.links:
+        geometry = urdf_link.visual.geometry
+        tf = visual_tf[urdf_link.name](q_user_input).toarray()
+        position = tf[:3, 3].flatten().tolist()
+        orientation = Rot.from_matrix(tf[:3, :3]).as_quat().tolist()
+
+        if show_links:
+            actors += link(
+                tf,
+                axis_scale=link_axis_scale,
+                axis_linewidth=link_axis_linewidth,
+                center_radius=link_center_radius,
+                center_rgb=link_center_rgb,
+                center_alpha=link_center_alpha,
+            )
+
+        if display_link_names:
+            actors.append(
+                text(
+                    camera,
+                    urdf_link.name,
+                    position,
+                    link_names_scale,
+                    link_names_rgb,
+                    link_names_alpha,
+                )
+            )
+
+        if urdf_link.visual is None:
+            continue
+
+        material = urdf_link.visual.material
+        rgb = None
+        if isinstance(material.name, str) and material.name in material_names:
+            rgba = get_material_rgba(urdf_link.visual.material.name)
+            rgb = rgba[:3]
+
+        if isinstance(geometry, Mesh):
+            if geometry.filename.lower().endswith(".stl"):
+                filename = geometry.filename
+
+                if not os.path.exists(filename):
+                    relpath = robot_model.get_urdf_dirname()
+                    filename = os.path.join(relpath, filename)
+
+                scale = None
+                if geometry.scale is not None:
+                    scale = geometry.scale
+
+                actors.append(
+                    stl(
+                        filename,
+                        scale=scale,
+                        rgb=rgb,
+                        alpha=alpha,
+                        position=position,
+                        orientation=orientation,
+                        euler_seq="xyz",
+                        euler_degrees=True,
+                    )
+                )
+
+        elif isinstance(geometry, Sphere):
+            actors.append(
+                sphere(
+                    radius=geometry.radius,
+                    position=position,
+                    rgb=rgb,
+                    alpha=alpha,
+                    theta_resolution=20,
+                    phi_resolution=20,
+                )
+            )
+
+        elif isinstance(geometry, Cylinder):
+            actors.append(
+                cylinder_urdf(
+                    radius=geometry.radius,
+                    height=geometry.length,
+                    position=position,
+                    orientation=orientation,
+                    rgb=rgb,
+                    alpha=alpha,
+                )
+            )
+
+    return actors
+
+
+def robot_traj(
+    robot_model,
+    Q,
+    alpha_spec,
+    show_links,
+    link_axis_scale,
+    link_axis_linewidth,
+    link_center_rgb,
+    link_center_alpha,
+    link_center_radius,
+    display_link_names,
+    link_names_scale,
+    link_names_rgb,
+    link_names_alpha,
+    camera,
+):
+    default_alpha_spec = {"style": "A"}
+    if alpha_spec is None:
+        alpha_spec = default_alpha_spec.copy()
+
+    actors = []
+    n = Q.shape[1]
+
+    if alpha_spec["style"] == "A":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = np.linspace(alpha_min, alpha_max, n).tolist()
+    elif alpha_spec["style"] == "B":
+        alpha_min = alpha_spec.get("alpha_min", 0.1)
+        alpha_max = alpha_spec.get("alpha_max", 1.0)
+        alphas = [alpha_min] * (n - 1) + [alpha_max]
+    elif alpha_spec["style"] == "C":
+        alpha_start = alpha_spec.get("alpha_start", 1.0)
+        alpha_mid = alpha_spec.get("alpha_mid", 0.1)
+        alpha_end = alpha_spec.get("alpha_end", 1.0)
+        alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
+
+    for i, alpha in enumerate(alphas):
+        actors += robot(
+            robot_model,
+            Q[:, i],
+            alpha,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            camera,
+        )
+    return actors
+
+
+class Visualizer:
+    def __init__(
+        self,
+        window_size=[1440, 810],
+        background_color=[0, 0, 0],
+        camera_position=[2, 2, 2],
+        camera_focal_point=[0, 0, 0],
+        camera_view_up=[0, 0, 1],
+    ):
         self.ren = vtk.vtkRenderer()
+        self.ren.SetBackground(*background_color)
         self.renWin = vtk.vtkRenderWindow()
         self.renWin.AddRenderer(self.ren)
-        self.renWin.SetSize(int(1920 * 0.75), int(1080 * 0.75))
-        self.camera = self.ren.GetActiveCamera()
-        self.camera.SetPosition(2, 2, 2)
-        self.camera.SetFocalPoint(0, 0, 0)
-        self.camera.SetViewUp(0, 0, 1)
+        self.renWin.SetSize(int(window_size[0]), int(window_size[1]))
 
-        # Create a renderwindowinteractor
+        self.camera = self.ren.GetActiveCamera()
+        self.camera.SetPosition(*camera_position)
+        self.camera.SetFocalPoint(*camera_focal_point)
+        self.camera.SetViewUp(*camera_view_up)
+
         self.iren = vtk.vtkRenderWindowInteractor()
         self.iren.SetRenderWindow(self.renWin)
 
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.iren.SetInteractorStyle(style)
 
-        self.draw_grid_floor()
-        if self.params["show_global_link"]:
-            self.draw_link(I4())  # global link
-
-        if q is None:
-            q = [0.0] * self.robot.ndof
-        self.draw_robot(q, self.params["alpha"])
-
-        if self.params["show_link_names"]:
-            for name, Tf in self.link_tf.items():
-                tf = Tf(q)
-                p = tf[:3, 3].toarray()
-
-                text = f"{robot.get_name()}/{name}"
-
-                actor = self.create_text_actor(
-                    text, p, scale=[2 * 0.001, 2 * 0.001, 2 * 0.001]
-                )
-                self.ren.AddActor(actor)
-
-        if self.params["show_links"]:
-            for name, Tf in self.link_tf.items():
-                self.draw_link(Tf(q))
-
-    def init_robot(self, robot):
-        # Setup robot attributes
-        self.robot = robot
-        self.urdf = robot.get_urdf()
-
-        # Setup functions to compute visual origins in global frame
-        q = cs.SX.sym("q", robot.ndof)
-        self.link_tf = {}
-        self.visual_tf = {}
-        for link in self.urdf.links:
-            name = link.name
-
-            link_tf = robot.get_global_link_transform(link.name, q)
-            self.link_tf[name] = cs.Function(f"link_tf_{name}", [q], [link_tf])
-
-            xyz, rpy = robot.get_link_visual_origin(link)
-            visl_tf = rt2tr(rpy2r(rpy), xyz)
-
-            tf = link_tf @ visl_tf
-            self.visual_tf[name] = cs.Function(f"visual_tf_{name}", [q], [tf])
-
-    def _actor_from_stl(self, link, q):
-        geometry = link.visual.geometry
-        filename = geometry.filename
-
-        if not os.path.exists(filename):
-            relpath = self.robot.get_urdf_dirname()
-            if relpath is None:
-                raise RuntimeError(f"Unable to load mesh from filename: {filename}")
-            filename = os.path.join(relpath, filename)
-
-        reader = vtk.vtkSTLReader()
-        reader.SetFileName(filename)
-
-        if geometry.scale is not None:
-            transform = vtk.vtkTransform()
-            transform.Scale(*geometry.scale)
-
-            transformFilter = vtk.vtkTransformPolyDataFilter()
-            transformFilter.SetTransform(transform)
-            transformFilter.SetInputConnection(reader.GetOutputPort())
-
-            # Visualize the object
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputConnection(transformFilter.GetOutputPort())
-
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-
-        else:
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputConnection(reader.GetOutputPort())
-
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-
-        material = link.visual.material
-
-        if isinstance(material.name, str) and material.name in [
-            m.name for m in self.urdf.materials
-        ]:
-            for m in self.urdf.materials:
-                if m.name == material.name:
-                    break
-            if m.color is not None:
-                rgb = m.color.rgba[:3]
-                alpha = m.color.rgba[3]
-
-                actor.GetProperty().SetColor(*rgb)
-                actor.GetProperty().SetOpacity(alpha)
-
-        return actor
-
-    def draw_cylinder(self, radius, height, rgba=None, T=None):
-        cylinder = vtkCylinderSource()
-        cylinder.SetRadius(radius)
-        cylinder.SetHeight(height)
-        cylinder.SetResolution(20)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(cylinder.GetOutputPort())
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        # Transform cube
-        if T is not None:
-            if isinstance(T, cs.DM):
-                tf = T.toarray().flatten().tolist()
-            else:
-                # Assume numpy array
-                tf = T.flatten().tolist()
-
-            transform = vtk.vtkTransform()
-            transform.SetMatrix(tf)
-            actor.SetUserTransform(transform)
-
-        # Set color
-        if rgba is not None:
-            rgb = rgba[:3]
-            alpha = rgba[3]
-
-            actor.GetProperty().SetColor(*rgb)
-            actor.GetProperty().SetOpacity(alpha)
-
-        self.ren.AddActor(actor)
-
-    def draw_sphere(self, radius, rgba=None, position=None):
-        sphere = vtkSphereSource()
-        sphere.SetRadius(radius)
-        sphere.SetThetaResolution(20)
-        sphere.SetPhiResolution(20)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(sphere.GetOutputPort())
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        # Transform sphere
-        if position is not None:
-            transform = vtk.vtkTransform()
-            transform.Translate(position)
-            actor.SetUserTransform(transform)
-
-        # Set color
-        if rgba is not None:
-            rgb = rgba[:3]
-            alpha = rgba[3]
-
-            actor.GetProperty().SetColor(*rgb)
-            actor.GetProperty().SetOpacity(alpha)
-
-        self.ren.AddActor(actor)
-
-    def draw_robot(self, q, alpha):
-        for link in self.urdf.links:
-            if link.visual is None:
-                continue
-
-            geometry = link.visual.geometry
-            tf = self.visual_tf[link.name](q)
-
-            if isinstance(geometry, Mesh):
-                if geometry.filename.lower().endswith(".stl"):
-                    actor = self._actor_from_stl(link, q)
-                else:
-                    raise NotImplementedError(
-                        f"mesh file type for link '{link.name}' is not supported"
-                    )
-
-            elif isinstance(geometry, Sphere):
-                sphere = vtkSphereSource()
-                sphere.SetRadius(geometry.radius)
-                sphere.SetThetaResolution(20)
-                sphere.SetPhiResolution(20)
-
-                mapper = vtk.vtkPolyDataMapper()
-                mapper.SetInputConnection(sphere.GetOutputPort())
-
-                actor = vtk.vtkActor()
-                actor.SetMapper(mapper)
-
-            elif isinstance(geometry, Cylinder):
-                cylinder = vtkCylinderSource()
-                cylinder.SetRadius(geometry.radius)
-                cylinder.SetHeight(geometry.length)
-                cylinder.SetResolution(20)
-
-                mapper = vtk.vtkPolyDataMapper()
-                mapper.SetInputConnection(cylinder.GetOutputPort())
-
-                actor = vtk.vtkActor()
-                actor.SetMapper(mapper)
-
-                tf = tf @ r2t(rotx(0.5 * cs.np.pi))
-
-            else:
-                raise NotImplementedError("link type is not supported")
-
-            transform = vtk.vtkTransform()
-            transform.SetMatrix(tf.toarray().flatten().tolist())
-            actor.SetUserTransform(transform)
-
-            actor.GetProperty().SetOpacity(alpha)
-
-            self.ren.AddActor(actor)
-
-    def create_text_actor(self, text, position, scale=[1, 1, 1], rgb=[0, 0, 0]):
-        # Create a text source to generate the text
-        textSource = vtk.vtkTextSource()
-        textSource.SetText(text)
-        textSource.Update()
-
-        # Create a mapper to map the text source to graphics primitives
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(textSource.GetOutputPort())
-
-        # Create an actor to represent the text
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        # Create a follower to position the text in 3D space
-        follower = vtk.vtkFollower()
-        follower.SetMapper(mapper)
-        follower.SetPosition(*position)
-        follower.SetScale(*scale)
-        # follower.GetProperty().SetColor(*rgb)
-        follower.GetProperty().SetOpacity(0.6)
-        follower.SetCamera(self.camera)
-
-        return follower
-
-    @staticmethod
-    def create_line_actor(start, end):
-        points = vtk.vtkPoints()
-        points.InsertNextPoint(*start)
-        points.InsertNextPoint(*end)
-
-        line = vtk.vtkLine()
-        line.GetPointIds().SetId(0, 0)
-        line.GetPointIds().SetId(0, 1)
-
-        lines = vtk.vtkCellArray()
-        lines.InsertNextCell(line)
-
-        polydata = vtk.vtkPolyData()
-        polydata.SetPoints(points)
-        polydata.SetLines(lines)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(polydata)
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        return actor
-
-    @staticmethod
-    def create_cylinder_actor(start, end, radius):
-        s = cs.np.array(start)
-        e = cs.np.array(end)
-        a = e - s
-        l = cs.np.linalg.norm(a)
-        p = 0.5 * a
-        y = a / l
-
-        temp = cs.np.random.random(3)
-        temp /= cs.np.linalg.norm(temp)
-
-        x = cs.np.cross(y, temp)
-        z = cs.np.cross(x, y)
-        T = cs.np.eye(4)
-        T[:3, 0] = x
-        T[:3, 1] = y
-        T[:3, 2] = z
-        T[:3, 3] = p
-
-        cylinder = vtkCylinderSource()
-        cylinder.SetRadius(radius)
-        cylinder.SetHeight(l)
-        cylinder.SetResolution(20)
-
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(cylinder.GetOutputPort())
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        transform = vtk.vtkTransform()
-        transform.SetMatrix(T.flatten().tolist())
-        actor.SetUserTransform(transform)
-
-        return actor
-
-    def draw_grid_floor(self, ncells=10):
-        assert ncells % 2 == 0, "ncells must be even!"
-        nlines = ncells + 1
-
-        offset = vtk.vtkTransform()
-        offset.Translate(-0.5 * float(ncells), -0.5 * float(ncells), 0)
-
-        for i in range(nlines):
-            actor = self.create_line_actor(
-                [float(i), 0, 0], [float(i), float(ncells), 0]
+        self.actors = []
+
+    # def append_actors(self, *actors):
+    #     for actor in actors:
+    #         if isinstance(actor, list):
+    #             self.actors += actor  # assume actor is a list of actors
+    #         else:
+    #             self.actors.append(actor)  # assume actor is a single actor
+
+    def line(
+        self,
+        start=[0.0, 0.0, 0.0],
+        end=[1.0, 0.0, 0.0],
+        rgb=None,
+        alpha=1.0,
+        linewidth=1.0,
+    ):
+        self.actors.append(line(start, end, rgb, alpha, linewidth))
+
+    def sphere(
+        self,
+        radius=1.0,
+        position=[0.0, 0.0, 0.0],
+        rgb=None,
+        alpha=1.0,
+        theta_resolution=20,
+        phi_resolution=20,
+    ):
+        self.actors.append(
+            sphere(radius, position, rgb, alpha, theta_resolution, phi_resolution)
+        )
+
+    def sphere_traj(
+        self,
+        position_traj,
+        radius=1.0,
+        rgb=None,
+        theta_resolution=20,
+        phi_resolution=20,
+        alpha_spec=None,
+    ):
+        self.actors += sphere_traj(
+            position_traj, radius, rgb, theta_resolution, phi_resolution, alpha_spec
+        )
+
+    def box(
+        self,
+        scale=[1, 1, 1],
+        rgb=None,
+        alpha=1.0,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            box(scale, rgb, alpha, position, orientation, euler_seq, euler_degrees)
+        )
+
+    def cylinder(
+        self,
+        radius=1.0,
+        height=1.0,
+        rgb=None,
+        alpha=1.0,
+        resolution=20,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            cylinder(
+                radius,
+                height,
+                rgb,
+                alpha,
+                resolution,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
             )
-            actor.SetUserTransform(offset)
-            self.ren.AddActor(actor)
+        )
 
-            actor = self.create_line_actor(
-                [0, float(i), 0], [float(ncells), float(i), 0]
+    def cylinder_urdf(
+        self,
+        radius=1.0,
+        height=1.0,
+        rgb=None,
+        alpha=1.0,
+        resolution=20,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            cylinder_urdf(
+                radius,
+                height,
+                rgb,
+                alpha,
+                resolution,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
             )
-            actor.SetUserTransform(offset)
-            self.ren.AddActor(actor)
+        )
 
-    def draw_link(self, T):
-        scale = self.params["link_axis_scale"]
+    def text(
+        self,
+        msg="Hello, world!",
+        position=[0.0, 0.0, 0.0],
+        scale=[1.0, 1.0, 1.0],
+        rgb=None,
+        alpha=1.0,
+    ):
+        self.actors.append(text(self.camera, msg, position, scale, rgb, alpha))
 
-        # Extract data
-        p = T[:3, 3].toarray().flatten()
-        x = T[:3, 0].toarray().flatten()
-        y = T[:3, 1].toarray().flatten()
-        z = T[:3, 2].toarray().flatten()
+    def link(
+        self,
+        T=None,
+        axis_scale=0.1,
+        axis_linewidth=1.0,
+        center_radius=0.01,
+        center_rgb=None,
+        center_alpha=1.0,
+    ):
+        self.actors += link(
+            T, axis_scale, axis_linewidth, center_radius, center_rgb, center_alpha
+        )
 
-        # Draw a sphere to represent link center
-        center = vtkSphereSource()
-        center.SetRadius(self.params["link_center_radius"])
-        center.SetThetaResolution(20)
-        center.SetPhiResolution(20)
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(center.GetOutputPort())
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-        transform = vtk.vtkTransform()
-        transform.Translate(*p.tolist())
-        actor.SetUserTransform(transform)
-        self.ren.AddActor(actor)
+    def grid_floor(
+        self,
+        num_cells=10,
+        rgb=None,
+        alpha=1.0,
+        linewidth=3.0,
+        inner_rgb=None,
+        inner_alpha=None,
+        inner_linewidth=1.0,
+        stride=1.0,
+        euler=[0, 0, 0],
+        euler_degrees=True,
+    ):
+        self.actors += grid_floor(
+            num_cells,
+            rgb,
+            alpha,
+            linewidth,
+            inner_rgb,
+            inner_alpha,
+            inner_linewidth,
+            stride,
+            euler,
+            euler_degrees,
+        )
 
-        # Draw axes
-        actor = self.create_line_actor(p, p + scale * x)
-        actor.GetProperty().SetColor(1, 0, 0)
-        actor.GetProperty().SetLineWidth(5.0)
-        self.ren.AddActor(actor)
+    def obj(
+        self,
+        obj_filename,
+        png_texture_filename=None,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            obj(
+                obj_filename,
+                png_texture_filename,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
 
-        actor = self.create_line_actor(p, p + scale * y)
-        actor.GetProperty().SetColor(0, 1, 0)
-        actor.GetProperty().SetLineWidth(5.0)
-        self.ren.AddActor(actor)
+    def stl(
+        self,
+        filename,
+        scale=None,
+        rgb=None,
+        alpha=1.0,
+        position=[0.0, 0.0, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        euler_seq="xyz",
+        euler_degrees=False,
+    ):
+        self.actors.append(
+            stl(
+                filename,
+                scale,
+                rgb,
+                alpha,
+                position,
+                orientation,
+                euler_seq,
+                euler_degrees,
+            )
+        )
 
-        actor = self.create_line_actor(p, p + scale * z)
-        actor.GetProperty().SetColor(0, 0, 1)
-        actor.GetProperty().SetLineWidth(5.0)
-        self.ren.AddActor(actor)
+    def robot(
+        self,
+        robot_model,
+        q=None,
+        alpha=1.0,
+        show_links=False,
+        link_axis_scale=0.2,
+        link_axis_linewidth=1.0,
+        link_center_radius=0.01,
+        link_center_rgb=None,
+        link_center_alpha=None,
+        display_link_names=False,
+        link_names_scale=[0.005, 0.005, 0.005],
+        link_names_rgb=[1, 1, 1],
+        link_names_alpha=1.0,
+    ):
+        self.actors += robot(
+            robot_model,
+            q,
+            alpha,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            self.camera,
+        )
 
-    def draw_box(self, L, W, H, rgba=None, T=None):
-        # Create a vtkCubeSource
-        cube = vtk.vtkCubeSource()
-        cube.SetBounds(-0.5 * L, 0.5 * L, -0.5 * W, 0.5 * W, -0.5 * H, 0.5 * H)
-
-        # Create a vtkPolyDataMapper
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(cube.GetOutputPort())
-
-        # Create a vtkActor
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        # Transform cube
-        if T is not None:
-            if isinstance(T, cs.DM):
-                tf = T.toarray().flatten().tolist()
-            else:
-                # Assume numpy array
-                tf = T.flatten().tolist()
-
-            transform = vtk.vtkTransform()
-            transform.SetMatrix(tf)
-            actor.SetUserTransform(transform)
-
-        # Set color
-        if rgba is not None:
-            rgb = rgba[:3]
-            alpha = rgba[3]
-
-            actor.GetProperty().SetColor(*rgb)
-            actor.GetProperty().SetOpacity(alpha)
-
-        self.ren.AddActor(actor)
+    def robot_traj(
+        self,
+        robot_model,
+        Q,
+        alpha_spec=None,
+        show_links=False,
+        link_axis_scale=0.2,
+        link_axis_linewidth=1.0,
+        link_center_rgb=1,
+        link_center_alpha=None,
+        link_center_radius=0.01,
+        display_link_names=False,
+        link_names_scale=[0.01, 0.01, 0.01],
+        link_names_rgb=[1, 1, 1],
+        link_names_alpha=1.0,
+    ):
+        self.actors += robot_traj(
+            robot_model,
+            Q,
+            alpha_spec,
+            show_links,
+            link_axis_scale,
+            link_axis_linewidth,
+            link_center_rgb,
+            link_center_alpha,
+            link_center_radius,
+            display_link_names,
+            link_names_scale,
+            link_names_rgb,
+            link_names_alpha,
+            self.camera,
+        )
 
     def start(self):
-        # Enable user interface interactor
+        for actor in self.actors:
+            self.ren.AddActor(actor)
         self.iren.Initialize()
         self.renWin.Render()
         self.iren.Start()

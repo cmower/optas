@@ -583,6 +583,11 @@ class OptimizationBuilder:
         if isinstance(dt, (float, int)):
             dt = dt * cs.DM.ones(n)
 
+        if isinstance(dt, (cs.DM, cs.SX)):
+            dt = cs.vec(dt)
+            if dt.shape[0] == 1:
+                dt = dt * cs.DM.ones(n)
+
         dt = cs.vec(dt).T
         assert (
             dt.shape[1] == n
