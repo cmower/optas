@@ -7,8 +7,15 @@ from casadi import sin, cos, vec
 # additions, of the Spatial Math Toolbox for MATLAB. See the following.
 # https://github.com/petercorke/spatialmath-matlab
 
+from typing import List, Dict, Tuple, Union
 
+## Accepted array types.
+ArrayType = Union[List[float], Tuple[float], cs.np.ndarray, cs.DM, cs.SX]
+
+## The number pi (3.141...).
 pi = cs.np.pi
+
+## The machine epsilon.
 eps = cs.np.finfo(float).eps
 
 
