@@ -837,7 +837,7 @@ class RobotModel(Model):
         """! Get the function which computes the link transform in the global frame.
 
         @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called.
+        @param n Number of joint states to expect when the function is called. Default is 1.
         @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
         """
         return self.make_function("T", link, self.get_global_link_transform, n=n)
@@ -865,7 +865,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called.
+        @param n Number of joint states to expect when the function is called. Default is 1.
         @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
         """
         return self.make_function(
@@ -887,7 +887,7 @@ class RobotModel(Model):
         """! Get the function that computes the global position of a given link.
 
         @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called.
+        @param n Number of joint states to expect when the function is called. Default is 1.
         @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
         """
         return self.make_function("p", link, self.get_global_link_position, n=n)
@@ -912,7 +912,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called.
+        @param n Number of joint states to expect when the function is called. Default is 1.
         @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -931,10 +931,10 @@ class RobotModel(Model):
         return t2r(self.get_global_link_transform(link, q))
 
     def get_global_link_rotation_function(self, link: str, n: int = 1) -> cs.Function:
-        """Get the function that computes a rotation matrix in the global link.
+        """! Get the function that computes a rotation matrix in the global link.
 
         @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called.
+        @param n Number of joint states to expect when the function is called. Default is 1.
         @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function("R", link, self.get_global_link_rotation, n=n)
@@ -953,16 +953,31 @@ class RobotModel(Model):
         """
         return t2r(self.get_link_transform(link, q, base_link))
 
-    def get_link_rotation_function(self, link, base_link, n=1):
-        """Get the function that computes the rotation matrix for a link in a given base frame."""
+    def get_link_rotation_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the rotation matrix for a link in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "R", link, self.get_link_rotation, base_link=base_link, n=n
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_quaternion(self, link, q):
-        """Get a quaternion in the global frame."""
+    def get_global_link_quaternion(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get a quaternion in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Quaternion array.
+        """
 
         # Setup
         assert link in self.urdf.link_map.keys(), "given link does not appear in URDF"
@@ -995,44 +1010,86 @@ class RobotModel(Model):
 
         return quat.getquat()
 
-    def get_global_link_quaternion_function(self, link, n=1):
-        """Get the function that computes a quaternion in the global frame."""
+    def get_global_link_quaternion_function(self, link: str, n: int = 1) -> cs.Function:
+        """! Get the function that computes a quaternion in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         return self.make_function("quat", link, self.get_global_link_quaternion, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_quaternion(self, link, q, base_link):
-        """Get the quaternion defined in a given base frame."""
+    def get_link_quaternion(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get the quaternion defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Quaternion array.
+        """
         quat_L_W = Quaternion.fromvec(self.get_global_link_quaternion(link, q))
         quat_B_W = Quaternion.fromvec(self.get_global_link_quaternion(base_link, q))
         return (quat_L_W * quat_B_W.inv()).getquat()
 
-    def get_link_quaternion_function(self, link, base_link, n=1):
-        """Get the function that computes a quaternion defined in a given base frame."""
+    def get_link_quaternion_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes a quaternion defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         return self.make_function(
             "quat", link, self.get_link_quaternion, n=n, base_link=base_link
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_rpy(self, link, q):
-        """Get the Roll-Pitch-Yaw angles in the global frame."""
+    def get_global_link_rpy(self, link: str, q: ArrayType) -> Union[cs.DM, cs.SX]:
+        """! Get the Roll-Pitch-Yaw angles in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return RPY euler angles in radians.
+        """
         return Quaternion.fromvec(self.get_global_link_quaternion(link, q)).getrpy()
 
     def get_global_link_rpy_function(self, link, n=1):
-        """Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
+        """! Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
         return self.make_function("quat", link, self.get_global_link_rpy, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_rpy(self, link, q, base_link):
-        """Get the the Roll-Pitch-Yaw angles defined in a given base frame."""
+    def get_link_rpy(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get the the Roll-Pitch-Yaw angles defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return RPY euler angles in radians.
+        """
         return Quaternion.fromvec(self.get_link_quaternion(link, q, base_link)).getrpy()
 
-    def get_link_rpy_function(self, link, base_link, n=1):
-        """Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame."""
+    def get_link_rpy_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the RPY angles for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         return self.make_function(
-            "quat", link, self.get_link_rpy, n=n, base_link=base_link
+            "rpy", link, self.get_link_rpy, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_geometric_jacobian")
@@ -1041,8 +1098,15 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_geometric_jacobian(self, link, q):
-        """Compute the geometric Jacobian matrix in the global frame."""
+    def get_global_link_geometric_jacobian(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the geometric Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Geometric Jacobian.
+        """
 
         e = self.get_global_link_position(link, q)
 
@@ -1105,8 +1169,15 @@ class RobotModel(Model):
     def get_global_geometric_jacobian_function(self, link, n=1):
         pass
 
-    def get_global_link_geometric_jacobian_function(self, link, n=1):
-        """Get the function that computes the geometric jacobian in the global frame."""
+    def get_global_link_geometric_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "J", link, self.get_global_link_geometric_jacobian, n=n
         )
@@ -1117,8 +1188,15 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_analytical_jacobian(self, link, q):
-        """Compute the analytical Jacobian matrix in the global frame."""
+    def get_global_link_analytical_jacobian(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the analytical Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Analytic Jacobian.
+        """
         return cs.vertcat(
             self.get_global_link_linear_jacobian(link, q),
             self.get_global_link_angular_analytical_jacobian(link, q),
@@ -1128,8 +1206,15 @@ class RobotModel(Model):
     def get_global_analytical_jacobian_function(self, link):
         pass
 
-    def get_global_link_analytical_jacobian_function(self, link, n=1):
-        """Get the function that computes the analytical jacobian in the global frame."""
+    def get_global_link_analytical_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the analytical jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "J_a",
             link,
@@ -1143,8 +1228,16 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_link_geometric_jacobian(self, link, q, base_link):
-        """Get the geometric jacobian in a given base link."""
+    def get_link_geometric_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get the geometric jacobian in a given base link.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Geometric Jacobian.
+        """
 
         J = self.get_global_link_geometric_jacobian(link, q)
 
@@ -1163,8 +1256,16 @@ class RobotModel(Model):
     def get_geometric_jacobian_function(self, link, base_link, n=1):
         pass
 
-    def get_link_geometric_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the geometric jacobian in a given base frame"""
+    def get_link_geometric_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """Get the function that computes the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "J", link, self.get_link_geometric_jacobian, base_link=base_link, n=n
         )
