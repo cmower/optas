@@ -30,12 +30,13 @@ jobs:
 
       - run: |
           sudo apt install doxygen graphviz -y
-          cd doc/
 
       - run: |
+          cd doc/
           doxygen
 
       - run: |
+          cd doc/html
           git init
           touch .nojekyll
           git add -A
