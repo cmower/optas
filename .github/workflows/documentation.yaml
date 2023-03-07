@@ -16,12 +16,35 @@ on:
     if: github.event.pull_request.merged == true
 
 jobs:
-  deploy:
+
+  docs:
+
     runs-on: ubuntu-latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - uses: DenverCoder1/doxygen-github-pages-action@v1.2.0
+
+      - uses: actions/checkout@v2.3.4
+
+      - run: |
+          sudo apt install doxygen graphviz -y
+          cd doc/
+          doxygen
+
+      - run: |
+          cd html/
+          git init
+          touch .nojekyll
+          git add -A
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m 'deploy'
+
+      - uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
-          folder: doc/html
-          config_file: doc/Doxyfile
+          force: true
+          directory: ./doc/html
