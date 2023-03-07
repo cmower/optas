@@ -15,12 +15,6 @@ on:
     # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#booleans
     if: github.event.pull_request.merged == true
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
