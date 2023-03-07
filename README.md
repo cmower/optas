@@ -6,6 +6,8 @@
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 
+[![Watch the video](https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg)](https://youtu.be/gCMNOenFngU)
+
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
 # Example
