@@ -1,0 +1,56 @@
+name: Build documentation
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+    # Only run the workflow when the pull request is merged
+    # and not when it is closed without merging
+    # To achieve this we can check the pull_request.merged flag
+    # and ensure it is true
+    # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#github-context
+    # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request
+    # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#pull_requestmerged
+    # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#booleans
+    if: github.event.pull_request.merged == true
+
+jobs:
+
+  docs:
+
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+
+      - uses: actions/checkout@v2.3.4
+
+      - uses: actions/setup-python@v2.2.1
+        with:
+          python-versions: 3.9
+
+      - run: |
+          sudo apt install doxygen
+
+      - run: |
+          cd doc/
+          doxygen
+
+      - run: |
+          cd html
+          git init
+          touch .nojekyll
+          git add -A
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m 'deploy'
+
+      - uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          force: true
+          directory: ./doc/html
