@@ -325,7 +325,7 @@ class QuadraticCostUnconstrained(Optimization):
 
         @param decision_variables SXContainer containing decision variables.
         @param parameters SXContainer containing parameters.
-        @param cost_terms SXContainer containing cost terms.
+        @param cost_terms SXContainer containing cost terms (must be quadratic).
         @return Instance of the QuadraticCostUnconstrained class.
         """
         super().__init__(decision_variables, parameters, cost_terms)
@@ -358,7 +358,7 @@ class QuadraticCostLinearConstraints(Optimization):
 
         @param decision_variables SXContainer containing decision variables.
         @param parameters SXContainer containing parameters.
-        @param cost_terms SXContainer containing cost terms.
+        @param cost_terms SXContainer containing cost terms (must be quadratic).
         @param lin_eq_constraints SXContainer containing the linear equality constraints.
         @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
         @return Instance of the QuadraticCostLinearConstraints class.
@@ -370,8 +370,7 @@ class QuadraticCostLinearConstraints(Optimization):
 
 
 class QuadraticCostNonlinearConstraints(Optimization):
-
-    """Nonlinear constrained optimization problem with quadratic cost function.
+    """! Nonlinear constrained optimization problem with quadratic cost function.
 
             min f(x, p) where f(x, p) = x'.P(p).x + x'.q(p)
                  x
@@ -398,6 +397,17 @@ class QuadraticCostNonlinearConstraints(Optimization):
         eq_constraints: SXContainer,  # SXContainer for equality constraints
         ineq_constraints: SXContainer,  # SXContainer for inequality constraints
     ):
+        """! Initializer for the QuadraticCostNonlinearConstraints class.
+
+        @param decision_variables SXContainer containing decision variables.
+        @param parameters SXContainer containing parameters.
+        @param cost_terms SXContainer containing cost terms (must be quadratic).
+        @param lin_eq_constraints SXContainer containing the linear equality constraints.
+        @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
+        @param eq_constraints SXContainer containing the equality constraints.
+        @param ineq_constraints SXContainer containing the inequality constraints.
+        @return Instance of the QuadraticCostNonlinearConstraints class.
+        """
         super().__init__(decision_variables, parameters, cost_terms)
         self.specify_quadratic_cost()
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
@@ -406,7 +416,7 @@ class QuadraticCostNonlinearConstraints(Optimization):
 
 
 class NonlinearCostUnconstrained(Optimization):
-    """Unconstrained optimization problem.
+    """! Unconstrained optimization problem.
 
             min f(x, p)
              x
@@ -415,11 +425,24 @@ class NonlinearCostUnconstrained(Optimization):
 
     """
 
-    pass
+    def __init__(
+        self,
+        decision_variables: SXContainer,
+        parameters: SXContainer,
+        cost_terms: SXContainer,
+    ):
+        """! Initializer for the NonlinearCostUnconstrained class.
+
+        @param decision_variables SXContainer containing decision variables.
+        @param parameters SXContainer containing parameters.
+        @param cost_terms SXContainer containing cost terms.
+        @return Instance of the NonlinearCostUnconstrained class.
+        """
+        super().__init__(decision_variables, parameters, cost_terms)
 
 
 class NonlinearCostLinearConstraints(Optimization):
-    """Linear constrained optimization problem.
+    """! Linear constrained optimization problem.
 
 
             min f(x, p)
@@ -446,27 +469,35 @@ class NonlinearCostLinearConstraints(Optimization):
         lin_eq_constraints: SXContainer,  # SXContainer for linear equality constraints
         lin_ineq_constraints: SXContainer,  # SXContainer for linear inequality constraints
     ):
+        """! Initializer for the NonlinearCostLinearConstraints class.
+
+        @param decision_variables SXContainer containing decision variables.
+        @param parameters SXContainer containing parameters.
+        @param cost_terms SXContainer containing cost terms.
+        @param lin_eq_constraints SXContainer containing the linear equality constraints.
+        @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
+        @return Instance of the NonlinearCostLinearConstraints class.
+        """
         super().__init__(decision_variables, parameters, cost_terms)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_v(ineq=[self.k], eq=[self.a])
 
 
 class NonlinearCostNonlinearConstraints(Optimization):
-    """Nonlinear constrained optimization problem.
+    """! Nonlinear constrained optimization problem.
 
-        min f(x, p)
-         x
+            min f(x, p)
+             x
 
-            subject to
+                subject to
 
-                k(x, p) = M(p).x + c(p) >= 0
-                a(x, p) = A(p).x + b(p) == 0
-                g(x) >= 0, and
-                h(x) == 0
+                    k(x, p) = M(p).x + c(p) >= 0
+                    a(x, p) = A(p).x + b(p) == 0
+                    g(x) >= 0, and
+                    h(x) == 0
 
     The problem is constrained by nonlinear constraints and has a
     nonlinear cost function.
-
     """
 
     def __init__(
@@ -479,6 +510,17 @@ class NonlinearCostNonlinearConstraints(Optimization):
         eq_constraints: SXContainer,  # SXContainer for equality constraints
         ineq_constraints: SXContainer,  # SXContainer for inequality constraints
     ):
+        """! Initializer for the NonlinearCostNonlinearConstraints class.
+
+        @param decision_variables SXContainer containing decision variables.
+        @param parameters SXContainer containing parameters.
+        @param cost_terms SXContainer containing cost terms.
+        @param lin_eq_constraints SXContainer containing the linear equality constraints.
+        @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
+        @param eq_constraints SXContainer containing the equality constraints.
+        @param ineq_constraints SXContainer containing the inequality constraints.
+        @return Instance of the NonlinearCostNonlinearConstraints class.
+        """
         super().__init__(decision_variables, parameters, cost_terms)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
