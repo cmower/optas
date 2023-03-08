@@ -29,13 +29,13 @@ def test_dual_arm():
     assert main(gui=False) == 0
 
 
-def test_example_planar_idk():
-    main = load_main_function("example_planar_idk.py")
+def test_planar_idk():
+    main = load_main_function("planar_idk.py")
     assert main() == 0
 
 
-def test_example_planar_ik():
-    main = load_main_function("example_planar_ik.py")
+def test_planar_ik():
+    main = load_main_function("planar_ik.py")
     assert main() == 0
 
 
