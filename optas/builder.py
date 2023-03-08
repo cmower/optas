@@ -129,25 +129,16 @@ class OptimizationBuilder:
         @param name Name of the model.
         @param t Index of the desired state.
         @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
         @return The state vector where dim is the model dimension.
 
         """
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
-    def get_model_states(self, name, time_deriv=0):
-        """Get the full state trajectory for a given model.
+    def get_model_states(self, name: str, time_deriv: int=0) -> CasADiArrayType:
+        """! Get the full state trajectory for a given model.
 
-        Syntax
-        ------
-
-        states = builder.get_model_states(name, time_deriv=0)
-
-        Parameters
-        ----------
-
-        name (string)
+        @param name (string)
             Name of the model.
 
         time_deriv (int)
