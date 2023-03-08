@@ -500,35 +500,32 @@ class OSQPSolver(Solver):
 
 
 class CVXOPTSolver(Solver):
+    """! CVXOPT solver interface."""
 
-    """CVXOPT solver interface."""
+    def setup(self, solver_settings: Dict = {}):
+        """! Setup the cvxopt solver interface.
 
-    def setup(self, solver_settings={}):
-        """Setup the cvxopt solver interface.
-
-        Parameters
-        ----------
-
-        solver_settings : Dict
-            Settings passed to the CVXOPT solver.
-
-        Returns
-        -------
-
-        solver : CVXOPTSolver
-            The instance of the solve (i.e. self).
-
+        @param solver_settings Settings passed to the CVXOPT solver.
+        @return The instance of the solve (i.e. self).
         """
         assert self.opt_type in QP_COST, "CVXOPT cannot solve this problem"
+
+        ## Input to the solver
         self._solver_input = solver_settings
+
         self._reset_parameters()
         return self
 
-    def reset_parameters(self, p):
+    def reset_parameters(self, p: Dict[str, ArrayType]):
+        """! Reset the parameters.
+
+        @param p The values for the parameters.
+        """
         super().reset_parameters(p)
         self._reset_parameters()
 
     def _reset_parameters(self):
+        """! Internal method to reset parameters."""
         self._solver_input["P"] = cvxopt.matrix(2.0 * self.opt.P(self.p).toarray())
         self._solver_input["q"] = cvxopt.matrix(self.opt.q(self.p).toarray().flatten())
         if self.opt_type in CONSTRAINED_OPT:
@@ -541,11 +538,19 @@ class CVXOPTSolver(Solver):
                 self._solver_input["A"] = cvxopt.matrix(self.opt.A(self.p).toarray())
                 self._solver_input["b"] = cvxopt.matrix(-self.opt.b(self.p).toarray())
 
-    def _solve(self):
+    def _solve(self) -> CasADiArrayType:
+        """! Solve the optimization problem using CVXOPT.
+
+        @return The solution of the optimization problem.
+        """
         self._solution = cvxopt.solvers.qp(**self._solver_input)
         return self._solution["x"]
 
     def stats(self):
+        """! Statistics relating to the previous call to solve.
+
+        @return Dictionary containing the statistics.
+        """
         return self._solution
 
     def did_solve(self):
@@ -571,6 +576,7 @@ class ScipyMinimizeSolver(Solver):
 
     """Scipy solver (scipy.optimize.minimize) interface."""
 
+    ## Methods that require the Jacobian of the objective
     methods_req_jac = {
         "CG",
         "BFGS",
@@ -585,6 +591,7 @@ class ScipyMinimizeSolver(Solver):
         "trust-constr",
     }
 
+    ## Methods that require the Hessian of the objective
     methods_req_hess = {
         "Newton-CG",
         "dogleg",
@@ -594,32 +601,21 @@ class ScipyMinimizeSolver(Solver):
         "trust-constr",
     }
 
+    ## Methods that handle constrained optimization problems.
     methods_handle_constraints = {"COBYLA", "SLSQP", "trust-constr"}
 
-    def setup(self, method="SLSQP", tol=None, options=None):
+    def setup(
+        self,
+        method: str = "SLSQP",
+        tol: Union[None, float] = None,
+        options: Union[None, Dict] = None,
+    ):
         """Setup the Scipy solver.
 
-        Parameters
-        ----------
-
-        method : str
-            Type of solver.
-
-        tol : Optional[float] (default is None)
-            Tolerance for termination. When tol is specified, the
-            selected minimization algorithm sets some relevant
-            solver-specific tolerance(s) equal to tol. For detailed
-            control, use solver-specific options.
-
-        options : Optional[Dict]
-            A dictionary of solver options.
-
-        Returns
-        -------
-
-        solver : ScipyMinimizeSolver
-            The instance of the solve (i.e. self).
-
+        @param method Type of solver. Default is "SLSQP".
+        @param tol Tolerance for termination. When tol is specified, the selected minimization algorithm sets some relevant solver-specific tolerance(s) equal to tol. For detailed control, use solver-specific options.
+        @param options A dictionary of solver options.
+        @return The instance of the solve (i.e. self).
         """
 
         # Input check
@@ -631,10 +627,16 @@ class ScipyMinimizeSolver(Solver):
             )
 
         # Setup class attributes
+
+        ## Container for the statistics.
         self._stats = None
+
+        ## Method name.
         self.method = method
 
         # Setup minimize input parameters
+
+        ## Input to the minimize method
         self.minimize_input = {
             "fun": self.f,
             "method": method,
@@ -653,6 +655,7 @@ class ScipyMinimizeSolver(Solver):
         if method in ScipyMinimizeSolver.methods_req_hess:
             self.minimize_input["hess"] = self.hess
 
+        ## Constraints definition passed to the minimize method.
         self._constraints = {}
         if method in ScipyMinimizeSolver.methods_handle_constraints:
             if method != "trust-constr":
@@ -698,44 +701,63 @@ class ScipyMinimizeSolver(Solver):
 
         return self
 
-    def f(self, x):
+    def f(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return float(self.opt.f(x, self.p).toarray().flatten()[0])
 
-    def jac(self, x):
+    def jac(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.df(x, self.p).toarray().flatten()
 
-    def hess(self, x):
+    def hess(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.ddf(x, self.p).toarray()
 
-    def v(self, x):
+    def v(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.v(x, self.p).toarray().flatten()
 
-    def dv(self, x):
+    def dv(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.dv(x, self.p).toarray()
 
-    def g(self, x):
+    def g(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.g(x, self.p).toarray().flatten()
 
-    def dg(self, x):
+    def dg(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.dg(x, self.p).toarray()
 
-    def ddg(self, x):
+    def ddg(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.ddg(x, self.p).toarray()
 
-    def h(self, x):
+    def h(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.h(x, self.p).toarray().flatten()
 
-    def dh(self, x):
+    def dh(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""        
         return self.opt.dh(x, self.p).toarray()
 
-    def ddh(self, x):
+    def ddh(self, x: cs.np.ndarray) -> cs.np.ndarray:
+        """! Internal method."""
         return self.opt.ddh(x, self.p).toarray()
 
-    def reset_initial_seed(self, x0):
+    def reset_initial_seed(self, x0) -> None:
+        """! Reset initial seed for the optimization problem.
+
+        @param x0 The initial seed.
+        """
         super().reset_initial_seed(x0)
         self.minimize_input["x0"] = self.x0.toarray().flatten()
 
-    def reset_parameters(self, p):
+    def reset_parameters(self, p: Dict[str, ArrayType]):
+        """! Reset the parameters.
+
+        @param p The values for the parameters.
+        """
         super().reset_parameters(p)
         if self.method == "trust-constr":
             if self.opt.nk:
@@ -749,11 +771,19 @@ class ScipyMinimizeSolver(Solver):
         if self._constraints:
             self.minimize_input["constraints"] = list(self._constraints.values())
 
-    def _solve(self):
+    def _solve(self) -> CasADiArrayType:
+        """! Solve the optimization problem using Scipy.
+
+        @return The solution of the optimization problem.
+        """
         self._solution = minimize(**self.minimize_input)
         return self._solution.x
 
     def stats(self):
+        """! Statistics relating to the previous call to solve.
+
+        @return Dictionary containing the statistics.
+        """
         return self._solution
 
     def did_solve(self):
