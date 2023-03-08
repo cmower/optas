@@ -233,7 +233,7 @@ class OptimizationBuilder:
         return cs.sum1(self._cost_terms.vec())
 
     def is_cost_quadratic(self) -> cs.DM:
-        """True DM(1) when cost function is quadratic in the decision variables, False DM(0) otherwise.
+        """! True DM(1) when cost function is quadratic in the decision variables, False DM(0) otherwise.
 
         @return Truth value if the cost function is quadratic or not.
         """
