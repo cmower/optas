@@ -72,6 +72,9 @@ class Optimization:
         """
         # Set class attributes
 
+        ## A list of the task and robot models (set during build method in the OptimizationBuilder class)
+        self.models = None
+
         ## SXContainer containing decision variables.
         self.decision_variables = decision_variables
 
@@ -93,11 +96,77 @@ class Optimization:
         ## SXContainer containing inequality constraints.
         self.ineq_constraints = {}
 
-        ## A list of the task and robot models (set during build method in the OptimizationBuilder class)
-        self.models = None
+        ## CasADi function that evaluates the P term in the cost function (note, this only applies to problems with a quadratic cost function).
+        self.P = None
+
+        ## CasADi function that evaluates the q term in the cost function (note, this only applies to problems with a quadratic cost function).
+        self.q = None
+
+        ## CasADi function that evaluates the linear equality constraints.
+        self.k = None
+
+        ## Number of linear inequality constraints.
+        self.nk = 0
+
+        ## Lower bound for the linear inequality constraints (i.e. zeros).
+        self.lbk = None
+
+        ## Upper bound for the linear inequality constraints (i.e. inf).
+        self.ubk = None
+
+        ## CasADi function that evaluates the M term in the linear inequality constraints.
+        self.M = None
+
+        ## CasADi function that evaluates the c term in the linear inequality constraints.
+        self.c = None
+
+        ## CasADi function that evaluates the linear equality constraints.
+        self.a = None
+
+        ## Number of linear equality constraints.
+        self.na = 0
+
+        ## Lower bound for the linear equality constraints (i.e. zeros).
+        self.lba = None
+
+        ## Upper bound for the linear equality constraints (i.e. zeros).
+        self.uba = None
+
+        ## CasADi function that evaluates the A term in the linear equality constraints.
+        self.A = None
+
+        ## CasADi function that evaluates the b term in the linear equality constraints.
+        self.b = None
+
+        ## CasADi function that evaluates the inequality constraints
+        self.g = None
+
+        ## Number of inequality constraints.
+        self.ng = 0
+
+        ## Lower bound for the inequality constraints (i.e. zeros).
+        self.lbg = None
+
+        ## Upper bound for the inequality constraints (i.e. inf).
+        self.ubg = None
+
+        ## CasADi function that evaluates the equality constraints
+        self.h = None
+
+        ## Number of equality constraints.
+        self.nh = 0
+
+        ## Lower bound for the equality constraints (i.e. zeros).
+        self.lbh = None
+
+        ## Upper bound for the equality constraints (i.e. zeros).
+        self.ubh = None
 
         ## CasADi function that evaluates the constraints as a verticle column (set when specify_v is called), see vertcon.
         self.v = None
+
+        ## Number of vectorized constraints (see vertcon).
+        self.nv = 0
 
         ## Lower bound for the verticle constraints v (i.e. zeros).
         self.lbv = None
@@ -140,21 +209,6 @@ class Optimization:
         ## Number of parameters.
         self.np = parameters.numel()
 
-        ## Number of linear inequality constraints.
-        self.nk = 0
-
-        ## Number of linear equality constraints.
-        self.na = 0
-
-        ## Number of inequality constraints.
-        self.ng = 0
-
-        ## Number of equality constraints.
-        self.nh = 0
-
-        ## Number of vectorized constraints (see vertcon).
-        self.nv = 0
-
     def set_models(self, models: List[Model]) -> None:
         """! Specify the models in the optimization problem.
 
@@ -171,7 +225,11 @@ class Optimization:
     def specify_linear_constraints(
         self, lin_ineq_constraints, lin_eq_constraints
     ) -> None:
-        """! Setup the constraints k(x, p) = M(p).x + c(p) >= 0, and a(x, p) = A(p).x + b(p) == 0."""
+        """! Setup the constraints k(x, p) = M(p).x + c(p) >= 0, and a(x, p) = A(p).x + b(p) == 0.
+
+        @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
+        @param lin_eq_constraints SXContainer containing the linear equality constraints.
+        """
 
         self.lin_ineq_constraints = lin_ineq_constraints
         self.lin_eq_constraints = lin_eq_constraints
@@ -201,8 +259,14 @@ class Optimization:
         )
         self.b = cs.Function("b", [self.p], [self.a(x_zero, self.p)])
 
-    def specify_nonlinear_constraints(self, ineq_constraints, eq_constraints) -> None:
-        """! Setup the constraints g(x, p) >= 0, and h(x, p) == 0."""
+    def specify_nonlinear_constraints(
+        self, ineq_constraints: SXContainer, eq_constraints: SXContainer
+    ) -> None:
+        """! Setup the constraints g(x, p) >= 0, and h(x, p) == 0.
+
+        @param ineq_constraints SXContainer containing the inequality constraints.
+        @param eq_constraints SXContainer containing the equality constraints.
+        """
 
         self.ineq_constraints = ineq_constraints
         self.eq_constraints = eq_constraints
@@ -228,7 +292,7 @@ class Optimization:
     def specify_v(
         self, ineq: List[cs.Function] = [], eq: List[cs.Function] = []
     ) -> None:
-        """! Specify the vertical constraints vector v.
+        """! Specify the vertical constraints vector v. This is only called for optimization problems that have constraints.
 
         @param ineq List of CasADi functions that evalaute the (non)linear inequality constraints.
         @param ineq List of CasADi functions that evalaute the (non)linear equality constraints.
