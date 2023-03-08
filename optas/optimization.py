@@ -2,7 +2,7 @@ import casadi as cs
 from .models import Model
 from .sx_container import SXContainer
 from .spatialmath import CasADiArrayType
-from typing import List
+from typing import List, Tuple
 
 
 def derive_jacobian_and_hessian_functions(
