@@ -29,7 +29,7 @@ def vertcon(
     p: CasADiArrayType,
     ineq: List[cs.Function] = [],
     eq: List[cs.Function] = [],
-):
+) -> cs.Function:
     """! Align inequality and equality constraints vertically.
 
     Given an inequality constraint ineq(x, p) and equality constraint eq(x, p). The method that is returned evaluates the following array.

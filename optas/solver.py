@@ -17,6 +17,8 @@ from .optimization import (
     NonlinearCostNonlinearConstraints,
 )
 from .models import RobotModel
+from .spatialmath import ArrayType, CasADiArrayType
+from typing import Dict, Tuple
 
 ## Optimization problem types with quadratic cost.
 QP_COST = {
@@ -77,46 +79,45 @@ class Solver(ABC):
 
     @property
     def opt_type(self) -> type:
-        """Optimization type."""
+        """! Optimization type.
+
+        @return The type of the optimization problem.
+        """
         return type(self.opt)
 
     @abstractmethod
     def setup(self, *args, **kwargs):
-        """Setup solver, note this method must return self."""
+        """! Setup solver, note this method must return self. This is an abstract method."""
         pass
 
-    def reset_initial_seed(self, x0):
-        """Reset initial seed for the optimization problem.
+    def reset_initial_seed(self, x0: Dict[str, ArrayType]) -> None:
+        """! Reset initial seed for the optimization problem.
 
-        Parameters
-        ----------
-
-        x0 : Dict[str, ArrayLike]
-            The initial seed.
-
+        @param x0 The initial seed.
         """
         self.x0 = self.opt.decision_variables.dict2vec(x0)
 
-    def reset_parameters(self, p):
-        """Reset the parameters for the optimization problem.
+    def reset_parameters(self, p: Dict[str, ArrayType]) -> None:
+        """! Reset the parameters for the optimization problem.
 
-        Parameters
-        ----------
-
-        p : Union[Dict[str, ArrayLike], ArrayLike]
-            Specifies the parameters.
-
+        @param p Specifies the parameters.
         """
         self.p = self.opt.parameters.dict2vec(p)
         self._p_dict = self.opt.parameters.vec2dict(self.p)
 
     @abstractmethod
-    def _solve(self):
-        """Solve the optimization problem and return the optimal decision variables as an array."""
+    def _solve(self) -> CasADiArrayType:
+        """! Solve the optimization problem and return the optimal decision variables as an array. This is an abstract method.
+
+        @return The solution from the solver.
+        """
         pass
 
-    def solve(self):
-        """Solve the optimization problem."""
+    def solve(self) -> Dict:
+        """! Solve the optimization problem.
+
+        @return A dictionary containing the solution.
+        """
         solution = self.opt.decision_variables.vec2dict(self._solve())
 
         if self._error_on_fail and (not self.did_solve()):
@@ -147,10 +148,21 @@ class Solver(ABC):
 
     @abstractmethod
     def stats(self):
-        """Return stats from solver. The return type is specifc to the solver used."""
+        """! Return stats from solver. The return type is specifc to the solver used. This is an abstract method.
+
+        @return The statistics returned by the solver. This is specified to the solver used.
+        """
         pass
 
-    def violated_constraints(self, x, p):
+    def violated_constraints(
+        self, x: Dict[str, ArrayType], p: Dict[str, ArrayType]
+    ) -> Tuple:
+        """! Indicate the violated constraints.
+
+        @param x The values for the decision variables.
+        @param p The values for the parameters.
+        @return Several lists that contain information regarding which constraints are violated.
+        """
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
 
@@ -215,32 +227,57 @@ class Solver(ABC):
         )
 
     @staticmethod
-    def interpolate(traj, T, **interp_args):
-        """Interpolate a trajectory where T is the time duration of the trajectory."""
+    def interpolate(traj: cs.DM, T: float, **interp_args) -> interp1d:
+        """! Interpolate a trajectory
+
+        @param traj The trajectory to be interpolated where the columns correspond to the states over time.
+        @param T The time duration of the trajectory.
+        @return An interpolated function.
+        """
         assert isinstance(
-            traj, cs.casadi.DM
+            traj, cs.DM
         ), f"traj is incorrect type, got '{type(traj)}', expected casadi.DM'"
         t = np.linspace(0, T, traj.shape[1])
         return interp1d(t, traj.toarray(), **interp_args)
 
     @abstractmethod
-    def did_solve(self):
-        """Returns true when the solver solved the previous problem, false otherwise."""
+    def did_solve(self) -> bool:
+        """! Returns true when the solver solved the previous problem, false otherwise. This is an abstract method.
+
+        @return Result of whether the solver succeeded or not.
+        """
         pass
 
     @abstractmethod
-    def number_of_iterations(self):
-        """Returns the number of iterations required to solve the problem."""
+    def number_of_iterations(self) -> int:
+        """! Returns the number of iterations required to solve the problem. This is an abstract method.
+
+        @return Number of iterations.
+        """
         pass
 
-    def evaluate_cost(self, x, p):
-        """Evaluates the cost function for given decision variables x and parameters p."""
+    def evaluate_cost(
+        self, x: Dict[str, ArrayType], p: Dict[str, ArrayType]
+    ) -> CasADiArrayType:
+        """! Evaluates the cost function for given decision variables x and parameters p.
+
+        @param x The values for the decision variables.
+        @param p The values for the parameters.
+        @return The cost that results from x and p.
+        """
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
         return self.opt.f(x, p)
 
-    def evaluate_cost_terms(self, x, p):
-        """Evaluates each cost term for given decision variables and parameters."""
+    def evaluate_cost_terms(
+        self, x: Dict[str, ArrayType], p: Dict[str, ArrayType]
+    ) -> List:
+        """! Evaluates each cost term for given decision variables and parameters.
+
+        @param x The values for the decision variables.
+        @param p The values for the parameters.
+        @return List corresponding to each cost term evalauted at x, p.
+        """
 
         x = self.opt.decision_variables.dict2vec(x)
         p = self.opt.parameters.dict2vec(p)
@@ -272,13 +309,23 @@ class Solver(ABC):
 
 
 class CasADiSolver(Solver):
+    """! This is a base class for CasADi solver interfaces."""
 
-    """This is a base class for CasADi solver interfaces."""
-
+    ## Possible NLP solvers.
     nlp_solvers = {"ipopt", "knitro", "snopt", "worhp", "scpgen", "sqpmethod"}
+
+    ## Possible QP solvers.
     qp_solvers = {"cplex", "gurobi", "ooqp", "qpoases", "sqic", "nlp"}
 
-    def setup(self, solver_name, solver_options={}):
+    def setup(self, solver_name: str, solver_options: Dict = {}):
+        """! Setup the optimization solver.
+
+        @param solver_name The name of the solver to be used.
+        @param solver_options Solver options passed to the solver. For details, see
+            - https://casadi.sourceforge.net/v3.0.0/api/html/d9/d37/group__qpsol.html, and
+            - https://casadi.sourceforge.net/v2.0.0/api/html/d6/d07/classcasadi_1_1NlpSolver.html
+        @return An instance of the CasADiSovler class.
+        """
         # Setup problem
         x = self.opt.decision_variables.vec()
         p = self.opt.parameters.vec()
@@ -290,7 +337,11 @@ class CasADiSolver(Solver):
         }
 
         # Setup constraints
+
+        ## Lower bound on constraints.
         self._lbg = None
+
+        ## Upper bound on constraints
         self._ubg = None
 
         if self.opt_type in CONSTRAINED_OPT:
@@ -311,11 +362,17 @@ class CasADiSolver(Solver):
             solver_options["discrete"] = self.opt.decision_variables.discrete()
 
         # Initialize solver
+
+        ## Instance of the CasADi solver.
         self._solver = sol("solver", solver_name, problem, solver_options)
 
         return self
 
-    def _solve(self):
+    def _solve(self) -> CasADiArrayType:
+        """! Solve the optimization problem using the CasADi interface.
+
+        @return Solution to the problem.
+        """
         solver_input = {"x0": self.x0, "p": self.p}
         if self.opt_type in CONSTRAINED_OPT:
             solver_input["lbg"] = self._lbg
@@ -325,13 +382,25 @@ class CasADiSolver(Solver):
         self._stats["solution"] = self._solution
         return self._solution["x"]
 
-    def stats(self):
+    def stats(self) -> Dict:
+        """! Statistics relating to the previous call to solve.
+
+        @return Dictionary containing the statistics.
+        """
         return self._stats
 
-    def did_solve(self):
+    def did_solve(self) -> bool:
+        """! True when the solver succeeded, False otherwise.
+
+        @return Boolean indicating success of solver.
+        """
         return self._stats["success"]
 
-    def number_of_iterations(self):
+    def number_of_iterations(self) -> int:
+        """! Number of iterations it took the solver to converge.
+
+        @return Number of iterations.
+        """
         return self._stats["iter_count"]
 
 
@@ -343,26 +412,15 @@ class OSQPSolver(Solver):
 
     """OSQP solver interface."""
 
+    ## OSQP constant to check if the solver succeeded.
     OSQP_SOLVED = osqp.constant("OSQP_SOLVED")
 
     def setup(self, use_warm_start, settings={}):
-        """Setup solver.
+        """! Setup solver.
 
-        Parameters
-        ----------
-
-        use_warm_start : bool (default is True)
-            When true, the initial seed x0 is used as a warm start.
-
-        settings : Dict
-            Settings that are passed to OSQP.
-
-        Returns
-        -------
-
-        solver : OSQPSolver
-            The instance of the solve (i.e. self).
-
+        @param use_warm_start When true, the initial seed x0 is used as a warm start. Default is True.
+        @param settings Settings that are passed to OSQP. Default is {}.
+        @return The instance of the solve (i.e. self).
         """
         assert self.opt_type in QP_COST, "OSQP cannot solve this type of problem"
         self.use_warm_start = use_warm_start
@@ -372,11 +430,16 @@ class OSQPSolver(Solver):
         self._reset_parameters()
         return self
 
-    def reset_parameters(self, p):
+    def reset_parameters(self, p: Dict[str, ArrayType]) -> None:
+        """! Reset the parameters.
+
+        @param p The values for the parameters.
+        """
         super().reset_parameters(p)
         self._reset_parameters()
 
-    def _reset_parameters(self):
+    def _reset_parameters(self) -> None:
+        """! Internal method to reset parameters."""
         self._setup_input = {
             "P": csc_matrix(2.0 * self.opt.P(self.p).toarray()),
             "q": self.opt.q(self.p).toarray().flatten(),
@@ -391,7 +454,12 @@ class OSQPSolver(Solver):
                 cs.vertcat(-self.opt.c(self.p), -b, b).toarray().flatten()
             )
 
-    def _solve(self):
+    def _solve(self) -> CasADiArrayType:
+        """! Solve the optimization problem using OSQP.
+
+        @return The solution of the optimization problem.
+        """
+
         # Setup solver
         self.m = osqp.OSQP()
         self.m.setup(**self._setup_input)
@@ -406,12 +474,24 @@ class OSQPSolver(Solver):
         return self._solution.x
 
     def stats(self):
+        """! Statistics for the solution given by OSQP.
+
+        @return Statistics returned by OSQP. See details at https://osqp.org/.
+        """
         return self._solution
 
-    def did_solve(self):
+    def did_solve(self) -> bool:
+        """! Returns True when the problem was solved.
+
+        @return Boolean indicating if the solver converged.
+        """
         return self._solution.info.status == self.OSQP_SOLVED
 
-    def number_of_iterations(self):
+    def number_of_iterations(self) -> int:
+        """! Number of iterations it took the solver to converge.
+
+        @return Number of iterations.
+        """
         return self._solution.info.iter
 
 
@@ -469,9 +549,17 @@ class CVXOPTSolver(Solver):
         return self._solution
 
     def did_solve(self):
+        """! Returns True when the problem was solved.
+
+        @return Boolean indicating if the solver converged.
+        """
         return self._solution["status"] == "optimal"
 
     def number_of_iterations(self):
+        """! Number of iterations it took the solver to converge.
+
+        @return Number of iterations.
+        """
         return self._solution["iterations"]
 
 
@@ -669,7 +757,15 @@ class ScipyMinimizeSolver(Solver):
         return self._solution
 
     def did_solve(self):
+        """! Returns True when the problem was solved.
+
+        @return Boolean indicating if the solver converged.
+        """
         return self._solution.success
 
     def number_of_iterations(self):
+        """! Number of iterations it took the solver to converge.
+
+        @return Number of iterations.
+        """
         return self._solution.nit
