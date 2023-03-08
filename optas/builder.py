@@ -451,7 +451,7 @@ class OptimizationBuilder:
     def fix_configuration(
         self, name: str, config: CasADiArrayType = None, time_deriv: int = 0, t: int = 0
     ) -> None:
-        """Fix configuration.
+        """! Fix configuration.
 
         @param name Name of model.
         @param config The configuration. When None is passed then it is considered to be zero.
