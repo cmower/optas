@@ -185,3 +185,9 @@ This work has received funding from the European Union’s Horizon 2020 research
 <p align="center">
   <img src="doc/image/eu.png" width="180" align="left">
 </p>
+
+# Contributing
+
+We welcome contributions from the community.
+If you come across any issues or inacuracies in the the documentation, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
+If you would like to contribute any new features, please [fork the repository](https://github.com/cmower/optas/fork), and submit a pull request.
