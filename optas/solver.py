@@ -77,6 +77,9 @@ class Solver(ABC):
         ## When True, after solve() is called, if the solver did not converge then a RuntimeError is thrown.
         self._error_on_fail = error_on_fail
 
+        ## Solution container
+        self._solution = None
+
     @property
     def opt_type(self) -> type:
         """! Optimization type.
