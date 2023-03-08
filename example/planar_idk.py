@@ -27,12 +27,12 @@ def main():
     q = builder.add_parameter("q", robot.ndof)
 
     # Forward Differential Kinematics
-    J = robot.get_global_linear_jacobian_function(link_ee)
+    J = robot.get_global_link_linear_jacobian_function(link_ee)
     quat = robot.get_global_link_quaternion_function(link_ee)
     # End-effector orientation
     phi = lambda q: 2.0 * optas.atan2(quat(q)[2], quat(q)[3])
     # Jacobian of the end-effector orientation
-    J_phi = robot.get_global_angular_geometric_jacobian_function(link=link_ee)
+    J_phi = robot.get_global_link_angular_geometric_jacobian_function(link=link_ee)
 
     q_t = [2.39, -2.55, -0.46]
     dx = [0.01, 0.0]  # target end-effector displacement/velocity
