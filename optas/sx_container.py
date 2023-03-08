@@ -7,7 +7,11 @@ from typing import Union, List, Dict
 
 from .spatialmath import ArrayType
 
+
+## SX type: https://web.casadi.org/docs/#document-symbolic
 SX = cs.casadi.SX
+
+## DM type: https://web.casadi.org/docs/#dm
 DM = cs.casadi.DM
 
 
