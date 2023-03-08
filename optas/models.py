@@ -791,7 +791,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_transform(self, link: str, q: ArrayType) -> Union[cs.DM, cs.SX]:
+    def get_global_link_transform(self, link: str, q: ArrayType) -> CasADiType:
         """! Get the link transform in the global frame for a given joint state q.
 
         @param link Name of the end-effector link.
@@ -846,7 +846,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_transform(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the link transform in a given base frame.
 
         @param link Name of the end-effector link.
@@ -860,7 +860,7 @@ class RobotModel(Model):
 
     def get_link_transform_function(
         self, link: str, base_link: str, n: int = 1
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the function that computes the transform in a given base frame.
 
         @param link Name of the end-effector link.
@@ -874,7 +874,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_position(self, link: str, q: ArrayType) -> Union[cs.DM, cs.SX]:
+    def get_global_link_position(self, link: str, q: ArrayType) -> CasADiType:
         """! Get the link position in the global frame for a given joint state q.
 
         @param link Name of the end-effector link.
@@ -896,7 +896,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_position(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the link position in a given base frame.
 
         @param link Name of the end-effector link.
@@ -921,7 +921,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_rotation(self, link: str, q: ArrayType) -> Union[cs.DM, cs.SX]:
+    def get_global_link_rotation(self, link: str, q: ArrayType) -> CasADiType:
         """! Get the link rotation in the global frame for a given joint state q.
 
         @param link Name of the end-effector link.
@@ -943,7 +943,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_rotation(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the rotation matrix for a link in a given base frame.
 
         @param link Name of the end-effector link.
@@ -971,7 +971,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_quaternion(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get a quaternion in the global frame.
 
         @param link Name of the end-effector link.
@@ -1023,7 +1023,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_quaternion(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the quaternion defined in a given base frame.
 
         @param link Name of the end-effector link.
@@ -1051,7 +1051,7 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_rpy(self, link: str, q: ArrayType) -> Union[cs.DM, cs.SX]:
+    def get_global_link_rpy(self, link: str, q: ArrayType) -> CasADiType:
         """! Get the Roll-Pitch-Yaw angles in the global frame.
 
         @param link Name of the end-effector link.
@@ -1068,7 +1068,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_rpy(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the the Roll-Pitch-Yaw angles defined in a given base frame.
 
         @param link Name of the end-effector link.
@@ -1101,7 +1101,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_geometric_jacobian(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the geometric Jacobian matrix in the global frame.
 
         @param link Name of the end-effector link.
@@ -1193,7 +1193,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_analytical_jacobian(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the analytical Jacobian matrix in the global frame.
 
         @param link Name of the end-effector link.
@@ -1235,7 +1235,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_geometric_jacobian(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the geometric jacobian in a given base link.
 
         @param link Name of the end-effector link.
@@ -1285,7 +1285,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_analytical_jacobian(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the analytical Jacobian matrix in a given base link.
 
         @param link Name of the end-effector link.
@@ -1326,7 +1326,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_linear_jacobian(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the linear part of the geometric jacobian in the global frame.
 
         @param link Name of the end-effector link.
@@ -1361,7 +1361,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_linear_jacobian(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the linear part of the geometric jacobian in a given base frame.
 
         @param link Name of the end-effector link.
@@ -1400,7 +1400,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_angular_geometric_jacobian(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the angular part of the geometric jacobian in the global frame.
 
         @param link Name of the end-effector link.
@@ -1438,7 +1438,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_angular_analytical_jacobian(
         self, link: str, q: ArrayType
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the angular part of the analytical Jacobian matrix in the global frame.
 
         @param link Name of the end-effector link.
@@ -1477,7 +1477,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_angular_geometric_jacobian(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Get the angular part of the geometric jacobian in a given base frame.
 
         @param link Name of the end-effector link.
@@ -1520,7 +1520,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_angular_analytical_jacobian(
         self, link: str, q: ArrayType, base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the angular part of the analytical Jacobian matrix in a given base frame.
 
         @param link Name of the end-effector link.
@@ -1566,7 +1566,7 @@ class RobotModel(Model):
     @listify_output
     def get_link_axis(
         self, link: str, q: ArrayType, axis: Union[str, ArrayType], base_link: str
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis).
 
         @param link Name of the end-effector link.
@@ -1620,7 +1620,7 @@ class RobotModel(Model):
     @listify_output
     def get_global_link_axis(
         self, link: str, q: ArrayType, axis: Union[str, ArrayType]
-    ) -> Union[cs.DM, cs.SX]:
+    ) -> CasADiType:
         """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis) in the global frame.
 
         @param link Name of the end-effector link.
