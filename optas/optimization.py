@@ -96,24 +96,37 @@ class Optimization:
         ## A list of the task and robot models (set during build method in the OptimizationBuilder class)
         self.models = None
 
+        ## CasADi function that evaluates the constraints as a verticle column (set when specify_v is called), see vertcon.
+        self.v = None
+
+        ## Lower bound for the verticle constraints v (i.e. zeros).
+        self.lbv = None
+
+        ## Upper bound for the verticle constraints v (i.e. inf).
+        self.ubv = None
+
+        ## CasADi function that evaluates the Jacobian of the constraints v (set when specify_v is called).
+        self.dv = None
+
+        ## CasADi function that evaluates the Hessian of the constraints v (set when specify_v is called).
+        self.ddv = None
+
         # Get symbolic variables
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
 
         ## Vectorized decision variables.
-        self.x = x
+        self.x = decision_variables.vec()  # symbolic decision variables
 
         ## Vectorized parameters.
-        self.p = p
+        self.p = parameters.vec()  # symbolic parameters
 
         # Setup objective function.
         f = cs.sum1(cost_terms.vec())
 
         ## CasADi function that evaluates the objective function.
-        self.f = cs.Function("f", [x, p], [f])
+        self.f = cs.Function("f", [self.x, self.p], [f])
 
         # Derive jocobian/hessian of objective function
-        df, ddf = derive_jacobian_and_hessian_functions("f", self.f, x, p)
+        df, ddf = derive_jacobian_and_hessian_functions("f", self.f, self.x, self.p)
 
         ## Jacobian of the objective function.
         self.df = df
@@ -149,7 +162,77 @@ class Optimization:
         """
         self.models = models
 
-    def specify_v(self, ineq=[], eq=[]):
+    def specify_quadratic_cost(self) -> None:
+        """! Specify the terms P and q of a quadratic cost function."""
+        x_zero = cs.DM.zeros(self.nx)
+        self.P = cs.Function("P", [self.p], [0.5 * self.ddf(self.x, self.p)])
+        self.q = cs.Function("q", [self.p], [cs.vec(self.df(x_zero, self.p))])
+
+    def specify_linear_constraints(
+        self, lin_ineq_constraints, lin_eq_constraints
+    ) -> None:
+        """! Setup the constraints k(x, p) = M(p).x + c(p) >= 0, and a(x, p) = A(p).x + b(p) == 0."""
+
+        self.lin_ineq_constraints = lin_ineq_constraints
+        self.lin_eq_constraints = lin_eq_constraints
+
+        # Setup k
+        self.k = cs.Function("k", [self.x, self.p], [self.lin_ineq_constraints.vec()])
+        self.nk = self.lin_ineq_constraints.numel()
+        self.lbk = cs.DM.zeros(self.nk)
+        self.ubk = self.inf * cs.DM.ones(self.nk)
+
+        # Setup M and c
+        x_zero = cs.DM.zeros(self.nx)
+        self.M = cs.Function(
+            "M", [self.p], [cs.jacobian(self.k(self.x, self.p), self.x)]
+        )
+        self.c = cs.Function("c", [self.p], [self.k(x_zero, self.p)])
+
+        # Setup a
+        self.a = cs.Function("a", [self.x, self.p], [self.lin_eq_constraints.vec()])
+        self.na = self.lin_eq_constraints.numel()
+        self.lba = cs.DM.zeros(self.na)
+        self.uba = cs.DM.zeros(self.na)
+
+        # Setup A and b
+        self.A = cs.Function(
+            "A", [self.p], [cs.jacobian(self.a(self.x, self.p), self.x)]
+        )
+        self.b = cs.Function("b", [self.p], [self.a(x_zero, self.p)])
+
+    def specify_nonlinear_constraints(self, ineq_constraints, eq_constraints) -> None:
+        """! Setup the constraints g(x, p) >= 0, and h(x, p) == 0."""
+
+        self.ineq_constraints = ineq_constraints
+        self.eq_constraints = eq_constraints
+
+        # Setup g
+        self.g = cs.Function("g", [self.x, self.p], [self.ineq_constraints.vec()])
+        self.ng = self.ineq_constraints.numel()
+        self.lbg = cs.DM.zeros(self.ng)
+        self.ubg = self.inf * cs.DM.ones(self.ng)
+        self.dg, self.ddg = derive_jacobian_and_hessian_functions(
+            "g", self.g, self.x, self.p
+        )
+
+        # Setup h
+        self.h = cs.Function("g", [self.x, self.p], [self.eq_constraints.vec()])
+        self.nh = self.eq_constraints.numel()
+        self.lbh = cs.DM.zeros(self.nh)
+        self.ubh = cs.DM.zeros(self.nh)
+        self.dh, self.ddh = derive_jacobian_and_hessian_functions(
+            "h", self.h, self.x, self.p
+        )
+
+    def specify_v(
+        self, ineq: List[cs.Function] = [], eq: List[cs.Function] = []
+    ) -> None:
+        """! Specify the vertical constraints vector v.
+
+        @param ineq List of CasADi functions that evalaute the (non)linear inequality constraints.
+        @param ineq List of CasADi functions that evalaute the (non)linear equality constraints.
+        """
         self.v = vertcon(self.x, self.p, ineq=ineq, eq=eq)
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
@@ -182,25 +265,10 @@ class QuadraticCostUnconstrained(Optimization):
         @return Instance of the QuadraticCostUnconstrained class.
         """
         super().__init__(decision_variables, parameters, cost_terms)
-
-        # Ensure cost function is quadratic
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
-
-        # Initialize function for P
-        # Note, since f is quadratic, the hessian is 2M(p)
-
-        ## CasADi function that returns the P term in the cost function.
-        self.P = cs.Function("P", [p], [0.5 * self.ddf(x, p)])
-
-        # Initialize function for q
-        x_zero = cs.DM.zeros(self.nx)
-
-        ## CasADi function that returns the q term in the cost function.
-        self.q = cs.Function("q", [p], [cs.vec(self.df(x_zero, p))])
+        self.specify_quadratic_cost()
 
 
-class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
+class QuadraticCostLinearConstraints(Optimization):
     """! Linear constrained Quadratic Program.
 
             min f(x, p) where f(x, p) = x'.P(p).x + x'.q(p)
@@ -232,66 +300,12 @@ class QuadraticCostLinearConstraints(QuadraticCostUnconstrained):
         @return Instance of the QuadraticCostLinearConstraints class.
         """
         super().__init__(decision_variables, parameters, cost_terms)
-
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
-
-        ## SXContainer containing the linear equality constraints.
-        self.lin_eq_constraints = lin_eq_constraints
-
-        ## SXContainer containing the linear inequality constraints.
-        self.lin_ineq_constraints = lin_ineq_constraints
-
-        # Setup k
-
-        ## CasADi function that evaluates the linear inequality constraints.
-        self.k = cs.Function("k", [x, p], [lin_ineq_constraints.vec()])
-
-        ## Number of linear inequality constraints.
-        self.nk = lin_ineq_constraints.numel()
-
-        ## Lower bound for the linear inequality constraints (i.e. zeros).
-        self.lbk = cs.DM.zeros(self.nk)
-
-        ## Upper bound for the linear inequality constraints (i.e. inf).
-        self.ubk = self.inf * cs.DM.ones(self.nk)
-
-        # Setup M and c
-        x_zero = cs.DM.zeros(self.nx)
-
-        ## CasADi function that evaluates the M term in the linear inequality constraints function.
-        self.M = cs.Function("M", [p], [cs.jacobian(self.k(x, p), x)])
-
-        ## CasADi function that evaluates the c term in the linear inequality constraints function.
-        self.c = cs.Function("c", [p], [self.k(x_zero, p)])
-
-        # Setup a
-
-        ## CasADi function that evaluates the linear equality cosntraints.
-        self.a = cs.Function("a", [x, p], [lin_eq_constraints.vec()])
-
-        ## Number of linear equality constraints.
-        self.na = lin_eq_constraints.numel()
-
-        ## Lower bound for the linear equality constraints (i.e. zeros).
-        self.lba = cs.DM.zeros(self.na)
-
-        ## Upper bound for the linear equality constraints (i.e. zeros).
-        self.uba = cs.DM.zeros(self.na)
-
-        # Setup A and b
-
-        ## CasADi function that evaluates the A term in the linear equality constraints.
-        self.A = cs.Function("A", [p], [cs.jacobian(self.a(x, p), x)])
-
-        ## CasADi function that evaluates the b term in the linear equality constraints.
-        self.b = cs.Function("b", [p], [self.a(x_zero, p)])
-
-        # Setup v, i.e. v(x, p) >= 0
+        self.specify_quadratic_cost()
+        self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_v(ineq=[self.k], eq=[self.a])
 
 
-class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
+class QuadraticCostNonlinearConstraints(Optimization):
 
     """Nonlinear constrained optimization problem with quadratic cost function.
 
@@ -320,32 +334,10 @@ class QuadraticCostNonlinearConstraints(QuadraticCostLinearConstraints):
         eq_constraints: SXContainer,  # SXContainer for equality constraints
         ineq_constraints: SXContainer,  # SXContainer for inequality constraints
     ):
-        super().__init__(
-            decision_variables,
-            parameters,
-            cost_terms,
-            lin_eq_constraints,
-            lin_ineq_constraints,
-        )
-
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
-
-        # Setup g
-        self.g = cs.Function("g", [x, p], [ineq_constraints.vec()])
-        self.ng = ineq_constraints.numel()
-        self.lbg = cs.DM.zeros(self.ng)
-        self.ubg = self.inf * cs.DM.ones(self.ng)
-        self.dg, self.ddg = derive_jacobian_and_hessian_functions("g", self.g, x, p)
-
-        # Setup h
-        self.h = cs.Function("h", [x, p], [eq_constraints.vec()])
-        self.nh = eq_constraints.numel()
-        self.lbh = cs.DM.zeros(self.nh)
-        self.ubh = cs.DM.zeros(self.nh)
-        self.dh, self.ddh = derive_jacobian_and_hessian_functions("h", self.h, x, p)
-
-        # Setup v, i.e. v(x, p) >= 0        
+        super().__init__(decision_variables, parameters, cost_terms)
+        self.specify_quadratic_cost()
+        self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
+        self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
 
 
@@ -362,7 +354,7 @@ class NonlinearCostUnconstrained(Optimization):
     pass
 
 
-class NonlinearCostLinearConstraints(NonlinearCostUnconstrained):
+class NonlinearCostLinearConstraints(Optimization):
     """Linear constrained optimization problem.
 
 
@@ -391,39 +383,11 @@ class NonlinearCostLinearConstraints(NonlinearCostUnconstrained):
         lin_ineq_constraints: SXContainer,  # SXContainer for linear inequality constraints
     ):
         super().__init__(decision_variables, parameters, cost_terms)
-
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
-
-        self.lin_eq_constraints = lin_eq_constraints
-        self.lin_ineq_constraints = lin_ineq_constraints
-
-        # Setup k
-        self.k = cs.Function("k", [x, p], [lin_ineq_constraints.vec()])
-        self.nk = lin_ineq_constraints.numel()
-        self.lbk = cs.DM.zeros(self.nk)
-        self.ubk = self.inf * cs.DM.ones(self.nk)
-
-        # Setup M and c
-        x_zero = cs.DM.zeros(self.nx)
-        self.M = cs.Function("M", [p], [cs.jacobian(self.k(x, p), x)])
-        self.c = cs.Function("c", [p], [self.k(x_zero, p)])
-
-        # Setup a
-        self.a = cs.Function("a", [x, p], [lin_eq_constraints.vec()])
-        self.na = lin_eq_constraints.numel()
-        self.lba = cs.DM.zeros(self.na)
-        self.uba = cs.DM.zeros(self.na)
-
-        # Setup A and b
-        self.A = cs.Function("A", [p], [cs.jacobian(self.a(x, p), x)])
-        self.b = cs.Function("b", [p], [self.a(x_zero, p)])
-
-        # Setup v, i.e. v(x, p) >= 0
+        self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_v(ineq=[self.k], eq=[self.a])
 
 
-class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
+class NonlinearCostNonlinearConstraints(Optimization):
     """Nonlinear constrained optimization problem.
 
         min f(x, p)
@@ -451,33 +415,7 @@ class NonlinearCostNonlinearConstraints(NonlinearCostLinearConstraints):
         eq_constraints: SXContainer,  # SXContainer for equality constraints
         ineq_constraints: SXContainer,  # SXContainer for inequality constraints
     ):
-        super().__init__(
-            decision_variables,
-            parameters,
-            cost_terms,
-            lin_eq_constraints,
-            lin_ineq_constraints,
-        )
-
-        x = decision_variables.vec()  # symbolic decision variables
-        p = parameters.vec()  # symbolic parameters
-
-        self.eq_constraints = eq_constraints
-        self.ineq_constraints = ineq_constraints
-
-        # Setup g
-        self.g = cs.Function("g", [x, p], [ineq_constraints.vec()])
-        self.ng = ineq_constraints.numel()
-        self.lbg = cs.DM.zeros(self.ng)
-        self.ubg = self.inf * cs.DM.ones(self.ng)
-        self.dg, self.ddg = derive_jacobian_and_hessian_functions("g", self.g, x, p)
-
-        # Setup h
-        self.h = cs.Function("g", [x, p], [eq_constraints.vec()])
-        self.nh = eq_constraints.numel()
-        self.lbh = cs.DM.zeros(self.nh)
-        self.ubh = cs.DM.zeros(self.nh)
-        self.dh, self.ddh = derive_jacobian_and_hessian_functions("h", self.h, x, p)
-
-        # Setup v, i.e. v(x, p) >= 0
+        super().__init__(decision_variables, parameters, cost_terms)
+        self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
+        self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
