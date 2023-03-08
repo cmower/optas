@@ -1,42 +1,30 @@
+"""! @brief The optimization builder class is defined."""
+
 import casadi as cs
 from .sx_container import SXContainer
-from .spatialmath import arrayify_args
+from .spatialmath import arrayify_args, ArrayType, CasADiArrayType
 from .optimization import *
-from .models import RobotModel
+from .models import Model, TaskModel, RobotModel
+from typing import List
 
 
 class OptimizationBuilder:
+    """! OptimizationBuilder allows you to build/specify an optimization problem."""
 
-    """
+    def __init__(
+        self,
+        T: int,
+        robots: List[RobotModel] = [],
+        tasks: List[TaskModel] = [],
+        derivs_align: bool = False,
+    ):
+        """! OptimizationBuilder constructor.
 
-    OptimizationBuilder allows you to build/specify an optimization problem.
-
-    """
-
-    def __init__(self, T, robots=[], tasks=[], derivs_align=False):
-        """OptimizationBuilder constructor.
-
-        Syntax
-        ------
-
-        builder = optas.OptimizationBuilder(T, robots, tasks, optimize_time, derivs_align)
-
-        Parameters
-        ----------
-
-        T (int):
-          Number of time steps for the trajectory.
-
-        robots (list):
-          A list of robot models.
-
-        tasks (list):
-          A list of task models.
-
-        derivs_align (bool):
-          When true, the time derivatives align for each time
-          step. Default is False.
-
+        @param T Number of time steps for the trajectory.
+        @param robots A list of robot models.
+        @param tasks A list of task models.
+        @param derivs_align When true, the time derivatives align for each time step. Default is False.
+        @return An instance of the OptimizationBuilder class.
         """
 
         # Input check
@@ -49,8 +37,14 @@ class OptimizationBuilder:
             tasks = [tasks]  # all user to pass a single task
 
         # Class attributes
+
+        ## Number of time steps for the trajectory.
         self.T = T
+
+        ## List of models.
         self._models = robots + tasks
+
+        ## When true, the time derivatives align for each time step.
         self.derivs_align = derivs_align
 
         # Ensure T is sufficiently large
@@ -70,12 +64,26 @@ class OptimizationBuilder:
         assert is_unique_names, "each model should have a unique name"
 
         # Setup containers for decision variables, parameters, cost terms, ineq/eq constraints
+
+        ## SXContainer containing decision variables.
         self._decision_variables = SXContainer()
+
+        ## SXContainer containing parameters.
         self._parameters = SXContainer()
+
+        ## SXContainer containing the cost terms.
         self._cost_terms = SXContainer()
+
+        ## SXContainer containing the linear equality constraints.
         self._lin_eq_constraints = SXContainer()
+
+        ## SXContainer containing the linear inequality constraints.
         self._lin_ineq_constraints = SXContainer()
+
+        ## SXContainer containing the inequality constraints.
         self._ineq_constraints = SXContainer()
+
+        ## SXContainer containing the equality constraints.
         self._eq_constraints = SXContainer()
 
         # Setup decision variables and parameters
@@ -90,81 +98,39 @@ class OptimizationBuilder:
                 else:
                     self.add_decision_variables(n_s_x, model.dim, t)
 
-    def get_model_names(self):
-        """Return the names of each model."""
+    def get_model_names(self) -> List[str]:
+        """! Return the names of each model.
+
+        @return List of model names.
+        """
         return [model.name for model in self._models]
 
-    def get_model_index(self, name):
-        """Return the index of the model in the list of models.
+    def get_model_index(self, name: str) -> int:
+        """! Return the index of the model in the list of models.
 
-        Syntax
-        ------
-
-        idx = builder.get_model_index(name)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        Returns
-        -------
-
-        idx (int)
-            Index of the model in the list of models.
-
+        @param name Name of the model.
+        @return Index of the model in the list of models.
         """
         return self.get_model_names().index(name)
 
-    def get_model(self, name):
-        """Return the model with given name.
+    def get_model(self, name: str) -> Model:
+        """! Return the model with given name.
 
-        Syntax
-        ------
-
-        model = builder.get_model(name)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        Returns
-        -------
-
-        model (optas.models.Model)
-            A task or robot model.
-
+        @param name Name of the model.
+        @return A task or robot model.
         """
         return self._models[self.get_model_index(name)]
 
-    def get_model_state(self, name, t, time_deriv=0):
-        """Get the model state at a given time.
+    def get_model_state(
+        self, name: str, t: int, time_deriv: int = 0
+    ) -> CasADiArrayType:
+        """! Get the model state at a given time.
 
-        Syntax
-        ------
+        @param name Name of the model.
+        @param t Index of the desired state.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
 
-        state = builder.get_model_state(name, t, time_deriv=0)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        t (int)
-            Index of the desired state.
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        state (casadi.SX, with shape dim-by-1)
-            The state vector where dim is the model dimension.
+        @return The state vector where dim is the model dimension.
 
         """
         states = self.get_model_states(name, time_deriv)
