@@ -130,26 +130,16 @@ class OptimizationBuilder:
         @param t Index of the desired state.
         @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
         @return The state vector where dim is the model dimension.
-
         """
         states = self.get_model_states(name, time_deriv)
         return states[:, t]
 
-    def get_model_states(self, name: str, time_deriv: int=0) -> CasADiArrayType:
+    def get_model_states(self, name: str, time_deriv: int = 0) -> CasADiArrayType:
         """! Get the full state trajectory for a given model.
 
-        @param name (string)
-            Name of the model.
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        states (casadi.SX, with shape dim-by-T)
-            The state vector where dim is the model dimension, and T is the number of time-steps in the trajectory.
-
+        @param name Name of the model.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
+        @return The state vector where dim is the model dimension, and T is the number of time-steps in the trajectory.
         """
         model = self.get_model(name)
         assert (
@@ -158,29 +148,12 @@ class OptimizationBuilder:
         name = model.state_optimized_name(time_deriv)
         return self._decision_variables[name]
 
-    def get_model_parameters(self, name, time_deriv=0):
-        """Get the array of parameters for a given model.
+    def get_model_parameters(self, name: str, time_deriv: int = 0) -> CasADiArrayType:
+        """! Get the array of parameters for a given model.
 
-        Syntax
-        ------
-
-        parameters = builder.get_model_parameters(name, time_deriv=0)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        parameters (casadi.SX, with shape dim-by-T)
-            The array of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
-
+        @param name Name of the model.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
+        @return The array of parameters where dim is the number of model parameters, and T is the number of time-steps in the trajectory.
         """
         model = self.get_model(name)
         assert (
@@ -189,62 +162,30 @@ class OptimizationBuilder:
         name = model.state_parameter_name(time_deriv)
         return self._parameters[name]
 
-    def get_model_parameter(self, name, t, time_deriv=0):
-        """Get the model parameter at a given time.
+    def get_model_parameter(
+        self, name: str, t: int, time_deriv: int = 0
+    ) -> CasADiArrayType:
+        """! Get the model parameter at a given time.
 
-        Syntax
-        ------
-
-        parameter = builder.get_model_parameter(name, t, time_deriv=0)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        t (int)
-            Index of the desired parameter.
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        parameter (casadi.SX, with shape dim-by-1)
-            The parameter vector where dim is the model number of parameters
-
+        @param name Name of the model.
+        @param t Index of the desired state.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
+        @return The parameter vector where dim is the model number of parameters
         """
         parameters = self.get_model_parameters(name, time_deriv)
         return parameters[:, t]
 
-    def get_robot_states_and_parameters(self, name, time_deriv=0):
-        """Get the vector of states and parameters for a given model.
+    def get_robot_states_and_parameters(
+        self, name: str, time_deriv: int = 0
+    ) -> CasADiArrayType:
+        """! Get the vector of states and parameters for a given model.
 
         Note that method only applies to to RobotModel.
         To be replaced by get_model_states_and_parameters once parameters are added to base class Model.
 
-        Syntax
-        ------
-
-        parameters = builder.get_robot_states_and_parameters(name, time_deriv=0)
-
-        Parameters
-        ----------
-
-        name (string)
-            Name of the model.
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        states and parameters (casadi.SX, with shape dim-by-T)
-            The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
-
+        @param name Name of the model.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return The vector of parameters where dim is the number of model states and parameters (for a robot it should correspond to the degrees of freedom), and T is the number of time-steps in the trajectory.
         """
 
         model = self.get_model(name)
