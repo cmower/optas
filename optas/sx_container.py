@@ -3,7 +3,7 @@
 import collections
 import casadi as cs
 import numpy as np
-from typing import Union, List
+from typing import Union, List, Dict
 
 from .spatialmath import ArrayType
 
