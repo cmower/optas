@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import minimize, NonlinearConstraint, LinearConstraint
 from scipy.sparse import csc_matrix
 from .optimization import (
+    Optimization,
     QuadraticCostUnconstrained,
     QuadraticCostLinearConstraints,
     QuadraticCostNonlinearConstraints,
@@ -17,16 +18,26 @@ from .optimization import (
 )
 from .models import RobotModel
 
-QP_COST = {QuadraticCostUnconstrained, QuadraticCostLinearConstraints}
+## Optimization problem types with quadratic cost.
+QP_COST = {
+    QuadraticCostUnconstrained,
+    QuadraticCostLinearConstraints,
+    QuadraticCostNonlinearConstraints,
+}
 
+
+## Optimization problem types with nonlinear cost.
 NL_COST = {
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
 }
 
+## Optimization problem types that are unconstrained.
 UNCONSTRAINED_OPT = {QuadraticCostUnconstrained, NonlinearCostUnconstrained}
 
+
+## Optimization problem types that are constrained.
 CONSTRAINED_OPT = {
     QuadraticCostLinearConstraints,
     QuadraticCostNonlinearConstraints,
@@ -39,32 +50,33 @@ CONSTRAINED_OPT = {
 
 
 class Solver(ABC):
+    """! Base solver interface class"""
 
-    """Base solver interface class"""
+    def __init__(self, optimization: Optimization, error_on_fail: bool = False):
+        """! Constructor for the base Solver class.
 
-    def __init__(self, optimization, error_on_fail=False):
-        """Constructor for the base Solver class.
-
-        Parameters
-        ----------
-
-        optimization
-            The optimization problem created by calling the build
-            method of the OptimizationBuilder class.
-
-        error_on_fail
-            When True, after solve() is called, if the solver did not
-            converge then a RuntimeError is thrown.
-
+        @param optimization The optimization problem created by calling the build method of the OptimizationBuilder class.
+        @param error_on_fail When True, after solve() is called, if the solver did not converge then a RuntimeError is thrown. Default is False.
+        @return An instance of the Solver class.
         """
+
+        ## Instance of the optimization problem.
         self.opt = optimization
+
+        ## Initial guess for the optimization problem (set using reset_initial_seed).
         self.x0 = cs.DM.zeros(optimization.nx)
+
+        ## Parameter vector.
         self.p = cs.DM.zeros(optimization.np)
+
+        ## Parameter dictionary.
         self._p_dict = {}
+
+        ## When True, after solve() is called, if the solver did not converge then a RuntimeError is thrown.
         self._error_on_fail = error_on_fail
 
     @property
-    def opt_type(self):
+    def opt_type(self) -> type:
         """Optimization type."""
         return type(self.opt)
 
@@ -437,27 +449,17 @@ class CVXOPTSolver(Solver):
         self._reset_parameters()
 
     def _reset_parameters(self):
-        self._solver_input["P"] = cvxopt.matrix(
-            2.0 * self.opt.P(self.p).toarray()
-        )
-        self._solver_input["q"] = cvxopt.matrix(
-            self.opt.q(self.p).toarray().flatten()
-        )
+        self._solver_input["P"] = cvxopt.matrix(2.0 * self.opt.P(self.p).toarray())
+        self._solver_input["q"] = cvxopt.matrix(self.opt.q(self.p).toarray().flatten())
         if self.opt_type in CONSTRAINED_OPT:
             if self.opt.nk > 0:
-                self._solver_input["G"] = cvxopt.matrix(
-                    -self.opt.M(self.p).toarray()
-                )
+                self._solver_input["G"] = cvxopt.matrix(-self.opt.M(self.p).toarray())
                 self._solver_input["h"] = cvxopt.matrix(
                     self.opt.c(self.p).toarray().flatten()
                 )
             if self.opt.na > 0:
-                self._solver_input["A"] = cvxopt.matrix(
-                    self.opt.A(self.p).toarray()
-                )
-                self._solver_input["b"] = cvxopt.matrix(
-                    -self.opt.b(self.p).toarray()
-                )
+                self._solver_input["A"] = cvxopt.matrix(self.opt.A(self.p).toarray())
+                self._solver_input["b"] = cvxopt.matrix(-self.opt.b(self.p).toarray())
 
     def _solve(self):
         self._solution = cvxopt.solvers.qp(**self._solver_input)
