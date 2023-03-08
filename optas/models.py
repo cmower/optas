@@ -1476,7 +1476,7 @@ class RobotModel(Model):
     @arrayify_args
     @listify_output
     def get_link_angular_geometric_jacobian(
-        self, link: str, q: q, base_link: str
+        self, link: str, q: ArrayType, base_link: str
     ) -> Union[cs.DM, cs.SX]:
         """! Get the angular part of the geometric jacobian in a given base frame.
 
