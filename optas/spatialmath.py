@@ -11,7 +11,7 @@ ArrayType = Union[cs.DM, cs.SX, List[float], Tuple[float], cs.np.ndarray, float,
 ## CasADi array types typically returned by OpTaS methods.
 CasADiArrayType = Union[cs.DM, cs.SX]
 
-## The number pi (3.141...).
+## The number pi (i.e. 3.141...).
 pi = cs.np.pi
 
 ## The machine epsilon.
