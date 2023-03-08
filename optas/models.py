@@ -1094,6 +1094,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_geometric_jacobian")
     def get_global_geometric_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
@@ -1167,6 +1168,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_geometric_jacobian_function")
     def get_global_geometric_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
     def get_global_link_geometric_jacobian_function(
@@ -1184,6 +1186,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_analytical_jacobian")
     def get_global_analytical_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
@@ -1204,6 +1207,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_analytical_jacobian_function")
     def get_global_analytical_jacobian_function(self, link):
+        """! Deprecated function."""
         pass
 
     def get_global_link_analytical_jacobian_function(
@@ -1224,6 +1228,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_geometric_jacobian")
     def get_geometric_jacobian(self):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
@@ -1254,6 +1259,7 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_geometric_jacobian_function")
     def get_geometric_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
     def get_link_geometric_jacobian_function(
@@ -1272,12 +1278,21 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_analytical_jacobian")
     def get_analytical_jacobian(self):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_analytical_jacobian(self, link, q, base_link):
-        """Compute the analytical Jacobian matrix in a given base link."""
+    def get_link_analytical_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the analytical Jacobian matrix in a given base link.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Analytic Jacobian.
+        """
         return cs.vertcat(
             self.get_link_linear_jacobian(link, q, base_link),
             self.get_link_angular_analytical_jacobian(link, q, base_link),
@@ -1285,91 +1300,167 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_analytical_jacobian_function")
     def get_analytical_jacobian_function(self, link, base_link):
+        """! Deprecated function."""
         pass
 
-    def get_link_analytical_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the analytical jacobian in a given base frame."""
+    def get_link_analytical_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the analytical jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "J_a", link, self.get_link_analytical_jacobian, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_linear_jacobian")
     def get_global_linear_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_linear_jacobian(self, link, q):
-        """Compute the linear part of the geometric jacobian in the global frame."""
+    def get_global_link_linear_jacobian(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the linear part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Linear part of the Jacobian.
+        """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[:3, :]
 
     @deprecation_warning("get_global_link_linear_jacobian_function")
     def get_global_linear_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_linear_jacobian_function(self, link, n=1):
-        """Get the function that computes the linear part of the geometric jacobian in the global frame."""
+    def get_global_link_linear_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the linear part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function("Jl", link, self.get_global_link_linear_jacobian, n=n)
 
     @deprecation_warning("get_link_linear_jacobian")
     def get_linear_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_linear_jacobian(self, link, q, base_link):
-        """Get the linear part of the geometric jacobian in a given base frame."""
+    def get_link_linear_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get the linear part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Linear part of the Jacobian.
+        """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[:3, :]
 
     @deprecation_warning("get_link_linear_jacobian_function")
     def get_linear_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_link_linear_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
+    def get_link_linear_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the linear part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "Jl", link, self.get_link_linear_jacobian, base_link=base_link, n=n
         )
 
     @deprecation_warning("get_global_link_angular_geometric_jacobian")
     def get_global_angular_geometric_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_angular_geometric_jacobian(self, link, q):
-        """Compute the angular part of the geometric jacobian in the global frame."""
+    def get_global_link_angular_geometric_jacobian(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the angular part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the geometric Jacobian.
+        """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[3:, :]
 
     @deprecation_warning("get_global_link_angular_geometric_jacobian_function")
     def get_global_angular_geometric_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_angular_geometric_jacobian_function(self, link, n=1):
-        """Get the function that computes the angular part of the geometric jacobian in the global frame."""
+    def get_global_link_angular_geometric_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "Ja", link, self.get_global_link_angular_geometric_jacobian, n=n
         )
 
     @deprecation_warning("get_global_link_angular_analytical_jacobian")
     def get_global_angular_analytical_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_angular_analytical_jacobian(self, link, q):
-        """Compute the angular part of the analytical Jacobian matrix in the global frame."""
+    def get_global_link_angular_analytical_jacobian(
+        self, link: str, q: ArrayType
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the angular part of the analytical Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Angular part of the analytical Jacobian.
+        """
         return self.get_link_angular_analytical_jacobian(link, q, self.get_root_link())
 
     @deprecation_warning("get_global_link_angular_analytical_jacobian_function")
     def get_global_angular_analytical_jacobian_function(self, link):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_angular_analytical_jacobian_function(self, link, n=1):
-        """Get the function that computes the angular part of the analytical jacobian in the global frame."""
+    def get_global_link_angular_analytical_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the analytical jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "Ja",
             link,
@@ -1379,21 +1470,39 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_geometric_jacobian")
     def get_angular_geometric_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_angular_geometric_jacobian(self, link, q, base_link):
-        """Get the angular part of the geometric jacobian in a given base frame."""
+    def get_link_angular_geometric_jacobian(
+        self, link: str, q: q, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Get the angular part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the geometric Jacobian.
+        """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[3:, :]
 
     @deprecation_warning("get_link_angular_geometric_jacobian_function")
     def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_link_angular_geometric_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
+    def get_link_angular_geometric_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "Ja",
             link,
@@ -1404,12 +1513,21 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_analytical_jacobian")
     def get_angular_analytical_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_angular_analytical_jacobian(self, link, q, base_link):
-        """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
+    def get_link_angular_analytical_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the angular part of the analytical Jacobian matrix in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the analytical Jacobian.
+        """
 
         # Compute rpy derivative Ja
         q_sym = cs.SX.sym("q_sym", self.ndof)
@@ -1423,10 +1541,19 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_analytical_jacobian_function")
     def get_angular_analytical_jacobian_function(self, link, base_link):
+        """! Deprecated function."""
         pass
 
-    def get_link_angular_analytical_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
+    def get_link_angular_analytical_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the analytical jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the analytical Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
         return self.make_function(
             "Ja",
             link,
@@ -1437,7 +1564,17 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_link_axis(self, link, q, axis, base_link):
+    def get_link_axis(
+        self, link: str, q: ArrayType, axis: Union[str, ArrayType], base_link: str
+    ) -> Union[cs.DM, cs.SX]:
+        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis).
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @param base_link Name of the base frame link.
+        @return Axis defined in the end-effector frame as function of the joint angles.
+        """
         Tf = self.get_link_transform(link, q, base_link)
 
         axis2index = {"x": 0, "y": 1, "z": 2}
@@ -1460,7 +1597,9 @@ class RobotModel(Model):
 
         return vector
 
-    def get_link_axis_function(self, link, axis, base_link, n=1):
+    def get_link_axis_function(
+        self, link: str, axis: Union[str, ArrayType], base_link: str, n: int = 1
+    ) -> cs.Function:
         return self.make_function(
             "a",
             link,
@@ -1472,9 +1611,13 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_axis(self, link, q, axis):
+    def get_global_link_axis(
+        self, link: str, q: ArrayType, axis: Union[str, ArrayType]
+    ) -> Union[cs.DM, cs.SX]:
         return self.get_link_axis(link, q, axis, self.get_root_link())
 
-    def get_global_link_axis_function(self, link, axis, n=1):
+    def get_global_link_axis_function(
+        self, link: str, axis: Union[str, ArrayType], n: int = 1
+    ) -> cs.Function:
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
         return self.make_function("a", link, get_global_link_axis, n=n)
