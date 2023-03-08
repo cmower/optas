@@ -178,7 +178,7 @@ The preprint can be found on [arXiv](https://arxiv.org/abs/2301.13512).
 # Contributing
 
 We welcome contributions from the community.
-If you come across any issues or inacuracies in the the documentation, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
+If you come across any issues or inacuracies in the documentation, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
 If you would like to contribute any new features, please [fork the repository](https://github.com/cmower/optas/fork), and submit a pull request.
 
 # Acknowledgement
