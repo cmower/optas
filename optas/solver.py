@@ -18,7 +18,7 @@ from .optimization import (
 )
 from .models import RobotModel
 from .spatialmath import ArrayType, CasADiArrayType
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 ## Optimization problem types with quadratic cost.
 QP_COST = {
