@@ -1600,6 +1600,13 @@ class RobotModel(Model):
     def get_link_axis_function(
         self, link: str, axis: Union[str, ArrayType], base_link: str, n: int = 1
     ) -> cs.Function:
+        """! Get function for computing the link axis.
+
+        @param link Name of the end-effector link.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @param base_link Name of the base frame link.
+        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         return self.make_function(
             "a",
             link,
@@ -1614,10 +1621,23 @@ class RobotModel(Model):
     def get_global_link_axis(
         self, link: str, q: ArrayType, axis: Union[str, ArrayType]
     ) -> Union[cs.DM, cs.SX]:
+        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis) in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @return Axis defined in the end-effector frame as function of the joint angles.
+        """
         return self.get_link_axis(link, q, axis, self.get_root_link())
 
     def get_global_link_axis_function(
         self, link: str, axis: Union[str, ArrayType], n: int = 1
     ) -> cs.Function:
+        """! Get function for computing the link axis in the global frame.
+
+        @param link Name of the end-effector link.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
         return self.make_function("a", link, get_global_link_axis, n=n)
