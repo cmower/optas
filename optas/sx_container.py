@@ -17,7 +17,7 @@ class SXContainer(collections.OrderedDict):
     ## Dict[str, bool]: labels for each item in dict, true means variables are discrete
     is_discrete = {}
 
-    def __add__(self, other: SXContainer) -> SXContainer:
+    def __add__(self, other):
         """! Add two SXContainer's.
 
         @param other Another SXContainer instance.
