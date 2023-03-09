@@ -1,9 +1,13 @@
+"""! @brief Several Model classes are defined."""
+
 import os
 import warnings
 import functools
 import pathlib
 
 import casadi as cs
+
+from typing import Callable, Union
 
 # https://wiki.ros.org/xacro
 import xacro
@@ -14,7 +18,12 @@ from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 from .spatialmath import *
 
 
-def listify_output(fun):
+def listify_output(fun: Callable) -> Callable:
+    """! Decorator that handles the output of Model methods.
+
+    @param fun A method from a Model sub-class.
+    """
+
     @functools.wraps(fun)
     def listify(*args, **kwargs):
         args = list(args)  # makes concatenation easier later
@@ -69,143 +78,95 @@ def deprecation_warning(name_to):
 
 
 class Model:
-
+    """! The Model base class.
+    Defines the base class utilized by all models.
     """
 
-    Model base class
+    def __init__(
+        self,
+        name: str,
+        dim: int,
+        time_derivs: List[int],
+        symbol: str,
+        dlim: Dict[int, Tuple[List[float]]],
+        T: Union[None, int],
+    ):
+        """! The Model base class initializer.
 
-    """
+        @param name The name of the model.
+        @param dim Model dimension (for robots this is ndof).
+        @param time_derivs Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
+        @param symbol A short symbol to represent the model.
+        @param dlim Limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds.
+        @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 
-    def __init__(self, name, dim, time_derivs, symbol, dlim, T):
+        @return An instance of the Model class.
         """
-        name (str):
-            Name of model.
 
-        dim (int):
-            Model dimension (for robots this is ndof).
-
-        time_derivs (list[int]):
-            Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
-
-        symbol (str):
-            A short symbol to represent the model state.
-
-        dlim (dict[ int, tuple[list[float]] ]):
-            limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds        .
-
-        T (int)
-            Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
-
-        """
+        ## The name of the model.
         self.name = name
+
+        ## Model dimension.
         self.dim = dim
+
+        ## Time derivatives required for the model.
         self.time_derivs = time_derivs
+
+        ## A short symbol to represent the model.
         self.symbol = symbol
+
+        ## Model limits
         self.dlim = dlim
+
+        ## Number of time steps
         self.T = T
 
-    def get_name(self):
-        """Return the name of the model."""
+    def get_name(self) -> str:
+        """! Return the name of the model.
+
+        @return Name of the model.
+        """
         return self.name
 
-    def state_name(self, time_deriv):
-        """Return the state name.
+    def state_name(self, time_deriv: int) -> str:
+        """! Return the state name.
 
-        Syntax
-        ------
-
-        state_name = model.state_name(time_deriv)
-
-        Parameters
-        ----------
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        state_name (string)
-            The state name in the form {name}/{d}{symbol}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model state.
-
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return The state name in the form {name}/{d}{symbol}, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model state.
         """
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol
 
-    def state_parameter_name(self, time_deriv):
-        """Return the parameter name.
+    def state_parameter_name(self, time_deriv: int) -> str:
+        """! Return the parameter name.
 
-        Syntax
-        ------
-
-        state_parameter_name = model.state_parameter_name(time_deriv)
-
-        Parameters
-        ----------
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        state_parameter_name (string)
-            The parameter name in the form {name}/{d}{symbol}/p, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model parameters.
-
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return The parameter name in the form {name}/{d}{symbol}/p, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol is the symbol for the model parameters.
         """
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "p"
 
-    def state_optimized_name(self, time_deriv):
-        """Return the parameter name.
+    def state_optimized_name(self, time_deriv: int) -> str:
+        """! Return the sate optimized name.
 
-        Syntax
-        ------
-
-        state_optimized_name = model.state_optimized_name(time_deriv)
-
-        Parameters
-        ----------
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        state_optimized_name (string)
-            The parameter name in the form {name}/{d}{symbol_param}/x, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol_param is the symbol for the model parameters.
-
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return The parameter name in the form {name}/{d}{symbol_param}/x, where "name" is the model name, d is a string given by 'd'*time_deriv, and symbol_param is the symbol for the model parameters.
         """
         assert (
             time_deriv in self.time_derivs
         ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "x"
 
-    def get_limits(self, time_deriv):
-        """Return the model limits.
+    def get_limits(self, time_deriv: int) -> Tuple[ArrayType]:
+        """! Return the model limits.
 
-        Syntax
-        ------
-
-        lower, upper = model.get_limits(time_deriv)
-
-        Parameters
-        ----------
-
-        time_deriv (int)
-            The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
-
-        Returns
-        -------
-
-        lower/upper (casadi.DM)
-            The model lower/upper limits.
-
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return lower The model lower limit.
+        @return upper The model upper limit.
         """
         assert (
             time_deriv in self.time_derivs
@@ -215,27 +176,52 @@ class Model:
         ), f"Limit for time derivative {time_deriv=} has not been given"
         return self.dlim[time_deriv]
 
-    def in_limit(self, x, time_deriv):
-        """True when x is within limits for a given time derivative, False otherwise. The return type uses CasADi, so this can be used in the formulation."""
+    def in_limit(self, x: ArrayType, time_deriv: int) -> cs.DM:
+        """! Check if array is within model limits.
+
+        @param x The array containing values to be checked.
+        @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.)
+        @return Returns DM(1) if the array x is within the model limits, DM(0) otherwise.
+        """
         lo, up = self.get_limits(time_deriv)
         return cs.logic_all(cs.logic_and(lo <= x, x <= up))
 
 
 class TaskModel(Model):
+    """! Model class for tasks, e.g. position trajectory."""
+
     def __init__(
         self,
-        name,
-        dim,
-        time_derivs=[0],
-        symbol="y",
-        dlim={},
-        T=None,
+        name: str,
+        dim: int,
+        time_derivs: List[int] = [0],
+        symbol: str = "y",
+        dlim: Dict[int, Tuple[List[float]]] = {},
+        T: Union[None, int] = None,
     ):
+        """! Task model initializer.
+
+        @param name The name of the model.
+        @param dim Model dimension.
+        @param time_derivs Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
+        @param symbol A short symbol to represent the model.
+        @param dlim Limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds.
+        @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
+        """
+
         super().__init__(name, dim, time_derivs, symbol, dlim, T)
 
 
 class JointTypeNotSupported(NotImplementedError):
-    def __init__(self, joint_type):
+    """! Exception to be thrown when a joint type is not supported."""
+
+    def __init__(self, joint_type: str):
+        """! Initializer for the JointTypeNotSupported exception.
+
+        @param joint_type The joint type given
+        @return An instance of the exception class.
+        """
+
         msg = f"{joint_type} joints are currently not supported\n"
         msg += "if you require this joint type please raise an issue at "
         msg += "https://github.com/cmower/optas/issues"
@@ -243,19 +229,37 @@ class JointTypeNotSupported(NotImplementedError):
 
 
 class RobotModel(Model):
+    """! A class that defines a robot model. Many methods here model the robot kinematics."""
+
     def __init__(
         self,
-        urdf_filename=None,
-        urdf_string=None,
-        xacro_filename=None,
-        name=None,
-        time_derivs=[0],
-        qddlim=None,
-        T=None,
-        param_joints=[],
+        urdf_filename: Union[None, str] = None,
+        urdf_string: Union[None, str] = None,
+        xacro_filename: Union[None, str] = None,
+        name: Union[None, str] = None,
+        time_derivs: List[int] = [0],
+        qddlim: Union[None, ArrayType] = None,
+        T: Union[None, int] = None,
+        param_joints: List[str] = [],
     ):
+        """! Initializer for the robot model class.
+
+        Note, at least one of the parameters urdf_filename, urdf_string, or xacro_filename must be specified.
+
+        @param urdf_filename Filename for a URDF.
+        @param urdf_string URDF as a string.
+        @param xacro_filename Filename for a xacro file.
+        @param name Name of the robot model.
+        @param time_derivs Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
+        @param qddlim Optionally specify limits on the joint acceleration.
+        @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
+        @param param_joints A list of joints that are considered parameters.
+        """
+
         # If xacro is passed then convert to urdf string
-        self._xacro_filename = xacro_filename
+
+        ## Filename for xacro file.
+        self.xacro_filename = xacro_filename
         if xacro_filename is not None:
             try:
                 urdf_string = xacro.process(xacro_filename)
@@ -268,19 +272,27 @@ class RobotModel(Model):
                 urdf_string = str_io.getvalue()
 
         # Load URDF
-        self._urdf = None
-        self._urdf_filename = None
-        self._urdf_string = None
+
+        ## URDF instance.
+        self.urdf = None
+
+        ## Filename for URDF file.
+        self.urdf_filename = None
+
+        ## URDF string.
+        self.urdf_string = None
         if urdf_filename is not None:
-            self._urdf_filename = urdf_filename
-            self._urdf = URDF.from_xml_file(urdf_filename)
+            self.urdf_filename = urdf_filename
+            self.urdf = URDF.from_xml_file(urdf_filename)
         if urdf_string is not None:
-            self._urdf = URDF.from_xml_string(urdf_string)
+            self.urdf = URDF.from_xml_string(urdf_string)
         assert (
-            self._urdf is not None
+            self.urdf is not None
         ), "You need to supply a urdf, either through filename or as a string"
 
         # Setup joint limits, joint position/velocity limits
+
+        ## List of parameterized joints.
         self.param_joints = param_joints
         dlim = {
             0: (self.lower_optimized_joint_limits, self.upper_optimized_joint_limits),
@@ -302,45 +314,69 @@ class RobotModel(Model):
 
         # If user did not supply name for the model then use the one in the URDF
         if name is None:
-            name = self._urdf.name
+            name = self.urdf.name
 
         super().__init__(name, self.ndof, time_derivs, "q", dlim, T)
 
     def get_urdf(self):
-        return self._urdf
+        return self.urdf
 
     def get_urdf_dirname(self):
-        if self._urdf_filename is not None:
-            return pathlib.Path(os.path.dirname(self._urdf_filename))
-        elif self._xacro_filename is not None:
-            return pathlib.Path(os.path.dirname(self._xacro_filename))
+        if self.urdf_filename is not None:
+            return pathlib.Path(os.path.dirname(self.urdf_filename))
+        elif self.xacro_filename is not None:
+            return pathlib.Path(os.path.dirname(self.xacro_filename))
 
     @property
-    def joint_names(self):
-        return [jnt.name for jnt in self._urdf.joints]
+    def joint_names(self) -> List[str]:
+        """! Property that gives the list of joint names.
+
+        @return List of joint names.
+        """
+        return [jnt.name for jnt in self.urdf.joints]
 
     @property
-    def link_names(self):
-        return [lnk.name for lnk in self._urdf.links]
+    def link_names(self) -> List[str]:
+        """! Property that gives the list of link names.
+
+        @return List of link names.
+        """
+        return [lnk.name for lnk in self.urdf.links]
 
     @property
-    def actuated_joint_names(self):
-        return [jnt.name for jnt in self._urdf.joints if jnt.type != "fixed"]
+    def actuated_joint_names(self) -> List[str]:
+        """! Property that gives the names of the actuated joints.
+
+        @return List of actuated joint names.
+        """
+        return [jnt.name for jnt in self.urdf.joints if jnt.type != "fixed"]
 
     @property
-    def parameter_joint_names(self):
+    def parameter_joint_names(self) -> List[str]:
+        """! Property that gives the names of the parameterized joints.
+
+        @return List of the parameterized joint names.
+        """
         return [
             joint for joint in self.actuated_joint_names if joint in self.param_joints
         ]
 
     @property
-    def optimized_joint_indexes(self):
+    def optimized_joint_indexes(self) -> List[int]:
+        """! Property that gives the indexes of the optimized joints.
+
+        @return List of the optimized joint indexes.
+        """
         return [
             self.get_actuated_joint_index(joint) for joint in self.optimized_joint_names
         ]
 
     @property
-    def optimized_joint_names(self):
+    def optimized_joint_names(self) -> List[str]:
+        """! Property that gives the names of the optimized joints names.
+
+        @return List of the optimized joint names.
+        """
         return [
             joint
             for joint in self.actuated_joint_names
@@ -348,112 +384,186 @@ class RobotModel(Model):
         ]
 
     @property
-    def parameter_joint_indexes(self):
+    def parameter_joint_indexes(self) -> List[int]:
+        """! Property that gives the indexes of the parameterized joints.
+
+        @return List of the parameterized joint indexes.
+        """
         return [
             self.get_actuated_joint_index(joint) for joint in self.parameter_joint_names
         ]
 
-    def extract_parameter_dimensions(self, values):
+    def extract_parameter_dimensions(self, values: ArrayType) -> ArrayType:
+        """! Return the elements that correspond to the model dimensions.
+
+        @param values The values to extract elements from.
+        @return A sub-array of the given values corresponding to the model parameterized dimension.
+        """
         return values[self.parameter_joint_indexes, :]
 
-    def extract_optimized_dimensions(self, values):
+    def extract_optimized_dimensions(self, values: ArrayType) -> ArrayType:
+        """! Return the elements that correspond to the model optimized dimensions.
+
+        @param values The values to extract elements from.
+        @return A sub-array of the given values corresponding to the model optimized dimensions.
+        """
         return values[self.optimized_joint_indexes, :]
 
     @property
-    def ndof(self):
-        """Number of degrees of freedom."""
+    def ndof(self) -> int:
+        """! Number of degrees of freedom.
+
+        @return The number of degrees of freedom for the robot.
+        """
         return len(self.actuated_joint_names)
 
     @property
-    def num_opt_joints(self):
-        """Number of optimized joints"""
+    def num_opt_joints(self) -> int:
+        """! Number of optimized joints.
+
+        @return The number of optimized joints.
+        """
         return len(self.optimized_joint_names)
 
     @property
-    def num_param_joints(self):
-        """Number of joints defined as parameter"""
+    def num_param_joints(self) -> int:
+        """! Number of parameterized joints.
+
+        @return The number of parameterized joints.
+        """
         return len(self.parameter_joint_names)
 
-    def get_joint_lower_limit(self, joint):
+    def get_joint_lower_limit(self, joint: Joint) -> float:
+        """! Return the lower limit for a given joint.
+
+        @param joint The joint instance from the URDF.
+        @return The lower limit, when undefined the value -1e9 is returned.
+        """
         if joint.limit is None:
             return -1e9
         return joint.limit.lower
 
-    def get_joint_upper_limit(self, joint):
+    def get_joint_upper_limit(self, joint: Joint) -> float:
+        """! Return the upper limit for a given joint.
+
+        @param joint The joint instance from the URDF.
+        @return The upper limit, when undefined the value 1e9 is returned.
+        """
         if joint.limit is None:
             return 1e9
         return joint.limit.upper
 
-    def get_velocity_joint_limit(self, joint):
+    def get_velocity_joint_limit(self, joint: Joint) -> float:
+        """! Return the velocity limit for a given joint.
+
+        @param joint The joint instance from the URDF.
+        @return The velocity limit, when undefined the value 1e9 is returned.
+        """
         if joint.limit is None:
             return 1e9
         return joint.limit.velocity
 
     @property
-    def lower_actuated_joint_limits(self):
+    def lower_actuated_joint_limits(self) -> cs.DM:
+        """! Property that defines the lower actuated joint limits.
+
+        @return The lower joint position limits.
+        """
         return cs.DM(
             [
                 self.get_joint_lower_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.type != "fixed"
             ]
         )
 
     @property
-    def upper_actuated_joint_limits(self):
+    def upper_actuated_joint_limits(self) -> cs.DM:
+        """! Property that defines the upper actuated joint limits.
+
+        @return The upper joint position limits.
+        """
         return cs.DM(
             [
                 self.get_joint_upper_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.type != "fixed"
             ]
         )
 
     @property
-    def velocity_actuated_joint_limits(self):
+    def velocity_actuated_joint_limits(self) -> cs.DM:
+        """! Property that defines the velocity actuated joint limits.
+
+        @return The velocity joint limits.
+        """
         return cs.DM(
             [
                 self.get_velocity_joint_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.type != "fixed"
             ]
         )
 
     @property
-    def lower_optimized_joint_limits(self):
+    def lower_optimized_joint_limits(self) -> cs.DM:
+        """! Property that defines the lower optimized joint limits.
+
+        @return The lower joint position limits.
+        """
         return cs.DM(
             [
                 self.get_joint_lower_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
         )
 
     @property
-    def upper_optimized_joint_limits(self):
+    def upper_optimized_joint_limits(self) -> cs.DM:
+        """! Property that defines the upper optimized joint limits.
+
+        @return The upper joint position limits.
+        """
         return cs.DM(
             [
                 self.get_joint_upper_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
         )
 
     @property
-    def velocity_optimized_joint_limits(self):
+    def velocity_optimized_joint_limits(self) -> cs.DM:
+        """! Property that defines the velocity limits for the optimized joints.
+
+        @return The joint velocity limits.
+        """
         return cs.DM(
             [
                 self.get_velocity_joint_limit(jnt)
-                for jnt in self._urdf.joints
+                for jnt in self.urdf.joints
                 if jnt.name in self.optimized_joint_names
             ]
         )
 
-    def add_base_frame(self, base_link, xyz=None, rpy=None, joint_name=None):
-        """Add new base frame, note this changes the root link."""
+    def add_base_frame(
+        self,
+        base_link: str,
+        xyz: Union[None, List[float]] = None,
+        rpy: Union[None, List[float]] = None,
+        joint_name: str = None,
+    ) -> None:
+        """! Add new base frame, note this changes the root link.
+
+        @param base_link The name for the new root link.
+        @param xyz The position of the new link with respect to the current root link. Defaults to [0.0, 0.0, 0.0].
+        @param rpy The orientation as Euler (RPY) angles, defined in radians, with respect to the current root link. Defaults to [0.0, 0.0, 0.0].
+        @param joint_name The name for the joint that connects the current root link with the new base frame. Defaults to "{base_link}_and_{current_root_link}_joint".
+        """
 
         parent_link = base_link
-        child_link = self._urdf.get_root()  # i.e. current root
+        child_link = self.urdf.get_root()  # i.e. current root
 
         if xyz is None:
             xyz = [0.0] * 3
@@ -464,7 +574,7 @@ class RobotModel(Model):
         if not isinstance(joint_name, str):
             joint_name = parent_link + "_and_" + child_link + "_joint"
 
-        self._urdf.add_link(Link(name=parent_link))
+        self.urdf.add_link(Link(name=parent_link))
 
         joint = Joint(
             name=joint_name,
@@ -473,7 +583,7 @@ class RobotModel(Model):
             joint_type="fixed",
             origin=Pose(xyz=xyz, rpy=rpy),
         )
-        self._urdf.add_joint(joint)
+        self.urdf.add_joint(joint)
 
     # def add_fixed_link(self, link, parent_link, xyz=None, rpy=None, joint_name=None):
     #     """Add a fixed link"""
@@ -494,10 +604,10 @@ class RobotModel(Model):
     #     if not isinstance(joint_name, str):
     #         joint_name = parent_link + "_and_" + child_link + "_joint"
 
-    #     self._urdf.add_link(Link(name=child_link))
+    #     self.urdf.add_link(Link(name=child_link))
 
     #     origin = Pose(xyz=xyz, rpy=rpy)
-    #     self._urdf.add_joint(
+    #     self.urdf.add_joint(
     #         Joint(
     #             name=joint_name,
     #             parent=parent_link,
@@ -507,12 +617,19 @@ class RobotModel(Model):
     #         )
     #     )
 
-    def get_root_link(self):
-        """Return the root link"""
-        return self._urdf.get_root()
+    def get_root_link(self) -> str:
+        """! The root link name.
 
-    @staticmethod
-    def get_link_visual_origin(link):
+        @return The name of the root link.
+        """
+        return self.urdf.get_root()
+
+    def get_link_visual_origin(self, link: Link) -> Tuple[cs.DM]:
+        """! Get the link position and orientation for the link visual.
+
+        @param link The link of interest.
+        @return The position and orientation.
+        """
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if link.visual is not None:
             if link.visual.origin is not None:
@@ -520,27 +637,50 @@ class RobotModel(Model):
                 xyz, rpy = cs.DM(origin.xyz), cs.DM(origin.rpy)
         return xyz, rpy
 
-    @staticmethod
-    def get_joint_origin(joint):
-        """Get the origin for the joint"""
+    def get_joint_origin(self, joint: Joint) -> Tuple[cs.DM]:
+        """! Get the origin for the joint.
+
+        @param The joint of interest.
+        @return The position and orientation of the joint.
+        """
         xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
         if joint.origin is not None:
             xyz, rpy = cs.DM(joint.origin.xyz), cs.DM(joint.origin.rpy)
         return xyz, rpy
 
-    @staticmethod
-    def get_joint_axis(joint):
-        """Get the axis of joint, the axis is normalized for revolute/continuous joints"""
+    def get_joint_axis(self, joint: Joint) -> cs.DM:
+        """! Get the axis of a joint.
+
+        @param The joint of interest.
+        @return The normalized joint axis."""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1.0, 0.0, 0.0])
         return unit(axis)
 
-    def get_actuated_joint_index(self, joint_name):
+    def get_actuated_joint_index(self, joint_name: str) -> int:
+        """! Get the joint index for a given joint name.
+
+        @param The name of the joint.
+        @return Index for the joint.
+        """
         return self.actuated_joint_names.index(joint_name)
 
     def get_random_joint_positions(
-        self, n=1, xlim=None, ylim=None, zlim=None, base_link=None
-    ):
-        """Return a random array with joint positions within the actuator limits."""
+        self,
+        n: int = 1,
+        xlim: Union[None, Tuple[ArrayType]] = None,
+        ylim: Union[None, Tuple[ArrayType]] = None,
+        zlim: Union[None, Tuple[ArrayType]] = None,
+        base_link: Union[None, str] = None,
+    ) -> cs.DM:
+        """! Random joint positions within actuator limits and optionally within a box for a given base link.
+
+        @param n Number of joint positions. Default is 1.
+        @param xlim Limit the robot link positions in the x axis for the base frame. None means there are no limits.
+        @param ylim Limit the robot link positions in the y axis for the base frame. None means there are no limits.
+        @param zlim Limit the robot link positions in the z axis for the base frame. None means there are no limits.
+        @param base_link The link to define the x, y, z limits. None means the root link is used.
+        @return Random joint positions with dimension ndof-by-n.
+        """
 
         lo = self.lower_actuated_joint_limits.toarray()
         hi = self.upper_actuated_joint_limits.toarray()
@@ -575,12 +715,25 @@ class RobotModel(Model):
 
         return cs.horzcat(*[randq() for _ in range(n)])
 
-    def get_random_pose_in_global_link(self, link):
-        """Returns a random end-effector pose within the robot limits defined in the global link frame."""
-        q = self.get_random_joint_positions()
-        return self.get_global_link_transform(link, q)
+    def get_random_pose_in_global_link(self, link_name: str) -> cs.DM:
+        """Random end-effector pose within robot limits.
 
-    def _make_function(self, label, link, method, n=1, base_link=None, axis=None):
+        @param link_name Name of the end-effector link.
+        @return Random homogeneous transformation array within robot limits defined in the global link frame.
+        """
+        q = self.get_random_joint_positions()
+        return self.get_global_link_transform(link_name, q)
+
+    def make_function(
+        self,
+        label: str,
+        link: str,
+        method: Callable,
+        n: int = 1,
+        base_link: Union[None, str] = None,
+        axis: Union[None, cs.DM] = None,
+    ):
+        """! Automate function generation. This is an internal function for the RobotModel class and <b>SHOULD NOT</b> be used."""
         q = cs.SX.sym("q", self.ndof)
         args = [link, q]
         if axis is not None:
@@ -638,21 +791,26 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_transform(self, link, q):
-        """Get the link transform in the global frame for a given joint state q"""
+    def get_global_link_transform(self, link: str, q: ArrayType) -> CasADiArrayType:
+        """! Get the link transform in the global frame for a given joint state q.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Homogeneous transform array.
+        """
 
         # Setup
         assert (
-            link in self._urdf.link_map.keys()
+            link in self.urdf.link_map.keys()
         ), f"given link '{link}' does not appear in URDF"
-        root = self._urdf.get_root()
+        root = self.urdf.get_root()
         T = I4()
         if link == root:
             return T
 
         # Iterate over joints in chain
-        for joint_name in self._urdf.get_chain(root, link, links=False):
-            joint = self._urdf.joint_map[joint_name]
+        for joint_name in self.urdf.get_chain(root, link, links=False):
+            joint = self.urdf.joint_map[joint_name]
             xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == "fixed":
@@ -675,83 +833,162 @@ class RobotModel(Model):
 
         return T
 
-    def get_global_link_transform_function(self, link, n=1):
-        """Get the function which computes the link transform in the global frame"""
-        return self._make_function("T", link, self.get_global_link_transform, n=n)
+    def get_global_link_transform_function(self, link: str, n: int = 1) -> cs.Function:
+        """! Get the function which computes the link transform in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
+        """
+        return self.make_function("T", link, self.get_global_link_transform, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_transform(self, link, q, base_link):
-        """Get the link transform in a given base frame."""
+    def get_link_transform(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the link transform in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Homogeneous transform array.
+        """
         T_L_W = self.get_global_link_transform(link, q)
         T_B_W = self.get_global_link_transform(base_link, q)
         return T_L_W @ invt(T_B_W)
 
-    def get_link_transform_function(self, link, base_link, n=1):
-        """Get the function that computes the transform in a given base frame"""
-        return self._make_function(
+    def get_link_transform_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> CasADiArrayType:
+        """! Get the function that computes the transform in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
+        """
+        return self.make_function(
             "T", link, self.get_link_transform, base_link=base_link, n=n
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_position(self, link, q):
-        """Get the link position in the global frame for a given joint state q"""
+    def get_global_link_position(self, link: str, q: ArrayType) -> CasADiArrayType:
+        """! Get the link position in the global frame for a given joint state q.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Position array.
+        """
         return transl(self.get_global_link_transform(link, q))
 
-    def get_global_link_position_function(self, link, n=1):
-        """Get the function that computes the global position of a given link"""
-        return self._make_function("p", link, self.get_global_link_position, n=n)
+    def get_global_link_position_function(self, link: str, n: int = 1) -> cs.Function:
+        """! Get the function that computes the global position of a given link.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
+        """
+        return self.make_function("p", link, self.get_global_link_position, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_position(self, link, q, base_link):
-        """Get the link position in a given base frame"""
+    def get_link_position(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the link position in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Position array.
+        """
         return transl(self.get_link_transform(link, q, base_link))
 
-    def get_link_position_function(self, link, base_link, n=1):
-        """Get the function that computes the position of a link in a given base frame."""
-        return self._make_function(
+    def get_link_position_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the position of a link in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
+        """
+        return self.make_function(
             "p", link, self.get_link_position, n=n, base_link=base_link
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_rotation(self, link, q):
-        """Get the link rotation in the global frame for a given joint state q"""
+    def get_global_link_rotation(self, link: str, q: ArrayType) -> CasADiArrayType:
+        """! Get the link rotation in the global frame for a given joint state q.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Rotation array.
+        """
         return t2r(self.get_global_link_transform(link, q))
 
-    def get_global_link_rotation_function(self, link, n=1):
-        """Get the function that computes a rotation matrix in the global link"""
-        return self._make_function("R", link, self.get_global_link_rotation, n=n)
+    def get_global_link_rotation_function(self, link: str, n: int = 1) -> cs.Function:
+        """! Get the function that computes a rotation matrix in the global link.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function("R", link, self.get_global_link_rotation, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_rotation(self, link, q, base_link):
-        """Get the rotation matrix for a link in a given base frame"""
+    def get_link_rotation(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the rotation matrix for a link in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Rotation array.
+        """
         return t2r(self.get_link_transform(link, q, base_link))
 
-    def get_link_rotation_function(self, link, base_link, n=1):
-        """Get the function that computes the rotation matrix for a link in a given base frame."""
-        return self._make_function(
+    def get_link_rotation_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the rotation matrix for a link in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "R", link, self.get_link_rotation, base_link=base_link, n=n
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_quaternion(self, link, q):
-        """Get a quaternion in the global frame."""
+    def get_global_link_quaternion(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Get a quaternion in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Quaternion array.
+        """
 
         # Setup
-        assert link in self._urdf.link_map.keys(), "given link does not appear in URDF"
-        root = self._urdf.get_root()
+        assert link in self.urdf.link_map.keys(), "given link does not appear in URDF"
+        root = self.urdf.get_root()
         quat = Quaternion(0.0, 0.0, 0.0, 1.0)
         if link == root:
             return quat.getquat()
 
         # Iterate over joints in chain
-        for joint_name in self._urdf.get_chain(root, link, links=False):
-            joint = self._urdf.joint_map[joint_name]
+        for joint_name in self.urdf.get_chain(root, link, links=False):
+            joint = self.urdf.joint_map[joint_name]
             xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == "fixed":
@@ -773,54 +1010,104 @@ class RobotModel(Model):
 
         return quat.getquat()
 
-    def get_global_link_quaternion_function(self, link, n=1):
-        """Get the function that computes a quaternion in the global frame."""
-        return self._make_function("quat", link, self.get_global_link_quaternion, n=n)
+    def get_global_link_quaternion_function(self, link: str, n: int = 1) -> cs.Function:
+        """! Get the function that computes a quaternion in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
+        return self.make_function("quat", link, self.get_global_link_quaternion, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_quaternion(self, link, q, base_link):
-        """Get the quaternion defined in a given base frame."""
+    def get_link_quaternion(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the quaternion defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Quaternion array.
+        """
         quat_L_W = Quaternion.fromvec(self.get_global_link_quaternion(link, q))
         quat_B_W = Quaternion.fromvec(self.get_global_link_quaternion(base_link, q))
         return (quat_L_W * quat_B_W.inv()).getquat()
 
-    def get_link_quaternion_function(self, link, base_link, n=1):
-        """Get the function that computes a quaternion defined in a given base frame."""
-        return self._make_function(
+    def get_link_quaternion_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes a quaternion defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
+        return self.make_function(
             "quat", link, self.get_link_quaternion, n=n, base_link=base_link
         )
 
     @arrayify_args
     @listify_output
-    def get_global_link_rpy(self, link, q):
-        """Get the Roll-Pitch-Yaw angles in the global frame."""
+    def get_global_link_rpy(self, link: str, q: ArrayType) -> CasADiArrayType:
+        """! Get the Roll-Pitch-Yaw angles in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return RPY euler angles in radians.
+        """
         return Quaternion.fromvec(self.get_global_link_quaternion(link, q)).getrpy()
 
     def get_global_link_rpy_function(self, link, n=1):
-        """Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
-        return self._make_function("quat", link, self.get_global_link_rpy, n=n)
+        """! Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
+        return self.make_function("quat", link, self.get_global_link_rpy, n=n)
 
     @arrayify_args
     @listify_output
-    def get_link_rpy(self, link, q, base_link):
-        """Get the the Roll-Pitch-Yaw angles defined in a given base frame."""
+    def get_link_rpy(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the the Roll-Pitch-Yaw angles defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return RPY euler angles in radians.
+        """
         return Quaternion.fromvec(self.get_link_quaternion(link, q, base_link)).getrpy()
 
-    def get_link_rpy_function(self, link, base_link, n=1):
-        """Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame."""
-        return self._make_function(
-            "quat", link, self.get_link_rpy, n=n, base_link=base_link
+    def get_link_rpy_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the RPY angles for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
+        return self.make_function(
+            "rpy", link, self.get_link_rpy, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_geometric_jacobian")
     def get_global_geometric_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_geometric_jacobian(self, link, q):
-        """Compute the geometric Jacobian matrix in the global frame."""
+    def get_global_link_geometric_jacobian(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Compute the geometric Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Geometric Jacobian.
+        """
 
         e = self.get_global_link_position(link, q)
 
@@ -832,7 +1119,7 @@ class RobotModel(Model):
 
         past_in_chain = False
 
-        for joint in self._urdf.joints:
+        for joint in self.urdf.joints:
             if joint.type == "fixed":
                 continue
 
@@ -881,22 +1168,38 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_geometric_jacobian_function")
     def get_global_geometric_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_geometric_jacobian_function(self, link, n=1):
-        """Get the function that computes the geometric jacobian in the global frame."""
-        return self._make_function(
+    def get_global_link_geometric_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "J", link, self.get_global_link_geometric_jacobian, n=n
         )
 
     @deprecation_warning("get_global_link_analytical_jacobian")
     def get_global_analytical_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_analytical_jacobian(self, link, q):
-        """Compute the analytical Jacobian matrix in the global frame."""
+    def get_global_link_analytical_jacobian(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Compute the analytical Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Analytic Jacobian.
+        """
         return cs.vertcat(
             self.get_global_link_linear_jacobian(link, q),
             self.get_global_link_angular_analytical_jacobian(link, q),
@@ -904,11 +1207,19 @@ class RobotModel(Model):
 
     @deprecation_warning("get_global_link_analytical_jacobian_function")
     def get_global_analytical_jacobian_function(self, link):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_analytical_jacobian_function(self, link, n=1):
-        """Get the function that computes the analytical jacobian in the global frame."""
-        return self._make_function(
+    def get_global_link_analytical_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the analytical jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "J_a",
             link,
             self.get_global_link_analytical_jacobian,
@@ -917,12 +1228,21 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_geometric_jacobian")
     def get_geometric_jacobian(self):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_geometric_jacobian(self, link, q, base_link):
-        """Get the geometric jacobian in a given base link."""
+    def get_link_geometric_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the geometric jacobian in a given base link.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Geometric Jacobian.
+        """
 
         J = self.get_global_link_geometric_jacobian(link, q)
 
@@ -939,22 +1259,40 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_geometric_jacobian_function")
     def get_geometric_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_link_geometric_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the geometric jacobian in a given base frame"""
-        return self._make_function(
+    def get_link_geometric_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """Get the function that computes the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "J", link, self.get_link_geometric_jacobian, base_link=base_link, n=n
         )
 
     @deprecation_warning("get_link_analytical_jacobian")
     def get_analytical_jacobian(self):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_analytical_jacobian(self, link, q, base_link):
-        """Compute the analytical Jacobian matrix in a given base link."""
+    def get_link_analytical_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Compute the analytical Jacobian matrix in a given base link.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Analytic Jacobian.
+        """
         return cs.vertcat(
             self.get_link_linear_jacobian(link, q, base_link),
             self.get_link_angular_analytical_jacobian(link, q, base_link),
@@ -962,94 +1300,168 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_analytical_jacobian_function")
     def get_analytical_jacobian_function(self, link, base_link):
+        """! Deprecated function."""
         pass
 
-    def get_link_analytical_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the analytical jacobian in a given base frame."""
-        return self._make_function(
+    def get_link_analytical_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the analytical jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "J_a", link, self.get_link_analytical_jacobian, n=n, base_link=base_link
         )
 
     @deprecation_warning("get_global_link_linear_jacobian")
     def get_global_linear_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_linear_jacobian(self, link, q):
-        """Compute the linear part of the geometric jacobian in the global frame."""
+    def get_global_link_linear_jacobian(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Compute the linear part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Linear part of the Jacobian.
+        """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[:3, :]
 
     @deprecation_warning("get_global_link_linear_jacobian_function")
     def get_global_linear_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_linear_jacobian_function(self, link, n=1):
-        """Get the function that computes the linear part of the geometric jacobian in the global frame."""
-        return self._make_function(
-            "Jl", link, self.get_global_link_linear_jacobian, n=n
-        )
+    def get_global_link_linear_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the linear part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function("Jl", link, self.get_global_link_linear_jacobian, n=n)
 
     @deprecation_warning("get_link_linear_jacobian")
     def get_linear_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_linear_jacobian(self, link, q, base_link):
-        """Get the linear part of the geometric jacobian in a given base frame."""
+    def get_link_linear_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the linear part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Linear part of the Jacobian.
+        """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[:3, :]
 
     @deprecation_warning("get_link_linear_jacobian_function")
     def get_linear_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_link_linear_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the linear part of the geometric jacobian in a given base frame."""
-        return self._make_function(
+    def get_link_linear_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the linear part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "Jl", link, self.get_link_linear_jacobian, base_link=base_link, n=n
         )
 
     @deprecation_warning("get_global_link_angular_geometric_jacobian")
     def get_global_angular_geometric_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_angular_geometric_jacobian(self, link, q):
-        """Compute the angular part of the geometric jacobian in the global frame."""
+    def get_global_link_angular_geometric_jacobian(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Compute the angular part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the geometric Jacobian.
+        """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[3:, :]
 
     @deprecation_warning("get_global_link_angular_geometric_jacobian_function")
     def get_global_angular_geometric_jacobian_function(self, link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_angular_geometric_jacobian_function(self, link, n=1):
-        """Get the function that computes the angular part of the geometric jacobian in the global frame."""
-        return self._make_function(
+    def get_global_link_angular_geometric_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the geometric jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "Ja", link, self.get_global_link_angular_geometric_jacobian, n=n
         )
 
     @deprecation_warning("get_global_link_angular_analytical_jacobian")
     def get_global_angular_analytical_jacobian(self, link, q):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_global_link_angular_analytical_jacobian(self, link, q):
-        """Compute the angular part of the analytical Jacobian matrix in the global frame."""
+    def get_global_link_angular_analytical_jacobian(
+        self, link: str, q: ArrayType
+    ) -> CasADiArrayType:
+        """! Compute the angular part of the analytical Jacobian matrix in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @return Angular part of the analytical Jacobian.
+        """
         return self.get_link_angular_analytical_jacobian(link, q, self.get_root_link())
 
     @deprecation_warning("get_global_link_angular_analytical_jacobian_function")
     def get_global_angular_analytical_jacobian_function(self, link):
+        """! Deprecated function."""
         pass
 
-    def get_global_link_angular_analytical_jacobian_function(self, link, n=1):
-        """Get the function that computes the angular part of the analytical jacobian in the global frame."""
-        return self._make_function(
+    def get_global_link_angular_analytical_jacobian_function(
+        self, link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the analytical jacobian in the global frame.
+
+        @param link Name of the end-effector link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "Ja",
             link,
             self.get_global_link_angular_analytical_jacobian,
@@ -1058,22 +1470,40 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_geometric_jacobian")
     def get_angular_geometric_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_angular_geometric_jacobian(self, link, q, base_link):
-        """Get the angular part of the geometric jacobian in a given base frame."""
+    def get_link_angular_geometric_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Get the angular part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the geometric Jacobian.
+        """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[3:, :]
 
     @deprecation_warning("get_link_angular_geometric_jacobian_function")
     def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
+        """! Deprecated function."""
         pass
 
-    def get_link_angular_geometric_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the angular part of the geometric jacobian in a given base frame."""
-        return self._make_function(
+    def get_link_angular_geometric_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the geometric jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "Ja",
             link,
             self.get_link_angular_geometric_jacobian,
@@ -1083,12 +1513,21 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_analytical_jacobian")
     def get_angular_analytical_jacobian(self, link, q, base_link):
+        """! Deprecated function."""
         pass
 
     @arrayify_args
     @listify_output
-    def get_link_angular_analytical_jacobian(self, link, q, base_link):
-        """Compute the angular part of the analytical Jacobian matrix in a given base frame."""
+    def get_link_angular_analytical_jacobian(
+        self, link: str, q: ArrayType, base_link: str
+    ) -> CasADiArrayType:
+        """! Compute the angular part of the analytical Jacobian matrix in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param base_link Name of the base frame link.
+        @return Angular part of the analytical Jacobian.
+        """
 
         # Compute rpy derivative Ja
         q_sym = cs.SX.sym("q_sym", self.ndof)
@@ -1102,11 +1541,20 @@ class RobotModel(Model):
 
     @deprecation_warning("get_link_angular_analytical_jacobian_function")
     def get_angular_analytical_jacobian_function(self, link, base_link):
+        """! Deprecated function."""
         pass
 
-    def get_link_angular_analytical_jacobian_function(self, link, base_link, n=1):
-        """Get the function that computes the angular part of the analytical jacobian in a given base frame."""
-        return self._make_function(
+    def get_link_angular_analytical_jacobian_function(
+        self, link: str, base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get the function that computes the angular part of the analytical jacobian in a given base frame.
+
+        @param link Name of the end-effector link.
+        @param base_link Name of the base frame link.
+        @param n Number of joint states to expect when the function is called. Default is 1.
+        @return A CasADi function that computes the angular part of the analytical Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
+        """
+        return self.make_function(
             "Ja",
             link,
             self.get_link_angular_analytical_jacobian,
@@ -1116,7 +1564,17 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_link_axis(self, link, q, axis, base_link):
+    def get_link_axis(
+        self, link: str, q: ArrayType, axis: Union[str, ArrayType], base_link: str
+    ) -> CasADiArrayType:
+        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis).
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @param base_link Name of the base frame link.
+        @return Axis defined in the end-effector frame as function of the joint angles.
+        """
         Tf = self.get_link_transform(link, q, base_link)
 
         axis2index = {"x": 0, "y": 1, "z": 2}
@@ -1139,8 +1597,17 @@ class RobotModel(Model):
 
         return vector
 
-    def get_link_axis_function(self, link, axis, base_link, n=1):
-        return self._make_function(
+    def get_link_axis_function(
+        self, link: str, axis: Union[str, ArrayType], base_link: str, n: int = 1
+    ) -> cs.Function:
+        """! Get function for computing the link axis.
+
+        @param link Name of the end-effector link.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @param base_link Name of the base frame link.
+        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
+        return self.make_function(
             "a",
             link,
             self.get_link_axis,
@@ -1151,9 +1618,26 @@ class RobotModel(Model):
 
     @arrayify_args
     @listify_output
-    def get_global_link_axis(self, link, q, axis):
+    def get_global_link_axis(
+        self, link: str, q: ArrayType, axis: Union[str, ArrayType]
+    ) -> CasADiArrayType:
+        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis) in the global frame.
+
+        @param link Name of the end-effector link.
+        @param q Joint position array.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @return Axis defined in the end-effector frame as function of the joint angles.
+        """
         return self.get_link_axis(link, q, axis, self.get_root_link())
 
-    def get_global_link_axis_function(self, link, axis, n=1):
+    def get_global_link_axis_function(
+        self, link: str, axis: Union[str, ArrayType], n: int = 1
+    ) -> cs.Function:
+        """! Get function for computing the link axis in the global frame.
+
+        @param link Name of the end-effector link.
+        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
+        """
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
-        return self._make_function("a", link, get_global_link_axis, n=n)
+        return self.make_function("a", link, get_global_link_axis, n=n)
