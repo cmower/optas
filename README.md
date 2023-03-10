@@ -107,12 +107,15 @@ solution = solver.solve()
 q_solution = solution[f"{name}/q"]
 
 # Visualize the robot
-params = {"link_axis_scale": 0.5}
-# vis = optas.RobotVisualizer(robot, q=q_nominal, params={})  # nominal
-vis = optas.RobotVisualizer(robot, q=q_solution, params=params)  # solution
+
+vis = optas.Visualizer()
+vis.grid_floor()
+vis.robot(
+    robot, q=q_solution, show_links=True, display_link_names=True, link_names_alpha=0.4
+)
 
 # Draw goal position and start visualizer
-vis.draw_sphere(0.05, rgba=[0, 1, 0, 0.5], position=p_goal.toarray().flatten().tolist())
+vis.sphere(position=p_goal.toarray().flatten().tolist(), radius=0.05, alpha=0.5, rgb=[0, 1, 0])
 vis.start()
 ```
 
