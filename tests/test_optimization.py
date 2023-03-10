@@ -26,7 +26,7 @@ def test_derive_jacobian_and_hessian_functions():
     f = p[0] * x[0] ** 2 + p[1] * x[1] ** 3
     fun = optas.Function("fun", [x, p], [f])
 
-    Jac, Hes = optas.optimization._derive_jacobian_and_hessian_functions(
+    Jac, Hes = optas.optimization.derive_jacobian_and_hessian_functions(
         name, fun, x, p
     )
 
@@ -56,7 +56,7 @@ def test_vertcon():
         optas.Function("e", [x, p], [2 * x[0] - x[1]]),
     ]
 
-    fun = optas.optimization._vertcon(x, p, ineq=ineq, eq=eq)
+    fun = optas.optimization.vertcon(x, p, ineq=ineq, eq=eq)
 
     f_known = optas.vertcat(
         p[0] * x[0],

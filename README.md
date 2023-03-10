@@ -4,7 +4,11 @@
 
 # OpTaS
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
+
+[![Watch the video](https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg)](https://youtu.be/gCMNOenFngU)
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
@@ -171,6 +175,12 @@ If you use OpTaS in your work, please consider including the following citation.
 ```
 
 The preprint can be found on [arXiv](https://arxiv.org/abs/2301.13512).
+
+# Contributing
+
+We welcome contributions from the community.
+If you come across any issues or inacuracies in the documentation, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
+If you would like to contribute any new features, please [fork the repository](https://github.com/cmower/optas/fork), and submit a pull request.
 
 # Acknowledgement
 
