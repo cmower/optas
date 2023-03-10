@@ -2,7 +2,6 @@ import os
 import pathlib
 
 import optas
-from optas.visualize import Visualizer
 
 # Specify URDF filename
 cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
