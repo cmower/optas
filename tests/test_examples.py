@@ -20,6 +20,7 @@ def import_module(path):
     spec.loader.exec_module(module)
     return module
 
+
 def load_main_function(filename):
     path = examples_path / filename
 
@@ -30,86 +31,61 @@ def load_main_function(filename):
     return main
 
 
-# def test_dual_arm():
-#     main = load_main_function("dual_arm.py")
-#     assert main(gui=False) == 0
+def test_dual_arm():
+    main = load_main_function("dual_arm.py")
+    assert main(gui=False) == 0
 
 
-# def test_planar_idk():
-#     main = load_main_function("planar_idk.py")
-#     assert main() == 0
+def test_planar_idk():
+    main = load_main_function("planar_idk.py")
+    assert main() == 0
 
 
-# def test_planar_ik():
-#     main = load_main_function("planar_ik.py")
-#     assert main() == 0
+def test_planar_ik():
+    main = load_main_function("planar_ik.py")
+    assert main() == 0
 
 
-# def test_figure_eight_plan():
-#     main = load_main_function("figure_eight_plan.py")
-#     assert main(gui=False) == 0
+def test_figure_eight_plan():
+    main = load_main_function("figure_eight_plan.py")
+    assert main(gui=False) == 0
 
 
-# def test_figure_eight_plan_6dof():
-#     main = load_main_function("figure_eight_plan_6dof.py")
-#     assert main(gui=False) == 0
+def test_figure_eight_plan_6dof():
+    main = load_main_function("figure_eight_plan_6dof.py")
+    assert main(gui=False) == 0
 
 
-# def test_point_mass_mpc():
-#     main = load_main_function("point_mass_mpc.py")
-#     assert main(show=False) == 0
+def test_point_mass_mpc():
+    main = load_main_function("point_mass_mpc.py")
+    assert main(show=False) == 0
 
 
-# def test_point_mass_planner():
-#     main = load_main_function("point_mass_planner.py")
-#     assert main(show=False) == 0
+def test_point_mass_planner():
+    main = load_main_function("point_mass_planner.py")
+    assert main(show=False) == 0
 
 
-# def test_pushing():
-#     main = load_main_function("pushing.py")
-#     assert main(gui=False) == 0
+def test_pushing():
+    main = load_main_function("pushing.py")
+    assert main(gui=False) == 0
 
 
-# def test_pushing():
-#     main = load_main_function("pushing.py")
-#     assert main(gui=False) == 0
+def test_pushing():
+    main = load_main_function("pushing.py")
+    assert main(gui=False) == 0
 
 
-# def test_pybullet_api():
-#     main = load_main_function("pybullet_api.py")
-#     assert main(gui=False) == 0
+def test_pybullet_api():
+    main = load_main_function("pybullet_api.py")
+    assert main(gui=False) == 0
 
 
-# def test_simple_joint_space_planner():
-#     main = load_main_function("simple_joint_space_planner.py")
-#     assert main(gui=False) == 0
+def test_simple_joint_space_planner():
+    main = load_main_function("simple_joint_space_planner.py")
+    assert main(gui=False) == 0
+
 
 def test_example():
-
-
-    
-    
-
-    class RunTheTest:
-
-        def __init__(self):            
-            threading.Thread(target=self.quit_window).start()
-            path = examples_path / 'example.py'
-            self.module = import_module(path)
-
-        def quit_window(self):
-            time.sleep(5.)
-            del self.module.vis.renWin, self.module.vis.iren
-
-    RunTheTest()
-
-    
-    
-    
-
-    
-
-    
-    
-
-test_example()
+    path = examples_path / "example.py"
+    module = import_module(path)
