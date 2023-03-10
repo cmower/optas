@@ -2,6 +2,7 @@ import os
 import pathlib
 
 import optas
+from optas.visualize import Visualizer
 
 # Specify URDF filename
 cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
@@ -61,9 +62,10 @@ q_solution = solution[f"{name}/q"]
 
 # Visualize the robot
 params = {"link_axis_scale": 0.5}
-# vis = optas.RobotVisualizer(robot, q=q_nominal, params={})  # nominal
-vis = optas.RobotVisualizer(robot, q=q_solution, params=params)  # solution
+vis = Visualizer()  # solution
 
 # Draw goal position and start visualizer
-vis.draw_sphere(0.05, rgba=[0, 1, 0, 0.5], position=p_goal.toarray().flatten().tolist())
+vis.sphere(0.05, rgb=[0, 1, 0], position=p_goal.toarray().flatten().tolist())
+vis.robot(robot, q=q_solution)
 vis.start()
+
