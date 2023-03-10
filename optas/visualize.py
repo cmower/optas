@@ -745,6 +745,7 @@ class Visualizer:
         camera_position=[2, 2, 2],
         camera_focal_point=[0, 0, 0],
         camera_view_up=[0, 0, 1],
+        quit_after_delay=None,
     ):
         self.ren = vtk.vtkRenderer()
         self.ren.SetBackground(*background_color)
@@ -764,6 +765,12 @@ class Visualizer:
         self.iren.SetInteractorStyle(style)
 
         self.actors = []
+
+        if isinstance(quit_after_delay, float):
+            assert quit_after_delay > 0.0, "the delay must be positive"
+            quit_after_delay_ms = int(quit_after_delay * 1000.0)
+            timer_id = self.iren.CreateOneShotTimer(quit_after_delay_ms)
+            self.iren.AddObserver("TimerEvent", self.close, timer_id)
 
     # def append_actors(self, *actors):
     #     for actor in actors:
@@ -1039,3 +1046,7 @@ class Visualizer:
         self.iren.Initialize()
         self.renWin.Render()
         self.iren.Start()
+
+    def close(self, obj, event):
+        self.renWin.Finalize()
+        self.iren.TerminateApp()
