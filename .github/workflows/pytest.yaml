@@ -19,13 +19,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        echo "Display: $DISPLAY"
         python -m pip install --upgrade pip
         python -m pip install .
         python -m pip install -r requirements_all.txt
     - name: Test with pytest
-      env:
-        DISPLAY: :1
       run: |
         pytest tests/test_examples.py
         pytest tests/test_builder.py
