@@ -7,9 +7,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      DISPLAY: :1
-
     strategy:
       matrix:
         python-version: [3.8]
@@ -26,9 +23,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
         python -m pip install -r requirements_all.txt
-
-    - name: Setup xvfb for screen 0
-      run: Xvfb :1 -screen 0 1600x1200x8
     - name: Test with pytest
       env:
         DISPLAY: :1
@@ -41,5 +35,3 @@ jobs:
         pytest tests/test_solver.py
         pytest tests/test_spatialmath.py
         pytest tests/test_sx_container.py
-    - name: Tear down xvfb
-      run: killall Xvfb
