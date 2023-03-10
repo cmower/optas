@@ -27,8 +27,8 @@ jobs:
       env:
         DISPLAY: :1
       run: |
-        pytest tests/test_builder.py
         pytest tests/test_examples.py
+        pytest tests/test_builder.py
         pytest tests/test_models.py
         pytest tests/test_optas_utils.py
         pytest tests/test_optimization.py
