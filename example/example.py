@@ -60,7 +60,7 @@ solution = solver.solve()
 q_solution = solution[f"{name}/q"]
 
 # Visualize the robot
-params = {"link_axis_scale": 0.5}
+# params = {"link_axis_scale": 0.5}
 vis = optas.Visualizer()  # solution
 
 # Draw goal position and start visualizer
