@@ -26,6 +26,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
         python -m pip install -r requirements_all.txt
+
+    - name: Setup xvfb for screen 0
+      run: Xvfb :1 -screen 0 1600x1200x24 &
     - name: Test with pytest
       run: |
         pytest tests/test_builder.py
@@ -36,3 +39,5 @@ jobs:
         pytest tests/test_solver.py
         pytest tests/test_spatialmath.py
         pytest tests/test_sx_container.py
+    - name: Tear down xvfb
+      run: killall Xvfb
