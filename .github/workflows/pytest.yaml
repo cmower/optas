@@ -28,8 +28,10 @@ jobs:
         python -m pip install -r requirements_all.txt
 
     - name: Setup xvfb for screen 0
-      run: Xvfb :1 -screen 0 1600x1200x24 &
+      run: Xvfb :1 -screen 0 3200x2400x8
     - name: Test with pytest
+      env:
+        DISPLAY: :1
       run: |
         pytest tests/test_builder.py
         pytest tests/test_examples.py
