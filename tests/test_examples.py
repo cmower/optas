@@ -89,7 +89,7 @@ def load_main_function(filename):
 def test_example():
 
     os.system(
-        "Xvfb :1 -screen 0 1600x1200x16  &"
+        "Xvfb :1 -screen 0 1600x1200x16  "
     )  # create virtual display with size 1600x1200 and 16 bit color. Color can be changed to 24 or 8
     os.environ["DISPLAY"] = ":1"  # tell X clients to use our virtual DISPLAY :1
 
