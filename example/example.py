@@ -61,11 +61,11 @@ solution = solver.solve()
 q_solution = solution[f"{name}/q"]
 
 # Visualize the robot
-vis = optas.Visualizer()  # solution
+vis = optas.Visualizer(quit_after_delay=2.0)
 
 # Draw goal position and start visualizer
 vis.sphere(0.05, rgb=[0, 1, 0], position=p_goal.toarray().flatten().tolist())
-vis.robot(robot, q=q_solution,display_link_names=True,show_links=True)
+# vis.robot(robot, q=q_nominal,display_link_names=True,show_links=True)   # nominal
+vis.robot(robot, q=q_solution, display_link_names=True, show_links=True)  # solution
 
 vis.start()
-
