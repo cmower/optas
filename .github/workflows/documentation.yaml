@@ -38,7 +38,7 @@ jobs:
       - run: |
           cd doc/html
           git init
-          touch .nojekyll
+          # touch .nojekyll
           git add -A
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
