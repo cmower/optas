@@ -16,6 +16,8 @@ from scipy.spatial.transform import Rotation as Rot
 
 from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
+from .models import RobotModel
+
 from .spatialmath import *
 
 from typing import List, Union, Dict
@@ -234,7 +236,7 @@ class Visualizer:
         alpha: float = 1.0,
         theta_resolution: int = 20,
         phi_resolution: int = 20,
-    ):
+    ) -> vtk.vtkActor:
         """! Draw a sphere.
 
         @param radius The radius of the sphere.
@@ -267,12 +269,12 @@ class Visualizer:
     def sphere_traj(
         self,
         position_traj: ArrayType,
-        radius: float=1.0,
-        rgb: Union[None, ArrayType]=None,
-        theta_resolution: int=20,
-        phi_resolution: int=20,
-        alpha_spec: Union[None, Dict]=None,
-    ):
+        radius: float = 1.0,
+        rgb: Union[None, ArrayType] = None,
+        theta_resolution: int = 20,
+        phi_resolution: int = 20,
+        alpha_spec: Union[None, Dict] = None,
+    ) -> List[vtk.vtkActor]:
         """! Draw a sphere trajectory.
 
         @param position_traj The position trajectory for the spheres.
@@ -281,9 +283,9 @@ class Visualizer:
         @param theta_resolution The number of points in the longitude direction.
         @param phi_resolution The number of points in the latitude direction.
         @param The alpha specification.
-        @return The sphere actor.
+        @return The sphere actors.
         """
-        
+
         default_alpha_spec = {"style": "A"}
         if alpha_spec is None:
             alpha_spec = default_alpha_spec.copy()
@@ -322,14 +324,26 @@ class Visualizer:
     @arrayify_args
     def box(
         self,
-        scale=[1, 1, 1],
-        rgb=None,
-        alpha=1.0,
-        position=[0.0, 0.0, 0.0],
-        orientation=[0.0, 0.0, 0.0],
-        euler_seq="xyz",
-        euler_degrees=False,
-    ):
+        scale: ArrayType = [1, 1, 1],
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+        position: ArrayType = [0.0, 0.0, 0.0],
+        orientation: ArrayType = [0.0, 0.0, 0.0],
+        euler_seq: str = "xyz",
+        euler_degrees: bool = False,
+    ) -> vtk.vtkActor:
+        """! Draw a box.
+
+        @param scale The length, width, and height for the box [L, W, H].
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param position The position of the transformation.
+        @param orientation Orientation of the transformation, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The box actor.
+        """
+
         scale = scale.toarray().flatten().tolist()
 
         cube = vtk.vtkCubeSource()
@@ -359,16 +373,29 @@ class Visualizer:
     @arrayify_args
     def cylinder(
         self,
-        radius=1.0,
-        height=1.0,
-        rgb=None,
-        alpha=1.0,
-        resolution=20,
-        position=[0.0, 0.0, 0.0],
-        orientation=[0.0, 0.0, 0.0],
-        euler_seq="xyz",
-        euler_degrees=False,
-    ):
+        radius: float = 1.0,
+        height: float = 1.0,
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+        resolution: int = 20,
+        position: ArrayType = [0.0, 0.0, 0.0],
+        orientation: ArrayType = [0.0, 0.0, 0.0],
+        euler_seq: str = "xyz",
+        euler_degrees: bool = False,
+    ) -> vtk.vtkActor:
+        """! Draw a cylinder (with main axis along y-axis).
+
+        @param radius The cylinder radius.
+        @param height The height of the cylinder.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param resolution The number of facets used to define cylinder.
+        @param position The position of the object.
+        @param orientation Orientation of the object, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The cylinder actor.
+        """
         cylinder = vtkCylinderSource()
         cylinder.SetRadius(radius)
         cylinder.SetHeight(height)
@@ -398,7 +425,21 @@ class Visualizer:
         orientation=[0.0, 0.0, 0.0],
         euler_seq="xyz",
         euler_degrees=False,
-    ):
+    ) -> vtk.vtkActor:
+        """! Draw a cylinder (with main axis along the z-axis, i.e. similar to URDF).
+
+        @param radius The cylinder radius.
+        @param height The height of the cylinder.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param resolution The number of facets used to define cylinder.
+        @param position The position of the object.
+        @param orientation Orientation of the object, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The cylinder actor.
+        """
+
         cylinder = vtkCylinderSource()
         cylinder.SetRadius(radius)
         cylinder.SetHeight(height)
@@ -426,12 +467,21 @@ class Visualizer:
     @arrayify_args
     def text(
         self,
-        msg="Hello, world!",
-        position=[0.0, 0.0, 0.0],
-        scale=[1.0, 1.0, 1.0],
-        rgb=None,
-        alpha=1.0,
-    ):
+        msg: str = "Hello, world!",
+        position: ArrayType = [0.0, 0.0, 0.0],
+        scale: ArrayType = [1.0, 1.0, 1.0],
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+    ) -> vtk.vtkFollower:
+        """! Draw text.
+
+        @param msg The text to draw.
+        @param position The position to draw the text in the global frame.
+        @param scale The size of the text.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @return The text actor.
+        """
         position = position.toarray().flatten().tolist()
         scale = scale.toarray().flatten().tolist()
 
@@ -460,16 +510,29 @@ class Visualizer:
     @arrayify_args
     def link(
         self,
-        T=None,
-        axis_scale=0.1,
-        axis_linewidth=1.0,
-        center_radius=0.01,
-        center_rgb=None,
-        center_alpha=1.0,
-        center_theta_resolution=20,
-        center_phi_resolution=20,
-        axis_alpha=1.0,
-    ):
+        T: ArrayType = None,
+        axis_scale: float = 0.1,
+        axis_linewidth: float = 1.0,
+        center_radius: float = 0.01,
+        center_rgb: Union[None, ArrayType] = None,
+        center_alpha: float = 1.0,
+        center_theta_resolution: int = 20,
+        center_phi_resolution: int = 20,
+        axis_alpha: float = 1.0,
+    ) -> List[vtk.vtkActor]:
+        """! Draw a link.
+
+        @param T Homogeneous transformation matrix.
+        @param axis_scale The axis length.
+        @param axis_linewidth Width of the axis lines.
+        @param center_radius The radius of the central sphere.
+        @param center_rgb The Red-Green-Blue values in range [0, 1].
+        @param center_alpha Transparency of the centeral sphere in range [0, 1].
+        @param center_theta_resolution The number of points in the longitude direction.
+        @param center_phi_resolution The number of points in the latitude direction.
+        @param axis_alpha Transparency of the axes in range [0, 1].
+        @return The link actors.
+        """
         if T is None:
             T = I4()
 
@@ -526,18 +589,33 @@ class Visualizer:
     @arrayify_args
     def grid_floor(
         self,
-        num_cells=10,
-        rgb=None,
-        alpha=1.0,
-        linewidth=3.0,
-        inner_rgb=None,
-        inner_alpha=None,
-        inner_linewidth=1.0,
-        stride=1.0,
-        euler=[0, 0, 0],
-        euler_seq="xyz",
-        euler_degrees=True,
-    ):
+        num_cells: int = 10,
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+        linewidth: float = 3.0,
+        inner_rgb: Union[None, ArrayType] = None,
+        inner_alpha: Union[None, float] = None,
+        inner_linewidth: float = 1.0,
+        stride: float = 1.0,
+        euler: ArrayType = [0, 0, 0],
+        euler_seq: str = "xyz",
+        euler_degrees: bool = True,
+    ) -> List[vtk.vtkActor]:
+        """! Draw a grid floor.
+
+        @param num_cells The number of cells for the grid floor.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param linewidth The line width for the grid.
+        @param inner_rgb The Red-Green-Blue values in range [0, 1] for the inner lines at half the stride length.
+        @param inner_alpha Transparency of the actor in range [0, 1] for the inner lines at half the stride length.
+        @param inner_linewidth The line width for the grid for the inner lines at half the stride length.
+        @param stride The length of each main grid cell.
+        @param euler The Euler angles that defines the orientation of the plane the grid is defined on.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The grid actors.
+        """
         num_cells = num_cells.toarray().flatten().astype(int)[0]
         stride = stride.toarray().flatten()[0]
 
@@ -619,19 +697,23 @@ class Visualizer:
     @arrayify_args
     def obj(
         self,
-        obj_filename,
-        png_texture_filename=None,
-        position=[0.0, 0.0, 0.0],
-        orientation=[0.0, 0.0, 0.0],
-        euler_seq="xyz",
-        euler_degrees=False,
+        obj_filename: str,
+        png_texture_filename: str = None,
+        position: ArrayType = [0.0, 0.0, 0.0],
+        orientation: ArrayType = [0.0, 0.0, 0.0],
+        euler_seq: str = "xyz",
+        euler_degrees: bool = False,
     ):
-        # # Create a renderer, render window, and interactor
-        # renderer = vtk.vtkRenderer()
-        # render_window = vtk.vtkRenderWindow()
-        # render_window.AddRenderer(renderer)
-        # interactor = vtk.vtkRenderWindowInteractor()
-        # interactor.SetRenderWindow(render_window)
+        """! Load .obj file.
+
+        @param obj_filename The filename for the .obj file.
+        @param png_texture_filename The texture filename.
+        @param position The position of the object.
+        @param orientation Orientation of the object, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The actor representing the .obj file.
+        """
 
         # Read the .obj file
         reader = vtk.vtkOBJReader()
@@ -671,7 +753,20 @@ class Visualizer:
         orientation=[0.0, 0.0, 0.0],
         euler_seq="xyz",
         euler_degrees=False,
-    ):
+    ) -> vtk.vtkActor:
+        """! Load .stl file.
+
+        @param filename The filename for the .stl file.
+        @param scale Scale applied to the mesh file in the xyz directions.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param position The position of the object.
+        @param orientation Orientation of the object, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return The actor representing the .stl file.
+        """
+
         reader = vtk.vtkSTLReader()
         reader.SetFileName(filename)
 
@@ -706,20 +801,37 @@ class Visualizer:
 
     def robot(
         self,
-        robot_model,
-        q=None,
-        alpha=1.0,
-        show_links=False,
-        link_axis_scale=0.2,
-        link_axis_linewidth=1.0,
-        link_center_radius=0.01,
-        link_center_rgb=None,
-        link_center_alpha=None,
-        display_link_names=False,
-        link_names_scale=[0.005, 0.005, 0.005],
-        link_names_rgb=[1, 1, 1],
-        link_names_alpha=1.0,
-    ):
+        robot_model: RobotModel,
+        q: ArrayType = None,
+        alpha: float = 1.0,
+        show_links: bool = False,
+        link_axis_scale: float = 0.2,
+        link_axis_linewidth: float = 1.0,
+        link_center_radius: float = 0.01,
+        link_center_rgb: Union[None, ArrayType] = None,
+        link_center_alpha: Union[None, ArrayType] = None,
+        display_link_names: bool = False,
+        link_names_scale: ArrayType = [0.005, 0.005, 0.005],
+        link_names_rgb: ArrayType = [1, 1, 1],
+        link_names_alpha: float = 1.0,
+    ) -> List[vtk.vtkActor]:
+        """! Draw a robot.
+
+        @param robot_model The robot model defining the robot kinematics and visuals.
+        @param q Joint configuration to draw robot.
+        @param alpha Transparency of the actor in range [0, 1].
+        @param show_links When true, the robot links are shown.
+        @param link_axis_scale The scale for the link axes when shown.
+        @param link_axis_linewidth The linewidth for the axes of the robot links when shown.
+        @param link_center_radius The radius of the axis central sphere when shown.
+        @param link_center_rgb The RGB values for the central sphere in range [0, 1] when shown.
+        @param link_center_alpha The transparency for the central sphere in the range [0, 1] when shown.
+        @param display_link_names When true, the names of the robot link are shown.
+        @param link_names_scale The size of the link names text when shown.
+        @param link_names_rgb The RGB values in range [0, 1] for the robot link names text when shown.
+        @param link_names_alpha The transparency in range [0, 1] for the robot link names when shown.
+        @return The actors representing the robot.
+        """
         if link_center_alpha is None:
             link_center_alpha = alpha
 
@@ -874,6 +986,23 @@ class Visualizer:
         link_names_rgb=[1, 1, 1],
         link_names_alpha=1.0,
     ):
+        """! Draw a robot through a trajectory.
+
+        @param robot_model The robot model defining the robot kinematics and visuals.
+        @param Q Joint configuration trajectory to draw robot.
+        @param alpha_spec Transparency specification of the robots in motion.
+        @param show_links When true, the robot links are shown.
+        @param link_axis_scale The scale for the link axes when shown.
+        @param link_axis_linewidth The linewidth for the axes of the robot links when shown.
+        @param link_center_radius The radius of the axis central sphere when shown.
+        @param link_center_rgb The RGB values for the central sphere in range [0, 1] when shown.
+        @param link_center_alpha The transparency for the central sphere in the range [0, 1] when shown.
+        @param display_link_names When true, the names of the robot link are shown.
+        @param link_names_scale The size of the link names text when shown.
+        @param link_names_rgb The RGB values in range [0, 1] for the robot link names text when shown.
+        @param link_names_alpha The transparency in range [0, 1] for the robot link names when shown.
+        @return The actors representing the robot.
+        """
         default_alpha_spec = {"style": "A"}
         if alpha_spec is None:
             alpha_spec = default_alpha_spec.copy()
@@ -914,13 +1043,15 @@ class Visualizer:
 
         return actors
 
-    def start(self):
+    def start(self) -> None:
+        """! Start the visualizer."""
         for actor in self.actors:
             self.ren.AddActor(actor)
         self.iren.Initialize()
         self.renWin.Render()
         self.iren.Start()
 
-    def close(self, obj, event):
+    def close(self, obj, event) -> None:
+        """! Close the visualizer."""
         self.renWin.Finalize()
         self.iren.TerminateApp()
