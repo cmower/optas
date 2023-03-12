@@ -666,7 +666,6 @@ class Visualizer:
             visual_tf[name] = cs.Function(f"visual_tf_{name}", [q], [tf])
 
         for urdf_link in urdf.links:
-            geometry = urdf_link.visual.geometry
             tf = visual_tf[urdf_link.name](q_user_input).toarray()
             position = tf[:3, 3].flatten().tolist()
             orientation = Rot.from_matrix(tf[:3, :3]).as_quat().tolist()
@@ -692,63 +691,76 @@ class Visualizer:
                     )
                 )
 
-            if urdf_link.visual is None:
-                continue
+            for visual in urdf_link.visuals:
+                if visual is None:
+                    continue
 
-            material = urdf_link.visual.material
-            rgb = None
-            if isinstance(material.name, str) and material.name in material_names:
-                rgba = get_material_rgba(urdf_link.visual.material.name)
-                rgb = rgba[:3]
+                geometry = visual.geometry
 
-            if isinstance(geometry, Mesh):
-                if geometry.filename.lower().endswith(".stl"):
-                    filename = geometry.filename
+                xyz, rpy = cs.DM.zeros(3), cs.DM.zeros(3)
+                if visual.origin is not None:
+                    xyz, rpy = cs.DM(visual.origin.xyz), cs.DM(visual.origin.rpy)
 
-                    if not os.path.exists(filename):
-                        relpath = robot_model.get_urdf_dirname()
-                        filename = os.path.join(relpath, filename)
+                T_vis = rt2tr(rpy2r(rpy), xyz).toarray()
 
-                    scale = None
-                    if geometry.scale is not None:
-                        scale = geometry.scale
+                T = tf @ T_vis
+                position = transl(T).toarray().flatten()
+                orientation = Rot.from_matrix(T[:3, :3]).as_quat().tolist()
 
+                material = visual.material
+                rgb = None
+                if isinstance(material.name, str) and material.name in material_names:
+                    rgba = get_material_rgba(visual.material.name)
+                    rgb = rgba[:3]
+
+                if isinstance(geometry, Mesh):
+                    if geometry.filename.lower().endswith(".stl"):
+                        filename = geometry.filename
+
+                        if not os.path.exists(filename):
+                            relpath = robot_model.get_urdf_dirname()
+                            filename = os.path.join(relpath, filename)
+
+                        scale = None
+                        if geometry.scale is not None:
+                            scale = geometry.scale
+
+                        actors.append(
+                            self.stl(
+                                filename,
+                                scale=scale,
+                                rgb=rgb,
+                                alpha=alpha,
+                                position=position,
+                                orientation=orientation,
+                                euler_seq="xyz",
+                                euler_degrees=True,
+                            )
+                        )
+
+                elif isinstance(geometry, Sphere):
                     actors.append(
-                        self.stl(
-                            filename,
-                            scale=scale,
+                        self.sphere(
+                            radius=geometry.radius,
+                            position=position,
                             rgb=rgb,
                             alpha=alpha,
-                            position=position,
-                            orientation=orientation,
-                            euler_seq="xyz",
-                            euler_degrees=True,
+                            theta_resolution=20,
+                            phi_resolution=20,
                         )
                     )
 
-            elif isinstance(geometry, Sphere):
-                actors.append(
-                    self.sphere(
-                        radius=geometry.radius,
-                        position=position,
-                        rgb=rgb,
-                        alpha=alpha,
-                        theta_resolution=20,
-                        phi_resolution=20,
+                elif isinstance(geometry, Cylinder):
+                    actors.append(
+                        self.cylinder_urdf(
+                            radius=geometry.radius,
+                            height=geometry.length,
+                            position=position,
+                            orientation=orientation,
+                            rgb=rgb,
+                            alpha=alpha,
+                        )
                     )
-                )
-
-            elif isinstance(geometry, Cylinder):
-                actors.append(
-                    self.cylinder_urdf(
-                        radius=geometry.radius,
-                        height=geometry.length,
-                        position=position,
-                        orientation=orientation,
-                        rgb=rgb,
-                        alpha=alpha,
-                    )
-                )
 
         return actors
 
