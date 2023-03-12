@@ -1,3 +1,5 @@
+"""! @brief Visualizer class implementation."""
+
 import os
 
 import vtk
@@ -8,6 +10,7 @@ from vtkmodules.vtkFiltersSources import (
 )
 
 import casadi as cs
+from casadi import DM
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 
@@ -15,17 +18,32 @@ from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
 from .spatialmath import *
 
+from typing import List, Union, Dict
+
 
 class Visualizer:
+    """! This class defines the Visualizer for simple visualization."""
+
     def __init__(
         self,
-        window_size=[1440, 810],
-        background_color=[0, 0, 0],
-        camera_position=[2, 2, 2],
-        camera_focal_point=[0, 0, 0],
-        camera_view_up=[0, 0, 1],
-        quit_after_delay=None,
+        window_size: List[int] = [1440, 810],
+        background_color: ArrayType = [0.0, 0.0, 0.0],
+        camera_position: ArrayType = [2, 2, 2],
+        camera_focal_point: ArrayType = [0, 0, 0],
+        camera_view_up: ArrayType = [0, 0, 1],
+        quit_after_delay: Union[None, float] = None,
     ):
+        """! Initializer for the Visualizer class.
+
+        @param window_size The window size [W, H] for the visualizer.
+        @param background_color The color of the background (RGB), default is black.
+        @param camera_position The position of the camera in the global frame.
+        @param camera_focal_point The focus point of the camera.
+        @param camera_view_up Direction of the up direction for the camera.
+        @param quit_after_delay Number of seconds to keep visualizer running, if None then the visualizer is run indefinitely until the user quits the window.
+        @return An instance of the Visualizer class.
+        """
+
         self.ren = vtk.vtkRenderer()
         self.ren.SetBackground(*background_color)
         self.renWin = vtk.vtkRenderWindow()
@@ -63,7 +81,17 @@ class Visualizer:
     #
 
     @staticmethod
-    def cvt_orientation_to_rotation_matrix(orientation, euler_seq, euler_degrees):
+    @arrayify_args
+    def cvt_orientation_to_rotation_matrix(
+        orientation: ArrayType, euler_seq: str, euler_degrees: bool
+    ) -> DM:
+        """! Convert an orientation input to a rotation matrix.
+
+        @param orientation Either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        @return Rotation matrix.
+        """
         orientation = orientation.toarray().flatten().tolist()
         if len(orientation) == 4:
             R = Rot.from_quat(orientation)
@@ -73,10 +101,25 @@ class Visualizer:
             raise ValueError(
                 f"length for orientation is incorrect, expected 3 or 4, got {len(orientation)}"
             )
-        return R.as_matrix()
+        return cs.DM(R.as_matrix())
 
     @staticmethod
-    def set_tf(actor, position, orientation, euler_seq, euler_degrees):
+    @arrayify_args
+    def set_tf(
+        actor: vtk.vtkActor,
+        position: ArrayType,
+        orientation: ArrayType,
+        euler_seq: str,
+        euler_degrees: bool,
+    ) -> None:
+        """! Sets a transform to a vtk Actor.
+
+        @param actor A vtk actor object.
+        @param position The position of the transformation.
+        @param orientation Orientation of the transformation, either a quaternion or Euler angles.
+        @param euler_seq When orientation are Euler angles, specifies sequence of axes for rotations. Up to 3 characters belonging to the set {'X', 'Y', 'Z'} for intrinsic rotations, or {'x', 'y', 'z'} for extrinsic rotations. When orientation are Euler angles, extrinsic and intrinsic rotations cannot be mixed in one function call.
+        @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
+        """
         R = Visualizer.cvt_orientation_to_rotation_matrix(
             orientation, euler_seq, euler_degrees
         )
@@ -84,29 +127,49 @@ class Visualizer:
         Visualizer.set_transformation(actor, tf)
 
     @staticmethod
-    def set_transformation(actor, tf):
+    @arrayify_args
+    def set_transformation(actor: vtk.vtkActor, tf: ArrayType) -> None:
+        """! Sets a transformation to a vtk Actor.
+
+        @param actor A vtk actor object.
+        @param tf A homogenous transformation matrix.
+        """
         tf = tf.toarray().flatten().tolist()
         transform = vtk.vtkTransform()
         transform.SetMatrix(tf)
         actor.SetUserTransform(transform)
 
     @staticmethod
-    def set_rgba(actor, rgb, alpha):
+    @arrayify_args
+    def set_rgba(actor: vtk.vtkActor, rgb: ArrayType, alpha: float) -> None:
+        """! Set the RGB and alpha channels for an actor.
+
+        @param actor A vtk actor object.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        """
         if rgb is not None:
             rgb = rgb.toarray().flatten().tolist()
             assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
             actor.GetProperty().SetColor(*rgb)
 
+        alpha = alpha.toarray().flatten()[0]
         assert (
             0.0 <= alpha <= 1.0
         ), f"the scalar alpha must be in the range [0, 1], got {alpha}"
         actor.GetProperty().SetOpacity(alpha)
 
     @staticmethod
-    def set_translation(actor, position):
-        position = position.toarray().flatten().tolist()
+    @arrayify_args
+    def set_translation(actor: vtk.vtkActor, translation: ArrayType) -> None:
+        """! Set translation for an actor.
+
+        @param actor A vtk actor object.
+        @param translation The translation in the global frame.
+        """
+        translation = translation.toarray().flatten().tolist()
         transform = vtk.vtkTransform()
-        transform.Translate(position)
+        transform.Translate(translation)
         actor.SetUserTransform(transform)
 
     #
@@ -116,12 +179,21 @@ class Visualizer:
     @arrayify_args
     def line(
         self,
-        start=[0.0, 0.0, 0.0],
-        end=[1.0, 0.0, 0.0],
-        rgb=None,
-        alpha=1.0,
-        linewidth=1.0,
-    ):
+        start: ArrayType = [0.0, 0.0, 0.0],
+        end: ArrayType = [1.0, 0.0, 0.0],
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+        linewidth: float = 1.0,
+    ) -> vtk.vtkActor:
+        """! Draw a line.
+
+        @param start The start of the line.
+        @param end The end of the line.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param linewidth The width of the line.
+        @return The line actor.
+        """
         start = start.toarray().flatten().tolist()
         end = end.toarray().flatten().tolist()
 
@@ -156,13 +228,24 @@ class Visualizer:
     @arrayify_args
     def sphere(
         self,
-        radius=1.0,
-        position=[0.0, 0.0, 0.0],
-        rgb=None,
-        alpha=1.0,
-        theta_resolution=20,
-        phi_resolution=20,
+        radius: float = 1.0,
+        position: ArrayType = [0.0, 0.0, 0.0],
+        rgb: Union[None, ArrayType] = None,
+        alpha: float = 1.0,
+        theta_resolution: int = 20,
+        phi_resolution: int = 20,
     ):
+        """! Draw a sphere.
+
+        @param radius The radius of the sphere.
+        @param position The position of the sphere.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param alpha Transparency of the actor in range [0, 1].
+        @param theta_resolution The number of points in the longitude direction.
+        @param phi_resolution The number of points in the latitude direction.
+        @return The sphere actor.
+        """
+
         sphere = vtkSphereSource()
         sphere.SetRadius(radius)
         sphere.SetThetaResolution(theta_resolution)
@@ -183,13 +266,24 @@ class Visualizer:
     @arrayify_args
     def sphere_traj(
         self,
-        position_traj,
-        radius=1.0,
-        rgb=None,
-        theta_resolution=20,
-        phi_resolution=20,
-        alpha_spec=None,
+        position_traj: ArrayType,
+        radius: float=1.0,
+        rgb: Union[None, ArrayType]=None,
+        theta_resolution: int=20,
+        phi_resolution: int=20,
+        alpha_spec: Union[None, Dict]=None,
     ):
+        """! Draw a sphere trajectory.
+
+        @param position_traj The position trajectory for the spheres.
+        @param radius The radius of the spheres.
+        @param rgb The Red-Green-Blue values in range [0, 1].
+        @param theta_resolution The number of points in the longitude direction.
+        @param phi_resolution The number of points in the latitude direction.
+        @param The alpha specification.
+        @return The sphere actor.
+        """
+        
         default_alpha_spec = {"style": "A"}
         if alpha_spec is None:
             alpha_spec = default_alpha_spec.copy()
