@@ -5,7 +5,7 @@ vis.box(position=[0, 2, -1], orientation=[0, 0, 20], euler_degrees=True, rgb=[0,
 vis.cylinder(radius=0.1),
 vis.cylinder_urdf(
     position=[0, 0, 1],
-    orientation=[0, 90, 0],
+    # orientation=[0, 90, 0],
     euler_degrees=True,
     radius=0.4,
     height=1.0,
