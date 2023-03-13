@@ -28,4 +28,5 @@ setup(
         "vtk",
         "pyyaml",
     ],
+    extras_require={"test": ["roboticstoolbox-python", "pybullet", "pytest"]},
 )
