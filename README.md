@@ -20,7 +20,7 @@ In the past, OpTaS supported ROS from an internal module. This functionality, wi
 
 
 In this example we implement an optimization-based IK problem.
-The problem computes an optimal joint configuration \f$q^*\in\mathbb{R}^n\f$ given by
+The problem computes an optimal joint configuration $$q^*\in\mathbb{R}^n$$ given by
 
 $$
 q^* = \underset{q}{\text{arg}\min}~\|\|q - q_N\|\|^2\quad\text{subject to}\quad p(q) = p_g, q^-\leq q \leq q^+
