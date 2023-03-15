@@ -8,7 +8,7 @@
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 
-<p align="left">
+<p align="center">
 	<a href="https://youtu.be/gCMNOenFngU">
 		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="61.803398875%">
 	</a>
