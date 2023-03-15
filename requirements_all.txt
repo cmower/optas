@@ -1,3 +1,0 @@
-roboticstoolbox-python
-pybullet
-pytest
