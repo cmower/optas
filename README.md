@@ -7,8 +7,13 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
+Please see our paper accepted at ICRA 2023, and also our video (link below).
 
-[![Watch the video](https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg)](https://youtu.be/gCMNOenFngU)
+<p align="center">
+	<a href="https://youtu.be/gCMNOenFngU">
+		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="50%">
+	</a>
+</p>
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
@@ -136,7 +141,8 @@ Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`
 ### Build documentation
 
 1. `$ cd /path/to/optas/doc`
-2. `$ sudo apt install doxygen`
+2. `$ sudo apt install doxygen graphviz`
+3. `$ python gen_mainpage.py`
 3. `$ doxygen`
 4. Open the documentation in either HTML or PDF:
    - `html/index.html`

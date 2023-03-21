@@ -33,6 +33,7 @@ jobs:
 
       - run: |
           cd doc/
+          python gen_mainpage.md
           doxygen
 
       - run: |
