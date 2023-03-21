@@ -7,6 +7,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
+Please see our paper accepted at ICRA 2023, and also our video (link below).
 
 <p align="center">
 	<a href="https://youtu.be/gCMNOenFngU">
