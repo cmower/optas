@@ -11,7 +11,7 @@ Please see our paper accepted at ICRA 2023, and also our video (link below).
 
 <p align="center">
 	<a href="https://youtu.be/gCMNOenFngU">
-		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="35%">
+		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="50%">
 	</a>
 </p>
 

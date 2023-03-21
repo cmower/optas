@@ -20,6 +20,10 @@ class LineFixer:
         self._outside_code = True
 
     def fix(self, line):
+        # Adjust width of youtube video image
+        if 'width="50%"' in line and "REBmbCANx0s" in line:
+            return line.replace('width="50%"', 'width="30%"')
+
         # Check if this is the start/end of code
         if ("```python" in line) or "```" in line or ("```bibtex" in line):
             if self._outside_code:
