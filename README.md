@@ -141,7 +141,8 @@ Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`
 ### Build documentation
 
 1. `$ cd /path/to/optas/doc`
-2. `$ sudo apt install doxygen`
+2. `$ sudo apt install doxygen graphviz`
+3. `$ python gen_mainpage.py`
 3. `$ doxygen`
 4. Open the documentation in either HTML or PDF:
    - `html/index.html`
