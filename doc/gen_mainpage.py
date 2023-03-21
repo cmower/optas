@@ -73,6 +73,7 @@ class LineFixer:
             line = re.sub(pattern, replace_latex, line)
 
         line = line.replace("\|\|", "\|")
+        line = line.replace("doc/image/eu.png", "eu.png")
 
         return line
 
