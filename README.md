@@ -10,7 +10,7 @@ OpTaS is an OPtimization-based TAsk Specification library for trajectory optimiz
 
 <p align="center">
 	<a href="https://youtu.be/gCMNOenFngU">
-		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="61.803398875%">
+		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="35%">
 	</a>
 </p>
 

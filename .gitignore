@@ -140,3 +140,6 @@ example/data/
 
 # Backup folder
 backup/
+
+# Local main page
+doc/mainpage.md
