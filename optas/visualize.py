@@ -23,6 +23,57 @@ from .spatialmath import *
 from typing import List, Union, Dict
 
 
+class ActorList:
+    def __init__(self):
+        self.add_actors = True
+        self.actors = []
+
+    def start_adding_actors(self):
+        self.add_actors = True
+
+    def stop_adding_actors(self):
+        self.add_actors = False
+
+    def append(self, actor):
+        if self.add_actors:
+            self.actors.append(actor)
+
+
+class AnimationCallback:
+    def __init__(self, traj, duration, iren, ren):
+        # Setup class attributes
+        self.nsteps = len(traj)
+        self.dt = duration / float(self.nsteps - 1)
+        self.dt_ms = int(round(self.dt * 1e3))
+        self.step = 0
+        self.iren = iren
+        self.traj = traj
+        self.prev = None
+        self.ren = ren
+
+    def start(self):
+        self.iren.AddObserver("TimerEvent", self.callback)
+        self.timer_id = self.iren.CreateRepeatingTimer(self.dt_ms)
+
+    def callback(self, *args):
+        # Remove previous actors
+        if self.prev is not None:
+            for actor in self.prev:
+                self.ren.RemoveActor(actor)
+
+        # Create new robot actors
+        current = self.traj[self.step]
+        for actor in current:
+            self.ren.AddActor(actor)
+
+        # Render to window
+        self.iren.GetRenderWindow().Render()
+
+        # Reset
+        self.step = (self.step + 1) % self.nsteps
+        self.prev = current
+
+
 class Visualizer:
     """! This class defines the Visualizer for simple visualization."""
 
@@ -63,7 +114,9 @@ class Visualizer:
         style = vtk.vtkInteractorStyleTrackballCamera()
         self.iren.SetInteractorStyle(style)
 
-        self.actors = []
+        self.actors = ActorList()
+
+        self.animate_callbacks = []
 
         if isinstance(quit_after_delay, float):
             assert quit_after_delay > 0.0, "the delay must be positive"
@@ -274,6 +327,8 @@ class Visualizer:
         theta_resolution: int = 20,
         phi_resolution: int = 20,
         alpha_spec: Union[None, Dict] = None,
+        animate=False,
+        duration=5.0,
     ) -> List[vtk.vtkActor]:
         """! Draw a sphere trajectory.
 
@@ -286,13 +341,15 @@ class Visualizer:
         @return The sphere actors.
         """
 
-        default_alpha_spec = {"style": "A"}
+        default_alpha_spec = {"style": "none"}
         if alpha_spec is None:
             alpha_spec = default_alpha_spec.copy()
 
         n = position_traj.shape[1]
 
-        if alpha_spec["style"] == "A":
+        if alpha_spec["style"] == "none":
+            alphas = [1.0] * n
+        elif alpha_spec["style"] == "A":
             alpha_min = alpha_spec.get("alpha_min", 0.1)
             alpha_max = alpha_spec.get("alpha_max", 1.0)
             alphas = np.linspace(alpha_min, alpha_max, n).tolist()
@@ -306,18 +363,33 @@ class Visualizer:
             alpha_end = alpha_spec.get("alpha_end", 1.0)
             alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
 
+        sphere_traj = []
+        if animate:
+            self.actors.stop_adding_actors()
+
         actors = []
         for i, alpha in enumerate(alphas):
-            actors.append(
-                self.sphere(
-                    radius=radius,
-                    position=position_traj[:, i],
-                    rgb=rgb,
-                    alpha=alpha,
-                    theta_resolution=theta_resolution,
-                    phi_resolution=phi_resolution,
+            sphere = self.sphere(
+                radius=radius,
+                position=position_traj[:, i],
+                rgb=rgb,
+                alpha=alpha,
+                theta_resolution=theta_resolution,
+                phi_resolution=phi_resolution,
+            )
+
+            if animate:
+                sphere_traj.append([sphere])
+
+            actors.append(sphere)
+
+        if animate:
+            self.animate_callbacks.append(
+                AnimationCallback(
+                    sphere_traj, duration.toarray().flatten()[0], self.iren, self.ren
                 )
             )
+            self.actors.start_adding_actors()
 
         return actors
 
@@ -985,6 +1057,8 @@ class Visualizer:
         link_names_scale=[0.01, 0.01, 0.01],
         link_names_rgb=[1, 1, 1],
         link_names_alpha=1.0,
+        animate=False,
+        duration=5.0,
     ):
         """! Draw a robot through a trajectory.
 
@@ -1003,14 +1077,16 @@ class Visualizer:
         @param link_names_alpha The transparency in range [0, 1] for the robot link names when shown.
         @return The actors representing the robot.
         """
-        default_alpha_spec = {"style": "A"}
+        default_alpha_spec = {"style": "none"}
         if alpha_spec is None:
             alpha_spec = default_alpha_spec.copy()
 
         actors = []
         n = Q.shape[1]
 
-        if alpha_spec["style"] == "A":
+        if alpha_spec["style"] == "none":
+            alphas = np.ones(n).tolist()
+        elif alpha_spec["style"] == "A":
             alpha_min = alpha_spec.get("alpha_min", 0.1)
             alpha_max = alpha_spec.get("alpha_max", 1.0)
             alphas = np.linspace(alpha_min, alpha_max, n).tolist()
@@ -1024,8 +1100,12 @@ class Visualizer:
             alpha_end = alpha_spec.get("alpha_end", 1.0)
             alphas = [alpha_start] + [alpha_mid] * (n - 2) + [alpha_end]
 
+        robot_traj = []
+        if animate:
+            self.actors.stop_adding_actors()
+
         for i, alpha in enumerate(alphas):
-            actors += self.robot(
+            robot = self.robot(
                 robot_model,
                 Q[:, i],
                 alpha,
@@ -1041,13 +1121,28 @@ class Visualizer:
                 link_names_alpha,
             )
 
+            if animate:
+                robot_traj.append(robot)
+
+            actors += robot
+
+        if animate:
+            self.animate_callbacks.append(
+                AnimationCallback(robot_traj, duration, self.iren, self.ren)
+            )
+            self.actors.start_adding_actors()
+
         return actors
 
     def start(self) -> None:
         """! Start the visualizer."""
-        for actor in self.actors:
+        for actor in self.actors.actors:
             self.ren.AddActor(actor)
         self.iren.Initialize()
+
+        for callback in self.animate_callbacks:
+            callback.start()
+
         self.renWin.Render()
         self.iren.Start()
 
