@@ -136,7 +136,7 @@ class Model:
         """
         assert (
             time_deriv in self.time_derivs
-        ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
+        ), f"Given time derivative time_deriv={time_deriv} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol
 
     def state_parameter_name(self, time_deriv: int) -> str:
@@ -147,7 +147,7 @@ class Model:
         """
         assert (
             time_deriv in self.time_derivs
-        ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
+        ), f"Given time derivative time_deriv={time_deriv} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "p"
 
     def state_optimized_name(self, time_deriv: int) -> str:
@@ -158,7 +158,7 @@ class Model:
         """
         assert (
             time_deriv in self.time_derivs
-        ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
+        ), f"Given time derivative time_deriv={time_deriv} is not recognized, only allowed {self.time_derivs}"
         return self.name + "/" + "d" * time_deriv + self.symbol + "/" + "x"
 
     def get_limits(self, time_deriv: int) -> Tuple[ArrayType]:
@@ -170,10 +170,10 @@ class Model:
         """
         assert (
             time_deriv in self.time_derivs
-        ), f"Given time derivative {time_deriv=} is not recognized, only allowed {self.time_derivs}"
+        ), f"Given time derivative time_deriv={time_deriv} is not recognized, only allowed {self.time_derivs}"
         assert (
             time_deriv in self.dlim.keys()
-        ), f"Limit for time derivative {time_deriv=} has not been given"
+        ), f"Limit for time derivative time_deriv={time_deriv} has not been given"
         return self.dlim[time_deriv]
 
     def in_limit(self, x: ArrayType, time_deriv: int) -> cs.DM:

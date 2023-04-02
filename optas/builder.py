@@ -57,7 +57,7 @@ class OptimizationBuilder:
 
             # Check T is large enough
             Tmin = max_time_deriv + 1
-            assert T >= Tmin, f"{T=} is too low, it should be at least {Tmin}"
+            assert T >= Tmin, f"T={T} is too low, it should be at least {Tmin}"
 
         model_names = [m.get_name() for m in self._models]
         is_unique_names = len(model_names) == len(set(model_names))
