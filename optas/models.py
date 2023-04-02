@@ -872,6 +872,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
         """
         return self.make_function(
@@ -906,6 +907,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
         """
         return self.make_function(
@@ -935,6 +937,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -966,6 +969,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -995,6 +999,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1027,6 +1032,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1086,6 +1092,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -1124,6 +1131,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -1174,6 +1182,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the RPY angles for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -1274,6 +1283,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1316,6 +1326,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1374,6 +1385,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the geometric jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1424,6 +1436,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the analytic jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1469,6 +1482,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1512,6 +1526,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the linear part of the Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1558,6 +1573,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1601,6 +1617,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1648,6 +1665,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the angular part of the geometric Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1704,6 +1722,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param base_link Name of the base frame link.
         @param n Number of joint states to expect when the function is called. Default is 1.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the angular part of the analytical Jacobian for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
         """
         return self.make_function(
@@ -1763,6 +1782,7 @@ class RobotModel(Model):
         @param link Name of the end-effector link.
         @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
         @param base_link Name of the base frame link.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
         """
         return self.make_function(
@@ -1800,6 +1820,7 @@ class RobotModel(Model):
 
         @param link Name of the end-effector link.
         @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
+        @param numpy_output When true, the output will be a NumPy array.
         @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
         """
         get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
