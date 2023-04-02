@@ -358,7 +358,7 @@ class CasADiSolver(Solver):
         elif solver_name in self.nlp_solvers:
             sol = cs.nlpsol
         else:
-            raise ValueError(f"did not recognize {solver_name=}")
+            raise ValueError(f"did not recognize solver_name={solver_name}")
 
         # Check for discrete variables
         if self.opt.decision_variables.has_discrete_variables():
