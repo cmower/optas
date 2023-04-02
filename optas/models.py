@@ -812,6 +812,9 @@ class RobotModel(Model):
                     return self.handle(self.F(q).toarray())
 
                 def __call__(self, q):
+                    assert not isinstance(
+                        q, cs.SX
+                    ), "numpy_output=False was specified, you can not pass symbolic variables"
                     return self.call(q)
 
             F = NumpyOutputFunction(F)
