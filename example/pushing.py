@@ -287,7 +287,7 @@ class IK:
 
         # Setup solver
         optimization = builder.build()
-        self.solver = optas.CasADiSolver(optimization).setup("sqpmethod")
+        self.solver = optas.CasADiSolver(optimization).setup("ipopt")
 
         # Setup variables required later
         self.kuka_name = kuka_name
