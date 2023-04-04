@@ -140,7 +140,8 @@ The following operating systems and python versions are [officially supported](h
 * Mac OS
   * Python 3.9
 
-Other operating systems or Python versions will likely work.
+Note that OpTaS makes use of [dataclasses](https://docs.python.org/3/library/dataclasses.html) that was [introduced in Python 3.7](https://peps.python.org/pep-0557/), and so Python versions from 3.6 and lower are not supported on any operating system.
+Other operating systems or higher Python versions will likely work.
 If you experience problems, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
 
 # Install
