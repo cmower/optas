@@ -129,6 +129,20 @@ vis.start()
 Run the example script [example.py](example/example.py).
 Other examples, including dual-arm planning, Model Predictive Control, Trajectory Optimization, etc can be found in the [example/](example) directory.
 
+# Support
+
+The following operating systems and python versions are [officially supported](https://github.com/cmower/optas/blob/master/.github/workflows/pytest.yaml):
+
+* Ubuntu 20.04 and 22.04
+  * Python 3.7, 3.8, 3.9
+* Windows
+  * Python 3.7, 3.8, 3.9
+* Mac OS
+  * Python 3.9
+
+Other operating systems or Python versions will likely work.
+If you experience problems, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
+
 # Install
 
 Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`.
