@@ -5,6 +5,10 @@
 # OpTaS
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Lint](https://github.com/cmower/optas/actions/workflows/black.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/black.yaml)
+[![Run tests](https://github.com/cmower/optas/actions/workflows/pytest.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/pytest.yaml)
+[![Build documentation](https://github.com/cmower/optas/actions/workflows/documentation.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/documentation.yaml)
+
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 Please see our paper accepted at ICRA 2023, and also our video (link below).
