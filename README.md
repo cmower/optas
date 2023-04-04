@@ -5,6 +5,10 @@
 # OpTaS
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Lint](https://github.com/cmower/optas/actions/workflows/black.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/black.yaml)
+[![Run tests](https://github.com/cmower/optas/actions/workflows/pytest.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/pytest.yaml)
+[![Build documentation](https://github.com/cmower/optas/actions/workflows/documentation.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/documentation.yaml)
+
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 Please see our paper accepted at ICRA 2023, and also our video (link below).
@@ -124,6 +128,20 @@ vis.start()
 
 Run the example script [example.py](example/example.py).
 Other examples, including dual-arm planning, Model Predictive Control, Trajectory Optimization, etc can be found in the [example/](example) directory.
+
+# Support
+
+The following operating systems and python versions are [officially supported](https://github.com/cmower/optas/blob/master/.github/workflows/pytest.yaml):
+
+* Ubuntu 20.04 and 22.04
+  * Python 3.7, 3.8, 3.9
+* Windows
+  * Python 3.7, 3.8, 3.9
+* Mac OS
+  * Python 3.9
+
+Other operating systems or Python versions will likely work.
+If you experience problems, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
 
 # Install
 

@@ -29,7 +29,7 @@ setup(
         "pyyaml",
     ],
     extras_require={
-        "example": ["pybullet"],
-        "test": ["roboticstoolbox-python", "pybullet", "pytest"],
+        "example": ["pybullet", "matplotlib"],
+        "test": ["roboticstoolbox-python", "pybullet", "pytest", "matplotlib"],
     },
 )
