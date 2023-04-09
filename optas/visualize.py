@@ -131,6 +131,18 @@ class Visualizer:
     #         else:
     #             self.actors.append(actor)  # assume actor is a single actor
 
+    def reset_camera(self, position, view_dir, view_up):
+        """! Reset the camera pose.
+
+        @param position The position of the camera.
+        @param view_dir The direction that the camera should view.
+        @param view_up The up direction for the image.
+        """
+        focal_point = (np.asarray(position) + np.asarray(view_dir)).tolist()
+        self.camera.SetPosition(*position)
+        self.camera.SetFocalPoint(*focal_point)
+        self.camera.SetViewUp(*view_up)
+
     #
     # Set/convert helper methods
     #
