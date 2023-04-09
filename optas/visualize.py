@@ -1134,6 +1134,34 @@ class Visualizer:
 
         return actors
 
+    def save(self, file_name):
+        assert (
+            len(self.animate_callbacks) == 0
+        ), "saving animations is currently not supported"
+
+        if not file_name.endswith(".png"):
+            file_name += ".png"
+
+        for actor in self.actors.actors:
+            self.ren.AddActor(actor)
+        self.iren.Initialize()
+
+        self.renWin.Render()
+
+        # Capture the contents of the render window
+        window_to_image_filter = vtk.vtkWindowToImageFilter()
+        window_to_image_filter.SetInput(self.renWin)
+        window_to_image_filter.Update()
+
+        # Write the captured image to a PNG file
+        png_writer = vtk.vtkPNGWriter()
+        png_writer.SetFileName(file_name)
+        png_writer.SetInputConnection(window_to_image_filter.GetOutputPort())
+        png_writer.Write()
+        print(f"Saved {file_name}")
+
+        self.iren.Start()
+
     def start(self) -> None:
         """! Start the visualizer."""
         for actor in self.actors.actors:
