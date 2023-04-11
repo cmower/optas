@@ -61,7 +61,7 @@ class Test_arrayify_args:
     def _assert_correct_type(value, correct_type=(optas.SX, optas.DM)):
         assert isinstance(
             value, correct_type
-        ), f"got {type(value)=}, expected {correct_type}"
+        ), f"got type(value)={type(value)}, expected {correct_type}"
 
     def _test_cls_method(self, a, b, c="test", d=[1, 2, 3], e=(3, 2, 1), f=1, g=0.5):
         self._assert_correct_type(a)

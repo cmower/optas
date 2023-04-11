@@ -5,10 +5,19 @@
 # OpTaS
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Lint](https://github.com/cmower/optas/actions/workflows/black.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/black.yaml)
+[![Run tests](https://github.com/cmower/optas/actions/workflows/pytest.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/pytest.yaml)
+[![Build documentation](https://github.com/cmower/optas/actions/workflows/documentation.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/documentation.yaml)
+
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
+Please see our paper accepted at ICRA 2023, and also our video (link below).
 
-[![Watch the video](https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg)](https://youtu.be/gCMNOenFngU)
+<p align="center">
+	<a href="https://youtu.be/gCMNOenFngU">
+		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="50%">
+	</a>
+</p>
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
@@ -107,17 +116,33 @@ solution = solver.solve()
 q_solution = solution[f"{name}/q"]
 
 # Visualize the robot
-params = {"link_axis_scale": 0.5}
-vis = optas.Visualizer()  # solution
+vis = optas.Visualizer(quit_after_delay=2.0)
 
 # Draw goal position and start visualizer
 vis.sphere(0.05, rgb=[0, 1, 0], position=p_goal.toarray().flatten().tolist())
-vis.robot(robot, q=q_solution,display_link_names=True,show_links=True)
+# vis.robot(robot, q=q_nominal,display_link_names=True,show_links=True)   # nominal
+vis.robot(robot, q=q_solution, display_link_names=True, show_links=True)  # solution
+
 vis.start()
 ```
 
 Run the example script [example.py](example/example.py).
 Other examples, including dual-arm planning, Model Predictive Control, Trajectory Optimization, etc can be found in the [example/](example) directory.
+
+# Support
+
+The following operating systems and python versions are [officially supported](https://github.com/cmower/optas/blob/master/.github/workflows/pytest.yaml):
+
+* Ubuntu 20.04 and 22.04
+  * Python 3.7, 3.8, 3.9
+* Windows
+  * Python 3.7, 3.8, 3.9
+* Mac OS
+  * Python 3.9
+
+Note that OpTaS makes use of [dataclasses](https://docs.python.org/3/library/dataclasses.html) that was [introduced in Python 3.7](https://peps.python.org/pep-0557/), and so Python versions from 3.6 and lower are not supported on any operating system.
+Other operating systems or higher Python versions will likely work.
+If you experience problems, please [submit an issue](https://github.com/cmower/optas/issues/new/choose).
 
 # Install
 
@@ -135,7 +160,8 @@ Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`
 ### Build documentation
 
 1. `$ cd /path/to/optas/doc`
-2. `$ sudo apt install doxygen`
+2. `$ sudo apt install doxygen graphviz`
+3. `$ python gen_mainpage.py`
 3. `$ doxygen`
 4. Open the documentation in either HTML or PDF:
    - `html/index.html`

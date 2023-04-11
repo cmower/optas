@@ -358,7 +358,7 @@ class CasADiSolver(Solver):
         elif solver_name in self.nlp_solvers:
             sol = cs.nlpsol
         else:
-            raise ValueError(f"did not recognize {solver_name=}")
+            raise ValueError(f"did not recognize solver_name={solver_name}")
 
         # Check for discrete variables
         if self.opt.decision_variables.has_discrete_variables():
@@ -672,7 +672,7 @@ class ScipyMinimizeSolver(Solver):
                 if self.opt.nk:
                     self._constraints["k"] = LinearConstraint(
                         A=csc_matrix(self.opt.M(self.p).toarray()),
-                        lb=-self.opt.c(self.p).toarray.flatten(),
+                        lb=-self.opt.c(self.p).toarray().flatten(),
                         ub=self.opt.inf * np.ones(self.opt.nk),
                     )
 
@@ -765,7 +765,7 @@ class ScipyMinimizeSolver(Solver):
         if self.method == "trust-constr":
             if self.opt.nk:
                 self._constraints["k"].A = csc_matrix(self.opt.M(self.p).toarray())
-                self._constraints["k"].lb = -self.opt.c(self.p).toarray.flatten()
+                self._constraints["k"].lb = -self.opt.c(self.p).toarray().flatten()
             if self.opt.na:
                 eq = -self.opt.b(self.p).toarray().flatten()
                 self._constraints["a"].A = csc_matrix(self.opt.A(self.p).toarray())

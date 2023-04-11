@@ -474,6 +474,17 @@ class TestRobotModel:
                     T_expc = expected_fkine[link_idx + 1]
                     assert isclose(T_test, T_expc)
 
+    def test_get_global_link_transform_function_numpy_output(self):
+        link_name = self.model.link_names[-1]
+        q = self.model.get_random_joint_positions().toarray()
+        Tr = self.model.get_global_link_transform_function(link_name, numpy_output=True)
+        T = Tr(q)
+        assert isinstance(T, np.ndarray)
+
+        q = optas.SX.sym("q", q.shape[0])
+        with pytest.raises(AssertionError):
+            T = Tr(q)
+
     def test_get_link_transform(self):
         for _ in range(NUM_RANDOM):
             q = self.model.get_random_joint_positions().toarray().flatten()

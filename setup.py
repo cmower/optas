@@ -28,4 +28,8 @@ setup(
         "vtk",
         "pyyaml",
     ],
+    extras_require={
+        "example": ["pybullet", "matplotlib"],
+        "test": ["roboticstoolbox-python", "pybullet", "pytest", "matplotlib"],
+    },
 )
