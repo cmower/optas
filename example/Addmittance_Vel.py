@@ -15,6 +15,7 @@ from scipy.spatial.transform import Rotation as Rot
 import matplotlib.pyplot as plt
 
 
+
 class TrackingController:
     def __init__(self,dt):
         cwd = pathlib.Path(
@@ -52,7 +53,9 @@ class TrackingController:
         q = qc + dt * dq
 
         # Get jacobian
-        J = kuka.get_global_link_geometric_jacobian(link_ee, qc)
+        J = kuka.get_link_geometric_jacobian(link_ee, qc,link_ee)
+        # J = kuka.get_global_link_geometric_jacobian(link_ee, qc)
+
 
         # Get end-effector velocity
         dp = J @ dq
@@ -100,25 +103,28 @@ class TrackingController:
         # # print("e.T @ z = {0}".format(e.T @ z))
         # print("e.T @ z = {0}".format(f.size()))
         # r2angvec()
-        nf = optas.DM([0.0, 0.0, 1.0])
-        diffp = (I3() - nf @ nf.T) @ (p - pg_ee[:3])
-        
+
         diffR = Rg_ee.T @ R
-        diffFl = nf @ nf.T @ (fh[:3] - optas.diag([1e1, 1e1, 1e1]) @ Rc.T @dp[:3])
+        # diffp = (I3() - nf @ nf.T) @ (p - pg_ee[:3])
+        
+        nf = optas.DM([1.0, 1.0, 1.0])
+        W_nf = optas.diag([1.0, 1.0, 1.0])
+        # diffFl = nf @ nf.T @Rc.T @  (fh[:3] -  dp[:3])
+        diffFl =  nf @ nf.T @ (Rc.T @fh[:3] -  dp[:3])
 
         # diffFr = nf @ nf.T @ (fh[3:] - optas.diag([1e-3, 1e-3, 1e-3]) @ Rc.T @dq[3:])
 
-        W_p = optas.diag([1e3, 1e3, 1e3])
-        builder.add_cost_term("match_p", diffp.T @ W_p @ diffp)
+        # W_p = optas.diag([1e3, 1e3, 1e3])
+        # builder.add_cost_term("match_p", diffp.T @ W_p @ diffp)
 
-        W_f = optas.diag([1e3, 1e3, 1e6])
+        W_f = optas.diag([1e2, 1e2, 1e2])
         builder.add_cost_term("match_f", diffFl.T @ W_f @ diffFl)
         
         w_dq = 0.01
         builder.add_cost_term("min_dq", w_dq * optas.sumsqr(dq))
 
-        w_ori = 1e1
-        builder.add_cost_term("match_r", w_ori * optas.sumsqr(diffR - I3()))
+        # w_ori = 1e1
+        # builder.add_cost_term("match_r", w_ori * optas.sumsqr(diffR - I3()))
 
         # builder.add_leq_inequality_constraint(
         #     "eff_x", diffp[0] * diffp[0], 1e-6
@@ -152,7 +158,8 @@ class TrackingController:
         # )
 
         optimization = builder.build()
-        self.solver = optas.CasADiSolver(optimization).setup("sqpmethod")
+        # self.solver = optas.CasADiSolver(optimization).setup("sqpmethod")
+        self.solver = optas.ScipyMinimizeSolver(builder.build()).setup('SLSQP')
         # Setup variables required later
         self.kuka_name = kuka_name
 
@@ -164,7 +171,7 @@ class TrackingController:
 
 def main(gui=True):
     # Setup PyBullet
-    qc = -optas.np.deg2rad([0, 30, 0, -90, 0, 60, 0])
+    qc = -optas.np.deg2rad([20, 30, 10, 90, 30, 00, 00])
     q = qc.copy()
 
     hz = 50
@@ -188,7 +195,7 @@ def main(gui=True):
 
     # Move robot to start position
     Tmax_start = 6.0
-    pginit = optas.np.array([0.4, 0.0, 0.06, 0.0, 1.00, 0.0, 0.0])
+    pginit = optas.np.array([0.5, 0.0, 0.16, 0.0, 1.00, 0.0, 0.0])
     ik = TrackingController(dt)
 
     box_half_extents = [0.01, 0.01, 0.01]
@@ -206,6 +213,7 @@ def main(gui=True):
     zs =[]
     zgs =[]
     fhzs = []
+    manipulatiys= []
 
     while True:
         t = pybullet_api.time.time() - start_time
@@ -216,9 +224,9 @@ def main(gui=True):
             # base_orientation=yaw2quat(state[2]).toarray().flatten(),
         #)
         nv = 0.5
-        fh = optas.np.array([0.0,
-                                  0.0,
-                                  0.1*optas.np.cos(2*pi*nv*t), # changing force
+        fh = optas.np.array([0.2*optas.np.cos(2*pi*nv*t),
+                                  0.2*optas.np.cos(2*pi*nv*t),
+                                  0.2*optas.np.cos(2*pi*nv*t), # changing force
                                   0.0,
                                   0.0,
                                   0.0]) 
@@ -256,20 +264,25 @@ def main(gui=True):
         Jl = kuka.robot.get_global_link_linear_jacobian("end_effector_ball", q)
         Rc = kuka.robot.get_global_link_rotation("end_effector_ball", q)
 
+        J = kuka.robot.get_global_link_geometric_jacobian("end_effector_ball", q)
+
         transl = Rc.T @ transl
         pginit_show = Rc.T @ pginit1[:3]
-        fl = optas.diag([1e1, 1e1, 1e1])@ Rc.T @ Jl @ dqgoal
+        fl = Jl @ dqgoal
+
+        manipulatiy = optas.np.linalg.det(J @ J.T)
         # print(T)
         pybullet_api.time.sleep(dt * float(gui))
         ts.append(t)
-        xs.append(float(transl[0]))
-        xgs.append(float(pginit_show[0]))
+        xs.append(float(fl[0]))
+        xgs.append(float(fh[0]))
 
-        ys.append(float(transl[1]))
-        ygs.append(float(pginit_show[1]))
+        ys.append(float(fl[1]))
+        ygs.append(float(fh[1]))
 
         zs.append(float(fl[2]))
         zgs.append(float(fh[2]))
+        manipulatiys.append(float(manipulatiy))
 
         
 
@@ -283,17 +296,21 @@ def main(gui=True):
 
     print("X error mean = {0} mm".format(1000.0*optas.np.mean(xs_np-xgs_np)))
     
-    plt.subplot(311)
+    plt.subplot(221)
     plt.plot(ts, xs, label ='Actual x')
     plt.plot(ts, xgs, label ='Goal x')
     plt.title("Positional following re x-axis")
-    plt.subplot(312)
+    plt.subplot(222)
     plt.plot(ts, ys, label ='Actual y')
     plt.plot(ts, ygs, label ='Goal y')
     plt.title("Positional following re y-axis")
-    plt.subplot(313)
+    plt.subplot(223)
     plt.plot(ts, zs, label ='Actual z')
     plt.plot(ts, zgs, label ='Goal z')
+    plt.title("Positional following re z-axis")
+    plt.subplot(224)
+    plt.plot(ts, manipulatiys, label ='Mani')
+    # plt.plot(ts, zgs, label ='Goal z')
     plt.title("Positional following re z-axis")
     plt.show()
 
