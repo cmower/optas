@@ -63,8 +63,6 @@ class TrackingController:
         print("dp = {0}".format(dp.size()))
         Om = skew(dp[3:]) 
 
-        #TODO
-        # 分解dp 并将其加到位置上和姿态上
         # Get next end-effector position (Global)
         p = pc + dt * dp[:3]
         R = (Om * dt + I3()) @ Rc
@@ -73,11 +71,6 @@ class TrackingController:
         
         p = Rc.T @ dt @ dp[:3]
         R = Rc.T @ (Om * dt + I3())
-
-        # print("Rc.T = {0}".format(Rc.T.size()))
-        # print("pc = {0}".format(pc.size()))
-        # print("dp[:3] = {0}".format(dp[:3].size()))
-        # print("pc = {0}".format(pc.size()))
         
         # Cost: match end-effector position
         Rotq = Quaternion(pg[3],pg[4],pg[5],pg[6])
@@ -86,19 +79,6 @@ class TrackingController:
         pg_ee = -Rc.T @ pc + Rc.T @ pg[:3]
         Rg_ee = Rc.T @ Rg
 
-        # rgag = pg[3]*pg[3]+pg[4]*pg[4]+pg[5]*pg[5]
-        # rgv = unit(pg[3:])
-
-
-        # e = optas.DM([0, 0, -1.0])
-        # z = R[:, 2]
-        # print("e = {0}".format(e.size()))
-        # print("e = {0}".format(e))
-        # f = e.T @ z
-        # print("e.T @ z = {0}".format(f))
-        # # print("e.T @ z = {0}".format(e.T @ z))
-        # print("e.T @ z = {0}".format(f.size()))
-        # r2angvec()
 
         diffp = (p - pg_ee[:3])
         diffR = Rg_ee.T @ R
