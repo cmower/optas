@@ -290,7 +290,7 @@ class Quaternion:
 
     def split(self) -> Tuple[ArrayType]:
         """! Split the quaternion into its xyzw parts.
-        
+
         @return The xyzw parts of the quaternion.
         """
         return cs.vertsplit(self._q)
@@ -313,7 +313,7 @@ class Quaternion:
 
     def sumsqr(self) -> CasADiArrayType:
         """! Sum the square values of the quaternion elements.
-        
+
         @return Result of the sum of square values of the quaternion.
         """
         return cs.sumsqr(self._q)
@@ -367,7 +367,7 @@ class Quaternion:
 
         @param theta Angle of rotation (radians).
         @param v Direction vector to rotate about.
-        @return An instance of the Quaternion class.    
+        @return An instance of the Quaternion class.
         """
         w = cos(0.5 * theta)
         xyz = sin(0.5 * theta) * unit(vec(v))
@@ -402,16 +402,22 @@ class Quaternion:
         yaw = cs.atan2(siny_cosp, cosy_cosp)
 
         return cs.vertcat(roll, pitch, yaw)
-    
-    def getrotm(self) ->CasADiArrayType:
+
+    def getrotm(self) -> CasADiArrayType:
         """
-        
+
         @ return rot matrix
         """
         x, y, z, w = self.split()
 
         return cs.vertcat(
-            cs.horzcat(1-2*y*y-2*z*z, 2*x*y-2*w*z, 2*x*y+2*w*y),
-            cs.horzcat(2*x*y+2*w*z, 1-2*x*x-2*z*z, 2*y*z-2*w*z),
-            cs.horzcat(2*x*z-2*w*y, 2*y*z+w*w*x, 1-2*x*x-2*y*y),
+            cs.horzcat(
+                1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * w * z, 2 * x * y + 2 * w * y
+            ),
+            cs.horzcat(
+                2 * x * y + 2 * w * z, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * w * z
+            ),
+            cs.horzcat(
+                2 * x * z - 2 * w * y, 2 * y * z + w * w * x, 1 - 2 * x * x - 2 * y * y
+            ),
         )
