@@ -1832,16 +1832,12 @@ class RobotModel(Model):
             self,
             q: ArrayType, 
             qd: ArrayType, 
-            qdd: ArrayType, 
-            extf: ArrayType,
-            extTau: ArrayType
+            qdd: ArrayType
     )-> ArrayType:
         """! compute inverse Dynamics with RNEA
 @ param  q: joint position (unit rad)
 @ param  qd: joint velocity
-@ param  qdd: joint accerleration
-@ param  extf: linear part of external wrench f in R3
-@ param  extf: revolute part of external wrench tau in R3                
+@ param  qdd: joint accerleration          
         """
         # for joint_name in self.urdf.get_chain(root, link, links=False):
 
@@ -1935,8 +1931,8 @@ class RobotModel(Model):
         """
 
         # pRi = rpy2r(rpys[-1])
-        ifi = fs[-1] + extf#cs.DM([0.0,0.0,0.0])
-        ini = ns[-1] + skew(cm[:,-1]) @ fs[-1] + extTau#cs.DM([0.0,0.0,0.0])
+        ifi = fs[-1] #+ extf#cs.DM([0.0,0.0,0.0])
+        ini = ns[-1] + skew(cm[:,-1]) @ fs[-1] #+ extTau#cs.DM([0.0,0.0,0.0])
         # ifi = cs.DM([0.0,0.0,0.0])
         # ini = cs.DM([0.0,0.0,0.0])
         taus = []
