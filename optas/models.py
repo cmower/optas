@@ -1828,7 +1828,7 @@ class RobotModel(Model):
             "a", link, get_global_link_axis, n=n, numpy_output=numpy_output
         )
     
-    def computeRNEA(
+    def rnea(
             self,
             q: ArrayType, 
             qd: ArrayType, 
@@ -1839,7 +1839,7 @@ class RobotModel(Model):
 @ param  qd: joint velocity
 @ param  qdd: joint accerleration          
         """
-        # for joint_name in self.urdf.get_chain(root, link, links=False):
+        # This is a implementation from the RNEA method Chapter 6 (Page 176) in  Introduction to robotics mechanics and control (3rd version)
 
         # list of link informations
         masses = [link.inertial.mass for link in self.urdf.links if link.inertial is not None]
@@ -1863,18 +1863,16 @@ class RobotModel(Model):
             xyzs.append(xyz)
             rpys.append(rpy)
             axes.append(axis)
-        # xyzs = [self.get_joint_origin(joint)[0] for joint in self.joint_names if self.get_joint_origin(joint)[0] is not None]
-        # rpys = [self.get_joint_origin(joint)[1] for joint in self.joint_names if self.get_joint_origin(joint)[1] is not None]
-        # axes = [self.get_joint_axis(joint) for joint in self.joint_names if self.get_joint_axis(joint) is not None]
 
-        # for i in range(len(joints_list_r1)):
-        """
-        Assumption : The first joint is a fixed joint connecting world and base_link of robot
-        """
+        # omega0 (angle velocity of base_link)
         om0 = cs.DM([0.0,0.0,0.0])
+        # omegaDot0 (angle accerleration of base_link)
         om0D = cs.DM([0.0,0.0,0.0])
+        # Gravity accerlation of base_link (equals to a gravity force for every joint)
         gravity_para = cs.DM([0.0, 0.0, -9.81])
+        # external force of the base_link
         fs = [cs.DM([0.0,0.0,0.0])]
+        # external force of the torque
         ns = [cs.DM([0.0,0.0,0.0])]
 
         oms = [om0]
@@ -1899,9 +1897,9 @@ class RobotModel(Model):
         
         """
         for i in range(len(joints_list_r)):
-            # print("link p({0}) to i{1}".format(i,i+1))
+            
             if(i!=len(joints_list_r)-1):
-                # print(joints_list_r1)
+                
                 iRp = (rpy2r(rpys[i]) @ angvec2r(q[i], axes[i])).T
                 iaxisi = iRp @ axes[i]
                 omi = iRp @ oms[i] + iaxisi* qd[i]
@@ -1916,7 +1914,7 @@ class RobotModel(Model):
                         + skew(oms[i]) @ (skew(oms[i])@ xyzs[i]))
             
             fi = m[i] * (vDi + skew(omDi)@ cm[:,i]+ skew(omi)@(skew(omi)@cm[:,i]))
-            ni = Icm[:,i*3:i*3+3] @ omDi + skew(omi) @ Icm[:,i*3:i*3+3] @ omi #+ skew(cm[:,i]) @ fi
+            ni = Icm[:,i*3:i*3+3] @ omDi + skew(omi) @ Icm[:,i*3:i*3+3] @ omi 
             
 
             oms.append(omi)
@@ -1930,18 +1928,13 @@ class RobotModel(Model):
         $$ Backward part of RNEA $$
         """
 
-        # pRi = rpy2r(rpys[-1])
-        ifi = fs[-1] #+ extf#cs.DM([0.0,0.0,0.0])
-        ini = ns[-1] + skew(cm[:,-1]) @ fs[-1] #+ extTau#cs.DM([0.0,0.0,0.0])
-        # ifi = cs.DM([0.0,0.0,0.0])
-        # ini = cs.DM([0.0,0.0,0.0])
+        ifi = fs[-1] 
+        ini = ns[-1] + skew(cm[:,-1]) @ fs[-1] 
+
         taus = []
 
-        # print("Backward: fs[i+1] {0}".format(len(fs)))
         for i in range(len(joints_list_r)-1,0,-1):
 
-            # print("Backward: link i({0}) to p{1}".format(i+1,i))
-            # print("Backward: fs[i+1]".format(fs[i+1]))
             if(i < len(joints_list_r)-1):
                 pRi = rpy2r(rpys[i]) @ angvec2r(q[i], axes[i])
             elif(i == len(joints_list_r)-1):
