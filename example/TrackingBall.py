@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 
 class TrackingController:
-    def __init__(self,dt):
+    def __init__(self, dt):
         cwd = pathlib.Path(
             __file__
         ).parent.resolve()  # path to current working directory
@@ -32,11 +32,9 @@ class TrackingController:
         )
         kuka_name = kuka.get_name()
 
-        
-
         # setup model
-        X_dim = 6 # x,y,z, Rx, Ry, Rz dimensions
-        dim =  {0: [-1.5, -1.5]}
+        X_dim = 6  # x,y,z, Rx, Ry, Rz dimensions
+        dim = {0: [-1.5, -1.5]}
 
         T = 1
         builder = optas.OptimizationBuilder(T, robots=[kuka], derivs_align=True)
@@ -59,28 +57,27 @@ class TrackingController:
         # Get current end-effector position
         pc = kuka.get_global_link_position(link_ee, qc)
         Rc = kuka.get_global_link_rotation(link_ee, qc)
-        
+
         print("dp = {0}".format(dp.size()))
-        Om = skew(dp[3:]) 
+        Om = skew(dp[3:])
 
         # Get next end-effector position (Global)
         p = pc + dt * dp[:3]
         R = (Om * dt + I3()) @ Rc
-        
+
         # Get next end-effector position (Current end-effector position)
-        
+
         p = Rc.T @ dt @ dp[:3]
         R = Rc.T @ (Om * dt + I3())
-        
+
         # Cost: match end-effector position
-        Rotq = Quaternion(pg[3],pg[4],pg[5],pg[6])
+        Rotq = Quaternion(pg[3], pg[4], pg[5], pg[6])
         Rg = Rotq.getrotm()
 
         pg_ee = -Rc.T @ pc + Rc.T @ pg[:3]
         Rg_ee = Rc.T @ Rg
 
-
-        diffp = (p - pg_ee[:3])
+        diffp = p - pg_ee[:3]
         diffR = Rg_ee.T @ R
 
         W_p = optas.diag([1e3, 1e3, 1e3])
@@ -92,15 +89,9 @@ class TrackingController:
         w_ori = 1e1
         builder.add_cost_term("match_r", w_ori * optas.sumsqr(diffR - I3()))
 
-        builder.add_leq_inequality_constraint(
-            "eff_x", diffp[0] * diffp[0], 1e-6
-        )
-        builder.add_leq_inequality_constraint(
-            "eff_y", diffp[1] * diffp[1], 1e-8
-        )
-        builder.add_leq_inequality_constraint(
-            "eff_z", diffp[2] * diffp[2], 1e-8
-        )
+        builder.add_leq_inequality_constraint("eff_x", diffp[0] * diffp[0], 1e-6)
+        builder.add_leq_inequality_constraint("eff_y", diffp[1] * diffp[1], 1e-8)
+        builder.add_leq_inequality_constraint("eff_z", diffp[2] * diffp[2], 1e-8)
 
         optimization = builder.build()
         self.solver = optas.CasADiSolver(optimization).setup("sqpmethod")
@@ -119,7 +110,7 @@ def main(gui=True):
     q = qc.copy()
 
     hz = 50
-    dt = 1.0/float(hz)
+    dt = 1.0 / float(hz)
     pb = pybullet_api.PyBullet(
         dt,
         camera_distance=0.5,
@@ -135,15 +126,13 @@ def main(gui=True):
 
     start_time = pybullet_api.time.time()
 
-    
-
     # Move robot to start position
     Tmax_start = 6.0
     pginit = optas.np.array([0.4, 0.0, 0.06, 0.0, 1.00, 0.0, 0.0])
     ik = TrackingController(dt)
 
     box_half_extents = [0.01, 0.01, 0.01]
-    constdist = optas.np.array([0.0, 0.0, -0.04]) 
+    constdist = optas.np.array([0.0, 0.0, -0.04])
     box = pybullet_api.VisualBox(
         base_position=pginit[:3] + constdist,
         half_extents=box_half_extents,
@@ -153,9 +142,9 @@ def main(gui=True):
     xs = []
     xgs = []
     ys = []
-    ygs =[]
-    zs =[]
-    zgs =[]
+    ygs = []
+    zs = []
+    zgs = []
 
     while True:
         t = pybullet_api.time.time() - start_time
@@ -163,28 +152,32 @@ def main(gui=True):
             break
         # box.reset(
         #     base_position=constdist)
-            # base_orientation=yaw2quat(state[2]).toarray().flatten(),
-        #)
+        # base_orientation=yaw2quat(state[2]).toarray().flatten(),
+        # )
         nv = 1.0
-        pginit1 = pginit + optas.np.array([0.03*optas.np.sin(2*pi*nv*t),
-                                  0.03*optas.np.cos(2*pi*nv*t),
-                                  0.02*pi*t,
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0]) + optas.np.random.uniform(-0.01, 0.01, kuka.ndof)
-        box.reset(
-            base_position=constdist+pginit1[:3],
-            base_orientation= pginit1[3:])
-        
+        pginit1 = (
+            pginit
+            + optas.np.array(
+                [
+                    0.03 * optas.np.sin(2 * pi * nv * t),
+                    0.03 * optas.np.cos(2 * pi * nv * t),
+                    0.02 * pi * t,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            )
+            + optas.np.random.uniform(-0.01, 0.01, kuka.ndof)
+        )
+        box.reset(base_position=constdist + pginit1[:3], base_orientation=pginit1[3:])
+
         dqgoal = ik.compute_target_velocity(q, pginit1)
 
-
-        q += dt * dqgoal + optas.np.random.uniform(-0.01, 0.01, kuka.ndof) # noise
+        q += dt * dqgoal + optas.np.random.uniform(-0.01, 0.01, kuka.ndof)  # noise
 
         # q += dt * dqgoal #ideal control
         kuka.cmd(q)
-
 
         transl = kuka.robot.get_global_link_position("end_effector_ball", q)
         # print(T)
@@ -199,8 +192,6 @@ def main(gui=True):
         zs.append(float(transl[2]))
         zgs.append(float(pginit1[2]))
 
-
-
     # pybullet_api.time.sleep(5.0)
     pb.stop()
     pb.close()
@@ -208,30 +199,22 @@ def main(gui=True):
     xgs_np = optas.np.array(xgs)
     xs_np = optas.np.array(xs)
 
-    print("X error mean = {0} mm".format(1000.0*optas.np.mean(xs_np-xgs_np)))
-    
+    print("X error mean = {0} mm".format(1000.0 * optas.np.mean(xs_np - xgs_np)))
+
     plt.subplot(311)
-    plt.plot(ts, xs, label ='Actual x')
-    plt.plot(ts, xgs, label ='Goal x')
+    plt.plot(ts, xs, label="Actual x")
+    plt.plot(ts, xgs, label="Goal x")
     plt.title("Positional following re x-axis")
     plt.subplot(312)
-    plt.plot(ts, ys, label ='Actual y')
-    plt.plot(ts, ygs, label ='Goal y')
+    plt.plot(ts, ys, label="Actual y")
+    plt.plot(ts, ygs, label="Goal y")
     plt.title("Positional following re y-axis")
     plt.subplot(313)
-    plt.plot(ts, zs, label ='Actual z')
-    plt.plot(ts, zgs, label ='Goal z')
+    plt.plot(ts, zs, label="Actual z")
+    plt.plot(ts, zgs, label="Goal z")
     plt.title("Positional following re z-axis")
     plt.show()
 
 
-
-
-
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-
-
