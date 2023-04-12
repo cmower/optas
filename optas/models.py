@@ -1833,11 +1833,24 @@ class RobotModel(Model):
 
     @arrayify_args
     def rnea(self, q: ArrayType, qd: ArrayType, qdd: ArrayType) -> ArrayType:
-        """! Compute inverse Dynamics with RNEA.
+        """! Compute inverse dynamics with RNEA.
+
+        NOTE, currently this method only supports revolute/continuous joints.
+        The first joint should be fixed and there is no fixed joints except the first joint and the last joint.
+
         @ param  q: Joint position (unit rad).
         @ param  qd: Joint velocity.
         @ param  qdd: Joint accerleration.
         """
+        # Ensure URDF only contains continuous/revolute joints
+        rnea_supported_joint_types = {"revolute", "continuous", "fixed"}
+        for joint_name, joint in self.urdf.joint_map.items():
+            if joint.type not in rnea_supported_joint_types:
+                raise JointTypeNotSupported(joint.type)
+
+        if list(self.urdf.joint_map.items())[0][1].type not in {"fixed"}:
+            raise JointTypeNotSupported("First joint should be fixed")
+
         # This is a implementation from the RNEA method Chapter 6 (Page 176) in  Introduction to robotics mechanics and control (3rd version)
 
         # list of link informations
