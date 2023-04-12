@@ -1828,11 +1828,12 @@ class RobotModel(Model):
             "a", link, get_global_link_axis, n=n, numpy_output=numpy_output
         )
 
+    @arrayify_args
     def rnea(self, q: ArrayType, qd: ArrayType, qdd: ArrayType) -> ArrayType:
-        """! compute inverse Dynamics with RNEA
-        @ param  q: joint position (unit rad)
-        @ param  qd: joint velocity
-        @ param  qdd: joint accerleration
+        """! Compute inverse Dynamics with RNEA.
+        @ param  q: Joint position (unit rad).
+        @ param  qd: Joint velocity.
+        @ param  qdd: Joint accerleration.
         """
         # This is a implementation from the RNEA method Chapter 6 (Page 176) in  Introduction to robotics mechanics and control (3rd version)
 
@@ -1871,15 +1872,15 @@ class RobotModel(Model):
             rpys.append(rpy)
             axes.append(axis)
 
-        # omega0 (angle velocity of base_link)
+        # omega0 (angle velocity of base_link).
         om0 = cs.DM([0.0, 0.0, 0.0])
-        # omegaDot0 (angle accerleration of base_link)
+        # omegaDot0 (angle accerleration of base_link).
         om0D = cs.DM([0.0, 0.0, 0.0])
-        # Gravity accerlation of base_link (equals to a gravity force for every joint)
+        # Gravity accerlation of base_link (equals to a gravity force for every joint).
         gravity_para = cs.DM([0.0, 0.0, -9.81])
-        # external force of the base_link
+        # external force of the base_link.
         fs = [cs.DM([0.0, 0.0, 0.0])]
-        # external force of the torque
+        # external force of the torque.
         ns = [cs.DM([0.0, 0.0, 0.0])]
 
         oms = [om0]
@@ -1898,7 +1899,7 @@ class RobotModel(Model):
 
         # 2.1 forward part of RNEA
         """
-        link0->1, link1->2 ...., link7->end-effector (for example)
+        link0->1, link1->2 ...., link7->end-effector (for example).
         joint0,   joint1 ....
         
         """
