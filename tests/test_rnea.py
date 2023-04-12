@@ -29,7 +29,7 @@ class TestRnea:
     # Setup model (with no parameterized joints)
     model = optas.RobotModel(urdf_filename=urdf_path)
 
-    pb.connect(*[pb.DIRECT])
+    pb.connect(pb.DIRECT)
 
     # pb.setAdditionalSearchPath(cwd)
 
@@ -41,12 +41,11 @@ class TestRnea:
     )
 
     def test_calculate_inverse_dynamics_symbol(self):
-        for _ in range(NUM_RANDOM):
-            q = optas.SX.sym("q", self.model.ndof)
-            qd = optas.SX.sym("qd", self.model.ndof)
-            qdd = optas.SX.sym("qdd", self.model.ndof)
-            tau1 = self.model.rnea(q, qd, qdd)
-            assert isinstance(tau1, optas.SX)
+        q = optas.SX.sym("q", self.model.ndof)
+        qd = optas.SX.sym("qd", self.model.ndof)
+        qdd = optas.SX.sym("qdd", self.model.ndof)
+        tau1 = self.model.rnea(q, qd, qdd)
+        assert isinstance(tau1, optas.SX)
 
     def test_calculate_inverse_dynamics(self):
         for _ in range(NUM_RANDOM):
@@ -60,9 +59,7 @@ class TestRnea:
                     self.id, q.tolist(), qd.tolist(), qdd.tolist()
                 )
             )
-            # print(tau1)
-            # print(tau2)
-            assert isclose(tau1.T, tau2)
+            assert isclose(tau1.toarray().flatten(), tau2)
 
 
 def main(q=None):
