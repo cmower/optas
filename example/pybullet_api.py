@@ -151,6 +151,14 @@ class FixedBaseRobot:
             targetPositions=np.asarray(q).tolist(),
         )
 
+    def cmd_torque(self, taus):
+        p.setJointMotorControlArray(
+            self._id,
+            self._actuated_joints,
+            p.TORQUE_CONTROL,
+            forces = np.asarray(taus).tolist(),
+        )
+
     def q(self):
         return [state[0] for state in p.getJointStates(self._id, self._actuated_joints)]
 
