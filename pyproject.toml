@@ -1,6 +1,24 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyoptas"
+version = "1.0.0"
+authors = [
+  { name="Christopher E. Mower", email="christopher.mower@kcl.ac.uk" },
+]
+description = "An optimization-based task specification library for task and motion planning (TAMP), trajectory optimization, and model predictive control."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache License, Version 2.0",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://cmower.github.io/optas/"
+"Documentation" = "https://cmower.github.io/optas/"
+"Bug Tracker" = "https://github.com/cmower/optas/issues"
+"Source" = "https://github.com/cmower/optas"
