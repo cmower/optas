@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/logo.png" width="60" align="right">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/logo.png" width="60" align="right">
 </p>
 
 # OpTaS
@@ -24,7 +24,7 @@ In the past, OpTaS supported ROS from an internal module. This functionality, wi
 # Example
 
 <p align="center">
-  <img src="doc/image/kuka_example.png" width="61.803398875%">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/image/kuka_example.png" width="61.803398875%">
 </p>
 
 
@@ -224,5 +224,5 @@ T. Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\7\3
 This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 101017008, Enhancing Healthcare with Assistive Robotic Mobile Manipulation ([HARMONY](https://harmony-eu.org/)).
 
 <p align="center">
-  <img src="doc/image/eu.png" width="180" align="left">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/image/eu.png" width="180" align="left">
 </p>
