@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="pyoptas",
     description="An optimization-based task specification library for task and motion planning (TAMP), trajectory optimization, and model predictive control.",
-    version="1.0.1",
+    version="1.0.2",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/cmower/optas",
