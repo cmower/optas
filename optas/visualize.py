@@ -1147,6 +1147,7 @@ class Visualizer:
         return actors
 
     def save(self, file_name):
+        """! Save the visualizer window as png image. Note, saving animations is currently not supported."""
         assert (
             len(self.animate_callbacks) == 0
         ), "saving animations is currently not supported"
