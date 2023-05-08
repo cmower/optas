@@ -149,7 +149,16 @@ If you experience problems, please [submit an issue](https://github.com/cmower/o
 Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`.
 
 ## Via pip
-1. `$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'`
+
+```
+$ pip install pyoptas
+```
+
+Alternatively, you can also install OpTaS using:
+
+```
+$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'
+```
 
 ## From source
 1. `$ git clone git@github.com:cmower/optas.git`
