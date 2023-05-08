@@ -10,6 +10,9 @@
 [![Build documentation](https://github.com/cmower/optas/actions/workflows/documentation.yaml/badge.svg)](https://github.com/cmower/optas/actions/workflows/documentation.yaml)
 
 
+**Note**, the `icra23` branch is only kept as a legacy and serves as a placeholder.
+It is important to mention that this branch aligns with the version of OpTaS that was made available during [ICRA 2023](https://www.icra2023.org/), which coincided with the acceptance of our paper.
+
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
 Please see our paper accepted at ICRA 2023, and also our video (link below).
 
