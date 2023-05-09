@@ -1,0 +1,26 @@
+name: Update submodules
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *' # run monthly
+
+jobs:
+  update_submodules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Update submodules
+        run: |
+          git submodule update --remote
+      - name: Commit files
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -a -m "Update submodules" || echo "No changes to commit"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: master
