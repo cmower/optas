@@ -11,13 +11,14 @@
 
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
-Please see our paper accepted at ICRA 2023, and also our video (link below).
 
-<p align="center">
-	<a href="https://youtu.be/gCMNOenFngU">
-		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="50%">
-	</a>
-</p>
+- Code: [https://github.com/cmower/optas](https://github.com/cmower/optas)
+- Documentation: [https://cmower.github.io/optas/](https://cmower.github.io/optas/)
+- PyPI: [https://pypi.org/project/pyoptas/](https://pypi.org/project/pyoptas/)
+- Issues: [https://github.com/cmower/optas/issues](https://github.com/cmower/optas/issues)
+- ICRA 2023 paper (arXiv): [https://arxiv.org/abs/2301.13512](https://arxiv.org/abs/2301.13512)
+- Video: [https://youtu.be/gCMNOenFngU](https://youtu.be/gCMNOenFngU)
+- Presentation: [https://vimeo.com/824802366](https://vimeo.com/824802366)
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
