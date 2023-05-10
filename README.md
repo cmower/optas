@@ -165,7 +165,8 @@ $ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'
 1. `$ git clone --recursive git@github.com:cmower/optas.git` (if you do not want to build the documentation then the `--recursive` flag is not necessary)
 2. `$ cd optas`
 4. `$ pip install .`
-5. (optional) If you want to run the examples/tests: `$ pip install -r requirements_all.txt`
+   - if you want to run the examples use: `$ pip install .[example]`
+   - if you want to run the tests use: `$ pip install .[test]`
 
 ### Build documentation
 
