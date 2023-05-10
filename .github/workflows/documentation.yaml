@@ -27,6 +27,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v2.3.4
+        with:
+          submodules: 'recursive'
 
       - run: |
           sudo apt install doxygen graphviz -y
