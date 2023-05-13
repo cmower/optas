@@ -1,7 +1,6 @@
 import casadi as cs
-from .models import Model
+from .models import Model, CasADiArrayType
 from .sx_container import SXContainer
-from .spatialmath import CasADiArrayType
 from typing import List, Tuple
 
 

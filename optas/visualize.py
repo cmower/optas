@@ -16,9 +16,7 @@ from scipy.spatial.transform import Rotation as Rot
 
 from urdf_parser_py.urdf import Mesh, Cylinder, Sphere
 
-from .models import RobotModel
-
-from .spatialmath import *
+from .models import RobotModel, ArrayType, arrayify_args
 
 from typing import List, Union, Dict
 

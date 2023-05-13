@@ -2,9 +2,15 @@
 
 import casadi as cs
 from .sx_container import SXContainer
-from .spatialmath import arrayify_args, ArrayType, CasADiArrayType
 from .optimization import *
-from .models import Model, TaskModel, RobotModel
+from .models import (
+    Model,
+    TaskModel,
+    RobotModel,
+    arrayify_args,
+    ArrayType,
+    CasADiArrayType,
+)
 from typing import List, Union
 
 

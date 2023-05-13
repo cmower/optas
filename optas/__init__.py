@@ -1,10 +1,11 @@
 import casadi as cs
 from casadi import *
-from .spatialmath import *
-from .models import RobotModel, TaskModel
+from .models import RobotModel, TaskModel, arrayify_args, ArrayType
 from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver
 from .visualize import Visualizer
+
+from typing import Union
 
 
 @arrayify_args

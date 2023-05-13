@@ -5,7 +5,7 @@ import casadi as cs
 import numpy as np
 from typing import Union, List, Dict
 
-from .spatialmath import ArrayType
+from .models import ArrayType
 
 
 ## SX type: https://web.casadi.org/docs/#document-symbolic

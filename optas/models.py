@@ -8,7 +8,7 @@ import pathlib
 import casadi as cs
 import spatial_casadi as sc
 
-from typing import Callable, Union
+from typing import Callable, Union, List, Dict, Tuple
 
 # https://wiki.ros.org/xacro
 import xacro
@@ -16,7 +16,63 @@ import xacro
 # https://pypi.org/project/urdf-parser-py
 from urdf_parser_py.urdf import URDF, Joint, Link, Pose
 
-from .spatialmath import *
+## Accepted array types.
+ArrayType = Union[cs.DM, cs.SX, List[float], Tuple[float], cs.np.ndarray, float, int]
+
+## CasADi array types typically returned by OpTaS methods.
+CasADiArrayType = Union[cs.DM, cs.SX]
+
+def arrayify_args(fun: Callable) -> Callable:
+    """! Decorator that ensures all input arguments are casadi arrays (i.e. either DM or SX).
+
+    @param fun Callable function
+    @return Wrapper that ensures the input to the given function are casadi arrays.
+    """
+
+    _arraylike_types = (cs.DM, cs.SX, list, tuple, cs.np.ndarray, float, int)
+
+    def _handle_arraylike_args(args, handle):
+        """Helper method that applies the handle to array like arguments."""
+        args_out = []
+
+        for a in args:
+            if isinstance(a, _arraylike_types):
+                args_out.append(handle(a))
+            else:
+                args_out.append(a)
+        return args_out
+
+    def _handle_arraylike_kwargs(kwargs, handle, default_kwargs):
+        kwargs_out = {}
+
+        for label, value in kwargs.items():
+            if isinstance(value, _arraylike_types):
+                kwargs_out[label] = handle(value)
+            else:
+                kwargs_out[label] = value
+
+        for label, default_value in default_kwargs.items():
+            if label not in kwargs_out and isinstance(default_value, _arraylike_types):
+                kwargs_out[label] = handle(default_value)
+
+        return kwargs_out
+
+    @functools.wraps(fun)
+    def wrap(*args, **kwargs):
+        # Extract default values for kwargs from fun
+        arg_names = fun.__code__.co_varnames[: fun.__code__.co_argcount]
+        arg_defaults = fun.__defaults__
+        if arg_defaults is not None:
+            default_kwargs = dict(zip(arg_names[-len(arg_defaults) :], arg_defaults))
+        else:
+            default_kwargs = {}
+
+        args_use = _handle_arraylike_args(args, cs.horzcat)
+        kwargs_use = _handle_arraylike_kwargs(kwargs, cs.horzcat, default_kwargs)
+        return fun(*args_use, **kwargs_use)
+
+    return wrap
+
 
 
 def listify_output(fun: Callable) -> Callable:
