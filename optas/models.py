@@ -6,6 +6,7 @@ import functools
 import pathlib
 
 import casadi as cs
+import spatial_casadi as sc
 
 from typing import Callable, Union
 
@@ -839,7 +840,7 @@ class RobotModel(Model):
             link in self.urdf.link_map.keys()
         ), f"given link '{link}' does not appear in URDF"
         root = self.urdf.get_root()
-        T = I4()
+        T = sc.Transformation.identity()
         if link == root:
             return T
 
@@ -849,19 +850,29 @@ class RobotModel(Model):
             xyz, rpy = self.get_joint_origin(joint)
 
             if joint.type == "fixed":
-                T = T @ rt2tr(rpy2r(rpy), xyz)
+                T = T * sc.Transformation(
+                    sc.Rotation.from_euler("XYZ", rpy), sc.Translation.from_vector(xyz)
+                )
                 continue
 
             joint_index = self.get_actuated_joint_index(joint.name)
             qi = q[joint_index]
 
-            T = T @ rt2tr(rpy2r(rpy), xyz)
+            T = T * sc.Transformation(
+                sc.Rotation.from_euler("XYZ", rpy), sc.Translation.from_vector(xyz)
+            )
 
             if joint.type in {"revolute", "continuous"}:
-                T = T @ r2t(angvec2r(qi, self.get_joint_axis(joint)))
+                rotvec = axis * qi
+                T = T * sc.Transformation(
+                    sc.Rotation.from_rotvec(rotvec), sc.Translation.identity()
+                )
 
             elif joint.type == "prismatic":
-                T = T @ rt2tr(I3(), qi * self.get_joint_axis(joint))
+                T = T * sc.Transformation(
+                    sc.Rotation.identity(),
+                    sc.Translation.from_vector(qi * self.get_joint_axis(joint)),
+                )
 
             else:
                 raise JointTypeNotSupported(joint.type)
@@ -896,7 +907,7 @@ class RobotModel(Model):
         """
         T_L_W = self.get_global_link_transform(link, q)
         T_B_W = self.get_global_link_transform(base_link, q)
-        return T_L_W @ invt(T_B_W)
+        return T_L_W * T_B_W.inv()
 
     def get_link_transform_function(
         self,
