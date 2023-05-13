@@ -525,3 +525,20 @@ class NonlinearCostNonlinearConstraints(Optimization):
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
+
+
+class MixedIntegerNonlinearCostNonlinearConstrained(NonlinearCostNonlinearConstrained):
+    """Nonlinear mixed-integer optimization problem.
+
+    min f(x, z; p)
+     x,z
+
+        subject to
+
+            k(x, z; p) = M(p).x + L(p).z + c(p) >= 0
+            a(x, z; p) = A(p).x + G(p).z + b(p) == 0
+            g(x, z; p) >= 0, and
+            h(x, z; p) == 0
+    """
+
+    pass
