@@ -1,31 +1,11 @@
 import casadi as cs
 from casadi import *
+from spatial_casadi import deg2rad, rad2deg, pi
 from .models import RobotModel, TaskModel, arrayify_args, ArrayType
 from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver
 from .visualize import Visualizer
-
 from typing import Union
-
-
-@arrayify_args
-def deg2rad(x: ArrayType) -> Union[cs.DM, cs.SX]:
-    """! Convert degrees to radians.
-
-    @param x An array containing angles in degrees.
-    @return An array containing angles in radians.
-    """
-    return (pi / 180.0) * x
-
-
-@arrayify_args
-def rad2deg(x: ArrayType) -> Union[cs.DM, cs.SX]:
-    """! Convert radians to degrees.
-
-    @param x An array containing angles in radians.
-    @return An array containing angles in degrees.
-    """
-    return (180.0 / pi) * x
 
 
 @arrayify_args
