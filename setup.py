@@ -21,6 +21,7 @@ setup(
         "numpy",
         "scipy",
         "casadi",
+        "spatial-casadi",
         "urdf-parser-py",
         "osqp",
         "cvxopt",
