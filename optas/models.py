@@ -909,310 +909,6 @@ class RobotModel(Model):
         T_B_W = self.get_global_link_transform(base_link, q)
         return T_L_W * T_B_W.inv()
 
-    def get_link_transform_function(
-        self,
-        link: str,
-        base_link: str,
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> CasADiArrayType:
-        """! Get the function that computes the transform in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the transform for a given joint state. If n > 1 then a list of transform are given for each corresponding joint state.
-        """
-        return self.make_function(
-            "T",
-            link,
-            self.get_link_transform,
-            base_link=base_link,
-            n=n,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_position(self, link: str, q: ArrayType) -> CasADiArrayType:
-        """! Get the link position in the global frame for a given joint state q.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @return Position array.
-        """
-        return transl(self.get_global_link_transform(link, q))
-
-    def get_global_link_position_function(
-        self, link: str, n: int = 1, numpy_output: bool = False
-    ) -> cs.Function:
-        """! Get the function that computes the global position of a given link.
-
-        @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "p", link, self.get_global_link_position, n=n, numpy_output=numpy_output
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_link_position(
-        self, link: str, q: ArrayType, base_link: str
-    ) -> CasADiArrayType:
-        """! Get the link position in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @return Position array.
-        """
-        return transl(self.get_link_transform(link, q, base_link))
-
-    def get_link_position_function(
-        self,
-        link: str,
-        base_link: str,
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> cs.Function:
-        """! Get the function that computes the position of a link in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the position for a given joint state. If n > 1 then an array is computed whose columns each correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "p",
-            link,
-            self.get_link_position,
-            n=n,
-            base_link=base_link,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_rotation(self, link: str, q: ArrayType) -> CasADiArrayType:
-        """! Get the link rotation in the global frame for a given joint state q.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @return Rotation array.
-        """
-        return t2r(self.get_global_link_transform(link, q))
-
-    def get_global_link_rotation_function(
-        self, link: str, n: int = 1, numpy_output: bool = False
-    ) -> cs.Function:
-        """! Get the function that computes a rotation matrix in the global link.
-
-        @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
-        """
-        return self.make_function(
-            "R", link, self.get_global_link_rotation, n=n, numpy_output=numpy_output
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_link_rotation(
-        self, link: str, q: ArrayType, base_link: str
-    ) -> CasADiArrayType:
-        """! Get the rotation matrix for a link in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @param base_link Name of the base frame link.
-        @return Rotation array.
-        """
-        return t2r(self.get_link_transform(link, q, base_link))
-
-    def get_link_rotation_function(
-        self,
-        link: str,
-        base_link: str,
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> cs.Function:
-        """! Get the function that computes the rotation matrix for a link in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the rotation for a given joint state. If n > 1 then a list of arrays are computed whose corresponding to the respective joint state in the input.
-        """
-        return self.make_function(
-            "R",
-            link,
-            self.get_link_rotation,
-            base_link=base_link,
-            n=n,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_quaternion(self, link: str, q: ArrayType) -> CasADiArrayType:
-        """! Get a quaternion in the global frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @return Quaternion array.
-        """
-
-        # Setup
-        assert link in self.urdf.link_map.keys(), "given link does not appear in URDF"
-        root = self.urdf.get_root()
-        quat = Quaternion(0.0, 0.0, 0.0, 1.0)
-        if link == root:
-            return quat.getquat()
-
-        # Iterate over joints in chain
-        for joint_name in self.urdf.get_chain(root, link, links=False):
-            joint = self.urdf.joint_map[joint_name]
-            xyz, rpy = self.get_joint_origin(joint)
-
-            if joint.type == "fixed":
-                quat = Quaternion.fromrpy(rpy) * quat
-                continue
-
-            joint_index = self.get_actuated_joint_index(joint.name)
-            qi = q[joint_index]
-
-            quat = Quaternion.fromrpy(rpy) * quat
-            if joint.type in {"revolute", "continuous"}:
-                quat = Quaternion.fromangvec(qi, self.get_joint_axis(joint)) * quat
-
-            elif joint.type == "prismatic":
-                pass
-
-            else:
-                raise JointTypeNotSupported(joint.type)
-
-        return quat.getquat()
-
-    def get_global_link_quaternion_function(
-        self, link: str, n: int = 1, numpy_output: bool = False
-    ) -> cs.Function:
-        """! Get the function that computes a quaternion in the global frame.
-
-        @param link Name of the end-effector link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "quat",
-            link,
-            self.get_global_link_quaternion,
-            n=n,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_link_quaternion(
-        self, link: str, q: ArrayType, base_link: str
-    ) -> CasADiArrayType:
-        """! Get the quaternion defined in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @param base_link Name of the base frame link.
-        @return Quaternion array.
-        """
-        quat_L_W = Quaternion.fromvec(self.get_global_link_quaternion(link, q))
-        quat_B_W = Quaternion.fromvec(self.get_global_link_quaternion(base_link, q))
-        return (quat_L_W * quat_B_W.inv()).getquat()
-
-    def get_link_quaternion_function(
-        self,
-        link: str,
-        base_link: str,
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> cs.Function:
-        """! Get the function that computes a quaternion defined in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the quaternion for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "quat",
-            link,
-            self.get_link_quaternion,
-            n=n,
-            base_link=base_link,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_rpy(self, link: str, q: ArrayType) -> CasADiArrayType:
-        """! Get the Roll-Pitch-Yaw angles in the global frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @return RPY euler angles in radians.
-        """
-        return Quaternion.fromvec(self.get_global_link_quaternion(link, q)).getrpy()
-
-    def get_global_link_rpy_function(
-        self, link: str, n: int = 1, numpy_output: bool = False
-    ):
-        """! Get the function that computes the Roll-Pitch-Yaw angles in the global frame."""
-        return self.make_function(
-            "quat", link, self.get_global_link_rpy, n=n, numpy_output=numpy_output
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_link_rpy(self, link: str, q: ArrayType, base_link: str) -> CasADiArrayType:
-        """! Get the the Roll-Pitch-Yaw angles defined in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @param base_link Name of the base frame link.
-        @return RPY euler angles in radians.
-        """
-        return Quaternion.fromvec(self.get_link_quaternion(link, q, base_link)).getrpy()
-
-    def get_link_rpy_function(
-        self, link: str, base_link: str, n: int = 1, numpy_output: bool = False
-    ) -> cs.Function:
-        """! Get the function that computes the Roll-Pitch-Yaw angles defined in a given base frame.
-
-        @param link Name of the end-effector link.
-        @param base_link Name of the base frame link.
-        @param n Number of joint states to expect when the function is called. Default is 1.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the RPY angles for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "rpy",
-            link,
-            self.get_link_rpy,
-            n=n,
-            base_link=base_link,
-            numpy_output=numpy_output,
-        )
-
-    @deprecation_warning("get_global_link_geometric_jacobian")
-    def get_global_geometric_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_geometric_jacobian(
@@ -1282,11 +978,6 @@ class RobotModel(Model):
 
         return J
 
-    @deprecation_warning("get_global_link_geometric_jacobian_function")
-    def get_global_geometric_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
-
     def get_global_link_geometric_jacobian_function(
         self,
         link: str,
@@ -1304,11 +995,6 @@ class RobotModel(Model):
             "J", link, self.get_global_link_geometric_jacobian, n=n
         )
 
-    @deprecation_warning("get_global_link_analytical_jacobian")
-    def get_global_analytical_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_analytical_jacobian(
@@ -1324,11 +1010,6 @@ class RobotModel(Model):
             self.get_global_link_linear_jacobian(link, q),
             self.get_global_link_angular_analytical_jacobian(link, q),
         )
-
-    @deprecation_warning("get_global_link_analytical_jacobian_function")
-    def get_global_analytical_jacobian_function(self, link):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_analytical_jacobian_function(
         self,
@@ -1350,11 +1031,6 @@ class RobotModel(Model):
             n=n,
             numpy_output=numpy_output,
         )
-
-    @deprecation_warning("get_link_geometric_jacobian")
-    def get_geometric_jacobian(self):
-        """! Deprecated function."""
-        pass
 
     @arrayify_args
     @listify_output
@@ -1382,11 +1058,6 @@ class RobotModel(Model):
 
         return J
 
-    @deprecation_warning("get_link_geometric_jacobian_function")
-    def get_geometric_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
-
     def get_link_geometric_jacobian_function(
         self,
         link: str,
@@ -1411,11 +1082,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_analytical_jacobian")
-    def get_analytical_jacobian(self):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_analytical_jacobian(
@@ -1432,11 +1098,6 @@ class RobotModel(Model):
             self.get_link_linear_jacobian(link, q, base_link),
             self.get_link_angular_analytical_jacobian(link, q, base_link),
         )
-
-    @deprecation_warning("get_link_analytical_jacobian_function")
-    def get_analytical_jacobian_function(self, link, base_link):
-        """! Deprecated function."""
-        pass
 
     def get_link_analytical_jacobian_function(
         self,
@@ -1462,11 +1123,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_linear_jacobian")
-    def get_global_linear_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_linear_jacobian(
@@ -1480,11 +1136,6 @@ class RobotModel(Model):
         """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[:3, :]
-
-    @deprecation_warning("get_global_link_linear_jacobian_function")
-    def get_global_linear_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_linear_jacobian_function(
         self,
@@ -1507,11 +1158,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_linear_jacobian")
-    def get_linear_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_linear_jacobian(
@@ -1526,11 +1172,6 @@ class RobotModel(Model):
         """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[:3, :]
-
-    @deprecation_warning("get_link_linear_jacobian_function")
-    def get_linear_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_link_linear_jacobian_function(
         self, link: str, base_link: str, n: int = 1, numpy_output: bool = False
@@ -1552,11 +1193,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_angular_geometric_jacobian")
-    def get_global_angular_geometric_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_angular_geometric_jacobian(
@@ -1571,11 +1207,6 @@ class RobotModel(Model):
         """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[3:, :]
-
-    @deprecation_warning("get_global_link_angular_geometric_jacobian_function")
-    def get_global_angular_geometric_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_angular_geometric_jacobian_function(
         self,
@@ -1598,11 +1229,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_angular_analytical_jacobian")
-    def get_global_angular_analytical_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_angular_analytical_jacobian(
@@ -1615,11 +1241,6 @@ class RobotModel(Model):
         @return Angular part of the analytical Jacobian.
         """
         return self.get_link_angular_analytical_jacobian(link, q, self.get_root_link())
-
-    @deprecation_warning("get_global_link_angular_analytical_jacobian_function")
-    def get_global_angular_analytical_jacobian_function(self, link):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_angular_analytical_jacobian_function(
         self,
@@ -1642,11 +1263,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_angular_geometric_jacobian")
-    def get_angular_geometric_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_angular_geometric_jacobian(
@@ -1661,11 +1277,6 @@ class RobotModel(Model):
         """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[3:, :]
-
-    @deprecation_warning("get_link_angular_geometric_jacobian_function")
-    def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_link_angular_geometric_jacobian_function(
         self,
@@ -1691,11 +1302,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_angular_analytical_jacobian")
-    def get_angular_analytical_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_angular_analytical_jacobian(
@@ -1719,11 +1325,6 @@ class RobotModel(Model):
 
         return Ja(q)
 
-    @deprecation_warning("get_link_angular_analytical_jacobian_function")
-    def get_angular_analytical_jacobian_function(self, link, base_link):
-        """! Deprecated function."""
-        pass
-
     def get_link_angular_analytical_jacobian_function(
         self,
         link: str,
@@ -1746,98 +1347,4 @@ class RobotModel(Model):
             n=n,
             base_link=base_link,
             numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_link_axis(
-        self, link: str, q: ArrayType, axis: Union[str, ArrayType], base_link: str
-    ) -> CasADiArrayType:
-        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis).
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
-        @param base_link Name of the base frame link.
-        @return Axis defined in the end-effector frame as function of the joint angles.
-        """
-        Tf = self.get_link_transform(link, q, base_link)
-
-        axis2index = {"x": 0, "y": 1, "z": 2}
-        if isinstance(axis, str):
-            assert axis in axis2index, "axis must be either 'x', 'y', 'z' or a 3-array"
-            index = axis2index[axis]
-            vector = Tf[:3, index]
-
-        elif isinstance(axis, (cs.DM, cs.SX)):
-            a = axis / cs.norm_fro(axis)  # normalize
-
-            x = Tf[:3, 0]
-            y = Tf[:3, 1]
-            z = Tf[:3, 2]
-
-            vector = a[0] * x + a[1] * y + a[2] * z
-
-        else:
-            raise ValueError(f"did not recognize input for axis: {axis}")
-
-        return vector
-
-    def get_link_axis_function(
-        self,
-        link: str,
-        axis: Union[str, ArrayType],
-        base_link: str,
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> cs.Function:
-        """! Get function for computing the link axis.
-
-        @param link Name of the end-effector link.
-        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
-        @param base_link Name of the base frame link.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
-        """
-        return self.make_function(
-            "a",
-            link,
-            self.get_link_axis,
-            n=n,
-            base_link=base_link,
-            axis=axis,
-            numpy_output=numpy_output,
-        )
-
-    @arrayify_args
-    @listify_output
-    def get_global_link_axis(
-        self, link: str, q: ArrayType, axis: Union[str, ArrayType]
-    ) -> CasADiArrayType:
-        """! Compute the link axis, this is a direction vector defined in the end-effector frame (e.g. the x/y/z link axis) in the global frame.
-
-        @param link Name of the end-effector link.
-        @param q Joint position array.
-        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
-        @return Axis defined in the end-effector frame as function of the joint angles.
-        """
-        return self.get_link_axis(link, q, axis, self.get_root_link())
-
-    def get_global_link_axis_function(
-        self,
-        link: str,
-        axis: Union[str, ArrayType],
-        n: int = 1,
-        numpy_output: bool = False,
-    ) -> cs.Function:
-        """! Get function for computing the link axis in the global frame.
-
-        @param link Name of the end-effector link.
-        @param axis The axis (direction vector) defined in the end-effector frame. If 'x', 'y', 'z' is passed then the corresponding sub-array of the homogenous transform is used.
-        @param numpy_output When true, the output will be a NumPy array.
-        @return A CasADi function that computes the link axis for a given joint state. If n > 1 then an array is computed whose columns correspond to the respective joint state in the input.
-        """
-        get_global_link_axis = functools.partial(self.get_global_link_axis, axis=axis)
-        return self.make_function(
-            "a", link, get_global_link_axis, n=n, numpy_output=numpy_output
         )
