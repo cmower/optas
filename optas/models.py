@@ -55,29 +55,6 @@ def listify_output(fun: Callable) -> Callable:
     return listify
 
 
-def deprecation_warning(name_to):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            name_from = function.__name__
-            warn = f"'{name_from}' will be deprecated, please use '{name_to}' instead"
-            msg = "\033[93m" + warn + "\033[0m"  # add
-            warnings.warn(msg, DeprecationWarning, stacklevel=2)
-            self_ = args[0]
-            new_function = getattr(self_, name_to)
-            while hasattr(new_function, "__wrapped__"):
-                new_function = new_function.__wrapped__
-
-            args_use = list(args)
-            if function.__name__.endswith("_function"):
-                args_use = args_use[1:]
-
-            return new_function(*args_use, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
 class Model:
     """! The Model base class.
     Defines the base class utilized by all models.
