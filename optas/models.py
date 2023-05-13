@@ -691,7 +691,7 @@ class RobotModel(Model):
         @param The joint of interest.
         @return The normalized joint axis."""
         axis = cs.DM(joint.axis) if joint.axis is not None else cs.DM([1.0, 0.0, 0.0])
-        return unit(axis)
+        return axis / cs.norm_fro(axis)
 
     def get_actuated_joint_index(self, joint_name: str) -> int:
         """! Get the joint index for a given joint name.
@@ -896,7 +896,7 @@ class RobotModel(Model):
             )
 
             if joint.type in {"revolute", "continuous"}:
-                rotvec = axis * qi
+                rotvec = self.get_joint_axis(joint) * qi
                 T = T * sc.Transformation(
                     sc.Rotation.from_rotvec(rotvec), sc.Translation.identity()
                 )
