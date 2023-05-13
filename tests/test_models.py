@@ -469,7 +469,7 @@ class TestRobotModel:
             q = self.model.get_random_joint_positions().toarray().flatten()
             expected_fkine = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
             for link_name, expected_T in zip(self.model.link_names, expected_fkine[1:]):
-                T = self.model.get_global_link_transform(link_name, q).toarray()
+                T = self.model.get_global_link_transform(link_name, q).as_matrix().toarray()
                 assert isclose(T, expected_T)
 
     def test_get_global_link_transform_function(self):
