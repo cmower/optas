@@ -414,6 +414,7 @@ class OptimizationBuilder:
         time_deriv: int = 0,
         lo: Union[None, CasADiArrayType] = None,
         up: Union[None, CasADiArrayType] = None,
+        safe_frac=1.0,
     ) -> None:
         """! Enforce model limits.
 
@@ -421,7 +422,11 @@ class OptimizationBuilder:
         @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
         @param lo Lower limits, if None then model limits specified in the model class are used.
         @param up Upper limits, if None then model limits specified in the model class are used.
+        @param safe_frac When safe_frac < 1.0, the joint limits are reduced by a fraction of their original values.
         """
+        assert (
+            0.0 < safe_frac <= 1.0
+        ), f"Given safe_frac '{safe_frac}' must be in range (0, 1]."
         x = self.get_model_states(name, time_deriv)
         xlo = lo
         xup = up
@@ -431,8 +436,17 @@ class OptimizationBuilder:
                 xlo = mlo
             if xup is None:
                 xup = mup
+        if safe_frac < 1.0:
+            mid = 0.5 * (xlo + xup)
+            diff = xup - xlo
+            small_diff = safe_frac * diff
+            xlo_use = mid - 0.5 * small_diff
+            xup_use = mid + 0.5 * small_diff
+        else:
+            xlo_use = xlo
+            xup_use = xup
         n = f"__{name}_model_limit_{time_deriv}__"
-        self.add_bound_inequality_constraint(n, xlo, x, xup)
+        self.add_bound_inequality_constraint(n, xlo_use, x, xup_use)
 
     def initial_configuration(
         self, name: str, init: Union[None, CasADiArrayType] = None, time_deriv: int = 0
