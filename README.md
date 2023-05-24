@@ -137,7 +137,7 @@ The following operating systems and python versions are [officially supported](h
 * Ubuntu 20.04 and 22.04
   * Python 3.7, 3.8, 3.9
 * Windows
-  * Python 3.7, 3.8, 3.9
+  * Python 3.8, 3.9
 * Mac OS
   * Python 3.9
 
