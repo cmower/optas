@@ -305,6 +305,9 @@ class Optimization:
             "v", self.v, self.x, self.p
         )
 
+    def has_discrete_variables(self):
+        return self.decision_variables.has_discrete_variables()
+
 
 class QuadraticCostUnconstrained(Optimization):
     """! Unconstrained Quadratic Program.
@@ -541,4 +544,28 @@ class MixedIntegerNonlinearCostNonlinearConstrained(NonlinearCostNonlinearConstr
             h(x, z; p) == 0
     """
 
-    pass
+    def __init__(
+        self,
+        decision_variables: SXContainer,  # SXContainer for decision variables
+        parameters: SXContainer,  # SXContainer for parameters
+        cost_terms: SXContainer,  # SXContainer for cost terms
+        lin_eq_constraints: SXContainer,  # SXContainer for linear equality constraints
+        lin_ineq_constraints: SXContainer,  # SXContainer for linear inequality constraints
+        eq_constraints: SXContainer,  # SXContainer for equality constraints
+        ineq_constraints: SXContainer,  # SXContainer for inequality constraints
+    ):
+        """! Initializer for the MixedIntegerNonlinearCostNonlinearConstrained class.
+
+        @param decision_variables SXContainer containing decision variables (with at least one discrete variable).
+        @param parameters SXContainer containing parameters.
+        @param cost_terms SXContainer containing cost terms.
+        @param lin_eq_constraints SXContainer containing the linear equality constraints.
+        @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
+        @param eq_constraints SXContainer containing the equality constraints.
+        @param ineq_constraints SXContainer containing the inequality constraints.
+        @return Instance of the MixedIntegerNonlinearCostNonlinearConstrained class.
+        """
+        super().__init__(decision_variables, parameters, cost_terms)
+        self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
+        self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
+        self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
