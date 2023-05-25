@@ -26,9 +26,7 @@ def test_derive_jacobian_and_hessian_functions():
     f = p[0] * x[0] ** 2 + p[1] * x[1] ** 3
     fun = optas.Function("fun", [x, p], [f])
 
-    Jac, Hes = optas.optimization.derive_jacobian_and_hessian_functions(
-        name, fun, x, p
-    )
+    Jac, Hes = optas.optimization.derive_jacobian_and_hessian_functions(name, fun, x, p)
 
     jac_known = optas.horzcat(2.0 * p[0] * x[0], 3.0 * p[1] * x[1] ** 2)
     Jac_known = optas.Function("test_jac_known", [x, p], [jac_known])
@@ -523,6 +521,107 @@ def test_NonlinearCostNonlinearConstraints():
 
     attr_exp_value_map = {
         "nx": 6,
+        "np": 1,
+        "nk": 2,
+        "na": 1,
+        "ng": 1,
+        "nh": 2,
+        "nv": 9,
+    }
+    for attr, exp_value in attr_exp_value_map.items():
+        assert getattr(opt, attr) == exp_value
+
+
+def test_MixedIntegerNonlinearCostNonlinearConstrained():
+    dv = SXContainer()
+    dv["x"] = optas.SX.sym("x", 2, 3)
+    dv["xd"] = optas.SX.sym("xd", 2)
+    dv.variable_is_discrete("xd")
+    x = dv.vec()
+
+    pr = SXContainer()
+    pr["p"] = optas.SX.sym("p")
+    p = pr.vec()
+
+    ct = SXContainer()
+    ct["c"] = p * optas.sumsqr(x) + x[0] * x[1] + 2.0 * (optas.cos(x[3]) - 1.0) ** 2
+
+    lec = SXContainer()
+    lec["lec"] = x[0] - 2.0 * x[1]
+
+    lic = SXContainer()
+    lic["lic1"] = x[2] + 3.0 * x[4]
+    lic["lic2"] = -2.0 * x[5] + x[2]
+
+    ec = SXContainer()
+    ec["e1"] = x[3] ** 2 - x[1] * x[2]
+    ec["e2"] = x[0] - 2.0 * x[1] * x[4]
+
+    ic = SXContainer()
+    ic["ic"] = x[1] + x[2] * x[0]
+
+    opt = optas.optimization.MixedIntegerNonlinearCostNonlinearConstrained(
+        dv, pr, ct, lec, lic, ec, ic
+    )
+
+    def fun_known(x, p):
+        return (
+            p * np.sum(x.flatten() ** 2) + x[0] * x[1] + 2.0 * (np.cos(x[3]) - 1.0) ** 2
+        )
+
+    def k_known(x, p):
+        return np.array([x[2] + 3.0 * x[4], -2.0 * x[5] + x[2]])
+
+    def a_known(x, p):
+        return np.array(
+            [
+                x[0] - 2.0 * x[1],
+            ]
+        )
+
+    def g_known(x, p):
+        return np.array([x[1] + x[2] * x[0]])
+
+    def h_known(x, p):
+        return np.array(
+            [
+                x[3] ** 2 - x[1] * x[2],
+                x[0] - 2.0 * x[1] * x[4],
+            ]
+        )
+
+    def v_known(x, p):
+        a = a_known(x, p)
+        h = h_known(x, p)
+        return np.concatenate([k_known(x, p), g_known(x, p), a, -a, h, -h])
+
+    for _ in range(NUM_RANDOM):
+        x = np.random.uniform(-10, 10, size=(8,)).tolist()
+        for idx, discrete in enumerate(dv.discrete()):
+            if discrete:
+                x[idx] = np.random.randint(0, 1)
+
+        x = np.asarray(x)
+
+        p = np.random.uniform(-10, 10)
+
+        assert isclose(opt.f(x, p), fun_known(x, p))
+
+        M = opt.M(p).toarray()
+        c = opt.c(p).toarray()
+
+        assert isclose(M @ x + c, k_known(x, p))
+
+        A = opt.A(p).toarray()
+        b = opt.b(p).toarray()
+
+        assert isclose(A @ x + b, a_known(x, p))
+
+        v = opt.v(x, p).toarray().flatten()
+        assert isclose(v, v_known(x, p))
+
+    attr_exp_value_map = {
+        "nx": 8,
         "np": 1,
         "nk": 2,
         "na": 1,
