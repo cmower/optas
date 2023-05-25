@@ -15,6 +15,7 @@ from .optimization import (
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
 )
 from .models import RobotModel
 from .spatialmath import ArrayType, CasADiArrayType
@@ -33,6 +34,7 @@ NL_COST = {
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
 }
 
 ## Optimization problem types that are unconstrained.
@@ -45,6 +47,11 @@ CONSTRAINED_OPT = {
     QuadraticCostNonlinearConstraints,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
+}
+
+MIXED_INTEGER_OPT = {
+    MixedIntegerNonlinearCostNonlinearConstrained,
 }
 
 ################################################################
@@ -314,6 +321,9 @@ class Solver(ABC):
 class CasADiSolver(Solver):
     """! This is a base class for CasADi solver interfaces."""
 
+    ## Possible mixed-integer solvers
+    mi_solvers = {"bonmin", "knitro"}
+
     ## Possible NLP solvers.
     nlp_solvers = {"ipopt", "knitro", "snopt", "worhp", "scpgen", "sqpmethod"}
 
@@ -353,15 +363,15 @@ class CasADiSolver(Solver):
             self._ubg = self.opt.ubv
 
         # Get solver interface
-        if solver_name in self.qp_solvers:
+        if (solver_name in self.qp_solvers) and not self.opt.has_discrete_variables():
             sol = cs.qpsol
-        elif solver_name in self.nlp_solvers:
+        elif (solver_name in self.nlp_solvers) or (solver_name in self.mi_solvers):
             sol = cs.nlpsol
         else:
-            raise ValueError(f"did not recognize solver_name={solver_name}")
+            raise ValueError(f"solver '{solver_name}' does not support this problem type")
 
         # Check for discrete variables
-        if self.opt.decision_variables.has_discrete_variables():
+        if self.opt.has_discrete_variables():
             solver_options["discrete"] = self.opt.decision_variables.discrete()
 
         # Initialize solver
@@ -705,43 +715,43 @@ class ScipyMinimizeSolver(Solver):
         return self
 
     def f(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return float(self.opt.f(x, self.p).toarray().flatten()[0])
 
     def jac(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.df(x, self.p).toarray().flatten()
 
     def hess(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.ddf(x, self.p).toarray()
 
     def v(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.v(x, self.p).toarray().flatten()
 
     def dv(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dv(x, self.p).toarray()
 
     def g(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.g(x, self.p).toarray().flatten()
 
     def dg(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dg(x, self.p).toarray()
 
     def ddg(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.ddg(x, self.p).toarray()
 
     def h(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.h(x, self.p).toarray().flatten()
 
     def dh(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dh(x, self.p).toarray()
 
     def ddh(self, x: cs.np.ndarray) -> cs.np.ndarray:

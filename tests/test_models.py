@@ -177,6 +177,22 @@ def test_TaskModel():
     assert model.T == T
 
 
+def test_TaskModel_discrete():
+    name = "test"
+    dim = 3
+    dlim = {
+        0: ([-1, -1, -1], [1, 1, 1]),
+    }
+    T = 2
+    is_discrete = True
+
+    model = optas.TaskModel(name, dim, dlim=dlim, T=T, is_discrete=is_discrete)
+    assert model.state_name(0) == "test/y"
+    assert model.state_parameter_name(0) == "test/y/p"
+    assert model.T == T
+    assert model.is_discrete == is_discrete
+
+
 class TestRobotModel:
     # Setup path to tester robot URDF
     cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory

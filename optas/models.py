@@ -198,6 +198,7 @@ class TaskModel(Model):
         symbol: str = "y",
         dlim: Dict[int, Tuple[List[float]]] = {},
         T: Union[None, int] = None,
+        is_discrete: bool = False,
     ):
         """! Task model initializer.
 
@@ -207,9 +208,11 @@ class TaskModel(Model):
 @param symbol A short symbol to represent the model.
 @param dlim Limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds.
 @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
+@param is_discrete When True, the variables are treated as discrete variables.
         """
 
         super().__init__(name, dim, time_derivs, symbol, dlim, T)
+        self.is_discrete = is_discrete
 
 
 class JointTypeNotSupported(NotImplementedError):
