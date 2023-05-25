@@ -212,7 +212,7 @@ class TaskModel(Model):
         """
 
         super().__init__(name, dim, time_derivs, symbol, dlim, T)
-        self.is_discrete = is_discret
+        self.is_discrete = is_discrete
 
 
 class JointTypeNotSupported(NotImplementedError):

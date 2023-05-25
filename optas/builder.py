@@ -96,7 +96,7 @@ class OptimizationBuilder:
                     n_s_p = model.state_parameter_name(d)
                     self.add_parameter(n_s_p, model.num_param_joints, t)
                 else:
-                    self.add_decision_variables(n_s_x, model.dim, t)
+                    self.add_decision_variables(n_s_x, model.dim, t, model.is_discrete)
 
     def get_model_names(self) -> List[str]:
         """! Return the names of each model.

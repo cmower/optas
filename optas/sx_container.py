@@ -76,7 +76,7 @@ class SXContainer(collections.OrderedDict):
         """
         out = []
         for label, value in self.items():
-            m, n = values.shape
+            m, n = value.shape
             out += [self.is_discrete[label]] * (m * n)
         return out
 
