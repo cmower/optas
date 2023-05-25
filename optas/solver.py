@@ -15,6 +15,7 @@ from .optimization import (
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
 )
 from .models import RobotModel
 from .spatialmath import ArrayType, CasADiArrayType
@@ -321,7 +322,7 @@ class CasADiSolver(Solver):
     """! This is a base class for CasADi solver interfaces."""
 
     ## Possible mixed-integer solvers
-    mi_solvers = {"bomin", "knitro"}
+    mi_solvers = {"bonmin", "knitro"}
 
     ## Possible NLP solvers.
     nlp_solvers = {"ipopt", "knitro", "snopt", "worhp", "scpgen", "sqpmethod"}

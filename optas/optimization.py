@@ -530,7 +530,7 @@ class NonlinearCostNonlinearConstraints(Optimization):
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
 
 
-class MixedIntegerNonlinearCostNonlinearConstrained(NonlinearCostNonlinearConstrained):
+class MixedIntegerNonlinearCostNonlinearConstrained(NonlinearCostNonlinearConstraints):
     """Nonlinear mixed-integer optimization problem.
 
     min f(x, z; p)
