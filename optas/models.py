@@ -202,6 +202,17 @@ class TaskModel(Model):
     ):
         """! Task model initializer.
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        @param name The name of the model.
+        @param dim Model dimension.
+        @param time_derivs Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
+        @param symbol A short symbol to represent the model.
+        @param dlim Limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds.
+        @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
+=======
+>>>>>>> Add is_discrete attribute for task model
 @param name The name of the model.
 @param dim Model dimension.
 @param time_derivs Time derivatives required for model, 0 means not time derivative, 1 means first derivative wrt to time is required, etc.
@@ -209,10 +220,12 @@ class TaskModel(Model):
 @param dlim Limits on each time derivative, index should correspond to a time derivative (i.e. 0, 1, ...) and the value should be a tuple of two lists containing the lower and upper bounds.
 @param T Optionally use this to override the number of time-steps given in the OptimizationBuilder constructor.
 @param is_discrete When True, the variables are treated as discrete variables.
+<<<<<<< HEAD
         """
 
         super().__init__(name, dim, time_derivs, symbol, dlim, T)
         self.is_discrete = is_discrete
+
 
 
 class JointTypeNotSupported(NotImplementedError):
