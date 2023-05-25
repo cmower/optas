@@ -33,6 +33,7 @@ NL_COST = {
     NonlinearCostUnconstrained,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
 }
 
 ## Optimization problem types that are unconstrained.
@@ -45,6 +46,11 @@ CONSTRAINED_OPT = {
     QuadraticCostNonlinearConstraints,
     NonlinearCostLinearConstraints,
     NonlinearCostNonlinearConstraints,
+    MixedIntegerNonlinearCostNonlinearConstrained,
+}
+
+MIXED_INTEGER_OPT = {
+    MixedIntegerNonlinearCostNonlinearConstrained,
 }
 
 ################################################################
@@ -314,6 +320,9 @@ class Solver(ABC):
 class CasADiSolver(Solver):
     """! This is a base class for CasADi solver interfaces."""
 
+    ## Possible mixed-integer solvers
+    mi_solvers = {"bomin", "knitro"}
+
     ## Possible NLP solvers.
     nlp_solvers = {"ipopt", "knitro", "snopt", "worhp", "scpgen", "sqpmethod"}
 
@@ -353,15 +362,15 @@ class CasADiSolver(Solver):
             self._ubg = self.opt.ubv
 
         # Get solver interface
-        if solver_name in self.qp_solvers:
+        if (solver_name in self.qp_solvers) and not self.opt.has_discrete_variables():
             sol = cs.qpsol
-        elif solver_name in self.nlp_solvers:
+        elif (solver_name in self.nlp_solvers) or (solver_name in self.mi_solvers):
             sol = cs.nlpsol
         else:
-            raise ValueError(f"did not recognize solver_name={solver_name}")
+            raise ValueError(f"solver '{solver_name}' does not support this problem type")
 
         # Check for discrete variables
-        if self.opt.decision_variables.has_discrete_variables():
+        if self.opt.has_discrete_variables():
             solver_options["discrete"] = self.opt.decision_variables.discrete()
 
         # Initialize solver
