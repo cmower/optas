@@ -714,43 +714,43 @@ class ScipyMinimizeSolver(Solver):
         return self
 
     def f(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return float(self.opt.f(x, self.p).toarray().flatten()[0])
 
     def jac(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.df(x, self.p).toarray().flatten()
 
     def hess(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.ddf(x, self.p).toarray()
 
     def v(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.v(x, self.p).toarray().flatten()
 
     def dv(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dv(x, self.p).toarray()
 
     def g(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.g(x, self.p).toarray().flatten()
 
     def dg(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dg(x, self.p).toarray()
 
     def ddg(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.ddg(x, self.p).toarray()
 
     def h(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.h(x, self.p).toarray().flatten()
 
     def dh(self, x: cs.np.ndarray) -> cs.np.ndarray:
-        """! Internal method."""        
+        """! Internal method."""
         return self.opt.dh(x, self.p).toarray()
 
     def ddh(self, x: cs.np.ndarray) -> cs.np.ndarray:
