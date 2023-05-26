@@ -1,11 +1,13 @@
 import casadi as cs
 from casadi import *
-from spatial_casadi import deg2rad, rad2deg, pi
+from spatial_casadi import deg2rad, rad2deg
 from .models import RobotModel, TaskModel, arrayify_args, ArrayType
 from .builder import OptimizationBuilder
 from .solver import CasADiSolver, OSQPSolver, CVXOPTSolver, ScipyMinimizeSolver
 from .visualize import Visualizer
 from typing import Union
+
+pi = cs.np.pi
 
 
 @arrayify_args
