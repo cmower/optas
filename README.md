@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/logo.png" width="60" align="right">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/logo.png" width="60" align="right">
 </p>
 
 # OpTaS
@@ -11,20 +11,21 @@
 
 
 OpTaS is an OPtimization-based TAsk Specification library for trajectory optimization and model predictive control.
-Please see our paper accepted at ICRA 2023, and also our video (link below).
 
-<p align="center">
-	<a href="https://youtu.be/gCMNOenFngU">
-		<img src="https://img.youtube.com/vi/REBmbCANx0s/maxresdefault.jpg" width="50%">
-	</a>
-</p>
+- Code: [https://github.com/cmower/optas](https://github.com/cmower/optas)
+- Documentation: [https://cmower.github.io/optas/](https://cmower.github.io/optas/)
+- PyPI: [https://pypi.org/project/pyoptas/](https://pypi.org/project/pyoptas/)
+- Issues: [https://github.com/cmower/optas/issues](https://github.com/cmower/optas/issues)
+- ICRA 2023 paper (arXiv): [https://arxiv.org/abs/2301.13512](https://arxiv.org/abs/2301.13512)
+- Video: [https://youtu.be/gCMNOenFngU](https://youtu.be/gCMNOenFngU)
+- Presentation: [https://vimeo.com/824802366](https://vimeo.com/824802366)
 
 In the past, OpTaS supported ROS from an internal module. This functionality, with additional updates, has now been moved to a dedicated repository: [optas_ros](https://github.com/cmower/optas_ros).
 
 # Example
 
 <p align="center">
-  <img src="doc/image/kuka_example.png" width="61.803398875%">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/image/kuka_example.png" width="61.803398875%">
 </p>
 
 
@@ -136,7 +137,7 @@ The following operating systems and python versions are [officially supported](h
 * Ubuntu 20.04 and 22.04
   * Python 3.7, 3.8, 3.9
 * Windows
-  * Python 3.7, 3.8, 3.9
+  * Python 3.8, 3.9
 * Mac OS
   * Python 3.9
 
@@ -149,13 +150,23 @@ If you experience problems, please [submit an issue](https://github.com/cmower/o
 Make sure `pip` is up-to-date by running `$ python -m pip install --upgrade pip`.
 
 ## Via pip
-1. `$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'`
+
+```
+$ pip install pyoptas
+```
+
+Alternatively, you can also install OpTaS using:
+
+```
+$ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'
+```
 
 ## From source
-1. `$ git clone git@github.com:cmower/optas.git`
+1. `$ git clone --recursive git@github.com:cmower/optas.git` (if you do not want to build the documentation then the `--recursive` flag is not necessary)
 2. `$ cd optas`
 4. `$ pip install .`
-5. (optional) If you want to run the examples/tests: `$ pip install -r requirements_all.txt`
+   - if you want to run the examples use: `$ pip install .[example]`
+   - if you want to run the tests use: `$ pip install .[test]`
 
 ### Build documentation
 
@@ -215,5 +226,5 @@ T. Vercauteren is supported by a Medtronic / RAEng Research Chair [RCSRF1819\7\3
 This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 101017008, Enhancing Healthcare with Assistive Robotic Mobile Manipulation ([HARMONY](https://harmony-eu.org/)).
 
 <p align="center">
-  <img src="doc/image/eu.png" width="180" align="left">
+  <img src="https://raw.githubusercontent.com/cmower/optas/master/doc/image/eu.png" width="180" align="left">
 </p>

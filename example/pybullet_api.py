@@ -152,6 +152,9 @@ class FixedBaseRobot:
         )
 
     def cmd_torque(self, taus):
+        for index in range(len(self._actuated_joints)):
+            p.setJointMotorControl2(self._id, index, p.VELOCITY_CONTROL, force=0)
+
         p.setJointMotorControlArray(
             self._id,
             self._actuated_joints,

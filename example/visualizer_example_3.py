@@ -31,4 +31,9 @@ vis.robot(
     display_link_names=True,
     link_names_alpha=0.4,
 )
-vis.start()
+
+save = True
+if save:
+    vis.save('vis.png')
+else:
+    vis.start()

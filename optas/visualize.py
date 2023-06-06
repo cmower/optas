@@ -131,6 +131,18 @@ class Visualizer:
     #         else:
     #             self.actors.append(actor)  # assume actor is a single actor
 
+    def reset_camera(self, position, view_dir, view_up):
+        """! Reset the camera pose.
+
+        @param position The position of the camera.
+        @param view_dir The direction that the camera should view.
+        @param view_up The up direction for the image.
+        """
+        focal_point = (np.asarray(position) + np.asarray(view_dir)).tolist()
+        self.camera.SetPosition(*position)
+        self.camera.SetFocalPoint(*focal_point)
+        self.camera.SetViewUp(*view_up)
+
     #
     # Set/convert helper methods
     #
@@ -1133,6 +1145,35 @@ class Visualizer:
             self.actors.start_adding_actors()
 
         return actors
+
+    def save(self, file_name):
+        """! Save the visualizer window as png image. Note, saving animations is currently not supported."""
+        assert (
+            len(self.animate_callbacks) == 0
+        ), "saving animations is currently not supported"
+
+        if not file_name.endswith(".png"):
+            file_name += ".png"
+
+        for actor in self.actors.actors:
+            self.ren.AddActor(actor)
+        self.iren.Initialize()
+
+        self.renWin.Render()
+
+        # Capture the contents of the render window
+        window_to_image_filter = vtk.vtkWindowToImageFilter()
+        window_to_image_filter.SetInput(self.renWin)
+        window_to_image_filter.Update()
+
+        # Write the captured image to a PNG file
+        png_writer = vtk.vtkPNGWriter()
+        png_writer.SetFileName(file_name)
+        png_writer.SetInputConnection(window_to_image_filter.GetOutputPort())
+        png_writer.Write()
+        print(f"Saved {file_name}")
+
+        self.iren.Start()
 
     def start(self) -> None:
         """! Start the visualizer."""

@@ -96,7 +96,7 @@ class OptimizationBuilder:
                     n_s_p = model.state_parameter_name(d)
                     self.add_parameter(n_s_p, model.num_param_joints, t)
                 else:
-                    self.add_decision_variables(n_s_x, model.dim, t)
+                    self.add_decision_variables(n_s_x, model.dim, t, model.is_discrete)
 
     def get_model_names(self) -> List[str]:
         """! Return the names of each model.
@@ -414,6 +414,7 @@ class OptimizationBuilder:
         time_deriv: int = 0,
         lo: Union[None, CasADiArrayType] = None,
         up: Union[None, CasADiArrayType] = None,
+        safe_frac=1.0,
     ) -> None:
         """! Enforce model limits.
 
@@ -421,7 +422,11 @@ class OptimizationBuilder:
         @param time_deriv The time-deriviative required (i.e. position is 0, velocity is 1, etc.).
         @param lo Lower limits, if None then model limits specified in the model class are used.
         @param up Upper limits, if None then model limits specified in the model class are used.
+        @param safe_frac When safe_frac < 1.0, the joint limits are reduced by a fraction of their original values.
         """
+        assert (
+            0.0 < safe_frac <= 1.0
+        ), f"Given safe_frac '{safe_frac}' must be in range (0, 1]."
         x = self.get_model_states(name, time_deriv)
         xlo = lo
         xup = up
@@ -431,8 +436,17 @@ class OptimizationBuilder:
                 xlo = mlo
             if xup is None:
                 xup = mup
+        if safe_frac < 1.0:
+            mid = 0.5 * (xlo + xup)
+            diff = xup - xlo
+            small_diff = safe_frac * diff
+            xlo_use = mid - 0.5 * small_diff
+            xup_use = mid + 0.5 * small_diff
+        else:
+            xlo_use = xlo
+            xup_use = xup
         n = f"__{name}_model_limit_{time_deriv}__"
-        self.add_bound_inequality_constraint(n, xlo, x, xup)
+        self.add_bound_inequality_constraint(n, xlo_use, x, xup_use)
 
     def initial_configuration(
         self, name: str, init: Union[None, CasADiArrayType] = None, time_deriv: int = 0
@@ -481,8 +495,9 @@ class OptimizationBuilder:
 
         if self.is_cost_quadratic():
             # True -> use QP formulation
-            if nnlin > 0:
-                opt = QuadraticCostNonlinearConstraints(
+
+            if self._decision_variables.has_discrete_variables():
+                opt = MixedIntegerNonlinearCostNonlinearConstrained(
                     self._decision_variables,
                     self._parameters,
                     self._cost_terms,
@@ -491,24 +506,36 @@ class OptimizationBuilder:
                     self._eq_constraints,
                     self._ineq_constraints,
                 )
-            elif nlin > 0:
-                opt = QuadraticCostLinearConstraints(
-                    self._decision_variables,
-                    self._parameters,
-                    self._cost_terms,
-                    self._lin_eq_constraints,
-                    self._lin_ineq_constraints,
-                )
             else:
-                opt = QuadraticCostUnconstrained(
-                    self._decision_variables,
-                    self._parameters,
-                    self._cost_terms,
-                )
+                if nnlin > 0:
+                    opt = QuadraticCostNonlinearConstraints(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                        self._lin_eq_constraints,
+                        self._lin_ineq_constraints,
+                        self._eq_constraints,
+                        self._ineq_constraints,
+                    )
+                elif nlin > 0:
+                    opt = QuadraticCostLinearConstraints(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                        self._lin_eq_constraints,
+                        self._lin_ineq_constraints,
+                    )
+                else:
+                    opt = QuadraticCostUnconstrained(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                    )
         else:
             # False -> use (nonlinear) Optimization formulation
-            if nnlin > 0:
-                opt = NonlinearCostNonlinearConstraints(
+
+            if self._decision_variables.has_discrete_variables():
+                opt = MixedIntegerNonlinearCostNonlinearConstrained(
                     self._decision_variables,
                     self._parameters,
                     self._cost_terms,
@@ -517,20 +544,31 @@ class OptimizationBuilder:
                     self._eq_constraints,
                     self._ineq_constraints,
                 )
-            elif nlin > 0:
-                opt = NonlinearCostLinearConstraints(
-                    self._decision_variables,
-                    self._parameters,
-                    self._cost_terms,
-                    self._lin_eq_constraints,
-                    self._lin_ineq_constraints,
-                )
             else:
-                opt = NonlinearCostUnconstrained(
-                    self._decision_variables,
-                    self._parameters,
-                    self._cost_terms,
-                )
+                if nnlin > 0:
+                    opt = NonlinearCostNonlinearConstraints(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                        self._lin_eq_constraints,
+                        self._lin_ineq_constraints,
+                        self._eq_constraints,
+                        self._ineq_constraints,
+                    )
+                elif nlin > 0:
+                    opt = NonlinearCostLinearConstraints(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                        self._lin_eq_constraints,
+                        self._lin_ineq_constraints,
+                    )
+                else:
+                    opt = NonlinearCostUnconstrained(
+                        self._decision_variables,
+                        self._parameters,
+                        self._cost_terms,
+                    )
 
         opt.set_models(self._models)
 
