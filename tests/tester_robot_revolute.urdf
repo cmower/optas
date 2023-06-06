@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<robot name="test_robot_revolute">
+
+<link name="world"/>
+<link name="link1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.1 0.2 0.3"/>
+      <mass value="3.271492"/>
+      <inertia ixx="0.020611" ixy="-0.000000" ixz="-0.000000" iyy="0.019667" iyz="-0.003660" izz="0.007290"/>
+    </inertial>
+</link>
+<link name="link2">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.2 0.3 0.4"/>
+      <mass value="3.271492"/>
+      <inertia ixx="0.020611" ixy="-0.000000" ixz="-0.000000" iyy="0.019667" iyz="-0.003660" izz="0.007290"/>
+    </inertial>
+</link>
+<link name="link3">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.4 0.5 0.6"/>
+      <mass value="3.271492"/>
+      <inertia ixx="0.020611" ixy="-0.000000" ixz="-0.000000" iyy="0.019667" iyz="-0.003660" izz="0.007290"/>
+    </inertial>
+</link>
+<link name="eff">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.7 0.8 0.9"/>
+      <mass value="3.271492"/>
+      <inertia ixx="0.020611" ixy="-0.000000" ixz="-0.000000" iyy="0.019667" iyz="-0.003660" izz="0.007290"/>
+    </inertial>
+</link>
+
+<joint name="joint0" type="fixed">
+  <origin xyz="0 0 0"/>
+  <axis xyz="0 0 1"/>
+  <parent link="world"/>
+  <child link="link1"/>
+</joint>
+
+<joint name="joint1" type="revolute">
+  <origin xyz="2 0 0"/>
+  <axis xyz="0 0 1"/>
+  <limit effort="100" lower="-2.0943951023931953" upper="2.0943951023931953" velocity="10"/>
+  <parent link="link1"/>
+  <child link="link2"/>
+</joint>
+
+<joint name="joint2" type="revolute">
+  <origin xyz="1 0 0"/>
+  <axis xyz="0 0 1"/>
+  <limit effort="100" lower="-2.0943951023931953" upper="2.0943951023931953" velocity="10"/>
+  <parent link="link2"/>
+  <child link="link3"/>
+</joint>
+
+<joint name="eff_joint" type="fixed">
+  <origin xyz="0 0 0.5"/>
+  <parent link="link3"/>
+  <child link="eff"/>
+</joint>
+
+</robot>
