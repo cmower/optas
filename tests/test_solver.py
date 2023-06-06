@@ -45,12 +45,13 @@ class TestSolverInterface(_SolverTester):
     def solve_and_check_solution(solver, solver_name=""):
         solver.reset_initial_seed({"x": 0, "y": 0})
         solver.reset_parameters({"a": 2.0, "b": 7.0})
-        name = ""
+        name = f"{type(solver)}"
         if solver_name:
-            name += solver_name + " "
+            name += "-" + solver_name
         result = solver.solve()
-        assert isclose(result["x"].toarray().flatten(), 1.0), name + "solver failed"
-        assert isclose(result["y"].toarray().flatten(), 3.0), name + "solver failed"
+        assert isclose(result["x"].toarray().flatten(), 1.0), name + " solver failed"
+        assert isclose(result["y"].toarray().flatten(), 3.0), name + " solver failed"
+        assert solver.did_solve(), f"did_solve returns false for {name}"
 
     def test_casadi_interface(self):
         qp_solver_names = ["qpoases"]
