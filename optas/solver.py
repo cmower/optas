@@ -368,7 +368,9 @@ class CasADiSolver(Solver):
         elif (solver_name in self.nlp_solvers) or (solver_name in self.mi_solvers):
             sol = cs.nlpsol
         else:
-            raise ValueError(f"solver '{solver_name}' does not support this problem type")
+            raise ValueError(
+                f"solver '{solver_name}' does not support this problem type"
+            )
 
         # Check for discrete variables
         if self.opt.has_discrete_variables():
@@ -495,7 +497,7 @@ class OSQPSolver(Solver):
 
         @return Boolean indicating if the solver converged.
         """
-        return self._solution.info.status == 'solved'
+        return self._solution.info.status == "solved"
 
     def number_of_iterations(self) -> int:
         """! Number of iterations it took the solver to converge.
