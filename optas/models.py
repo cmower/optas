@@ -1223,52 +1223,52 @@ class RobotModel(Model):
         @return Geometric Jacobian.
         """
 
+        root = self.urdf.get_root()
+
         e = self.get_global_link_position(link, q)
 
-        w = cs.DM.zeros(3)
         pdot = cs.DM.zeros(3)
 
         joint_index_order = []
         jacobian_columns = []
 
-        past_in_chain = False
-
         for joint in self.urdf.joints:
+
             if joint.type == "fixed":
                 continue
-
-            if joint.child == link:
-                past_in_chain = True
 
             joint_index = self.get_actuated_joint_index(joint.name)
             joint_index_order.append(joint_index)
             qi = q[joint_index]
 
-            if past_in_chain:
+            if joint.name in self.urdf.get_chain(root, link, links=False):
+                # if joint in chain check type of join
+                if joint.type in {"revolute", "continuous"}:
+                    axis = self.get_joint_axis(joint)
+                    R = self.get_global_link_rotation(joint.child, q)
+                    R = R @ angvec2r(qi, axis)
+                    p = self.get_global_link_position(joint.child, q)
+
+                    z = R @ axis
+                    pdot = cs.cross(z, e - p)
+
+                    jcol = cs.vertcat(pdot, z)
+                    jacobian_columns.append(jcol)
+
+                elif joint.type == "prismatic":
+                    axis = self.get_joint_axis(joint)
+                    R = self.get_global_link_rotation(joint.child, q)
+                    z = R @ axis
+                    jcol = cs.vertcat(z, cs.DM.zeros(3))
+                    jacobian_columns.append(jcol)
+
+                else:
+                    raise JointTypeNotSupported(joint.type)
+            else:
+                # if joint not in chain add zeros
                 jcol = cs.DM.zeros(6)
                 jacobian_columns.append(jcol)
 
-            elif joint.type in {"revolute", "continuous"}:
-                axis = self.get_joint_axis(joint)
-                R = self.get_global_link_rotation(joint.child, q)
-                R = R @ angvec2r(qi, axis)
-                p = self.get_global_link_position(joint.child, q)
-
-                z = R @ axis
-                pdot = cs.cross(z, e - p)
-
-                jcol = cs.vertcat(pdot, z)
-                jacobian_columns.append(jcol)
-
-            elif joint.type == "prismatic":
-                axis = self.get_joint_axis(joint)
-                R = self.get_global_link_rotation(joint.child, q)
-                z = R @ axis
-                jcol = cs.vertcat(z, cs.DM.zeros(3))
-                jacobian_columns.append(jcol)
-
-            else:
-                raise JointTypeNotSupported(joint.type)
 
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
