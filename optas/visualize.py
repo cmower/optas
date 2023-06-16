@@ -148,7 +148,7 @@ class Visualizer:
     #
 
     @staticmethod
-    @arrayify_args
+    # @arrayify_args
     def cvt_orientation_to_rotation_matrix(
         orientation: ArrayType, euler_seq: str, euler_degrees: bool
     ) -> DM:
@@ -159,7 +159,11 @@ class Visualizer:
         @param euler_degrees If True, then the given angles are assumed to be in degrees. Default is False.
         @return Rotation matrix.
         """
-        orientation = orientation.toarray().flatten().tolist()
+        if isinstance(orientation, DM):
+            scale = orientation.toarray().flatten().tolist()
+        else:
+            orientation = orientation
+
         if len(orientation) == 4:
             R = Rot.from_quat(orientation)
         elif len(orientation) == 3:
@@ -171,7 +175,7 @@ class Visualizer:
         return cs.DM(R.as_matrix())
 
     @staticmethod
-    @arrayify_args
+    # @arrayify_args
     def set_tf(
         actor: vtk.vtkActor,
         position: ArrayType,
@@ -194,7 +198,7 @@ class Visualizer:
         Visualizer.set_transformation(actor, tf)
 
     @staticmethod
-    @arrayify_args
+    # @arrayify_args
     def set_transformation(actor: vtk.vtkActor, tf: ArrayType) -> None:
         """! Sets a transformation to a vtk Actor.
 
@@ -207,7 +211,7 @@ class Visualizer:
         actor.SetUserTransform(transform)
 
     @staticmethod
-    @arrayify_args
+    # @arrayify_args
     def set_rgba(actor: vtk.vtkActor, rgb: ArrayType, alpha: float) -> None:
         """! Set the RGB and alpha channels for an actor.
 
@@ -216,25 +220,30 @@ class Visualizer:
         @param alpha Transparency of the actor in range [0, 1].
         """
         if rgb is not None:
-            rgb = rgb.toarray().flatten().tolist()
+            # rgb = rgb.toarray().flatten().tolist()
+            rgb = rgb
             assert len(rgb) == 3, f"rgb is incorrect length, got {len(rgb)} expected 3"
             actor.GetProperty().SetColor(*rgb)
 
-        alpha = alpha.toarray().flatten()[0]
+        # alpha = alpha.toarray().flatten()[0]
+        alpha = alpha
         assert (
             0.0 <= alpha <= 1.0
         ), f"the scalar alpha must be in the range [0, 1], got {alpha}"
         actor.GetProperty().SetOpacity(alpha)
 
     @staticmethod
-    @arrayify_args
+    # @arrayify_args
     def set_translation(actor: vtk.vtkActor, translation: ArrayType) -> None:
         """! Set translation for an actor.
 
         @param actor A vtk actor object.
         @param translation The translation in the global frame.
         """
-        translation = translation.toarray().flatten().tolist()
+        if isinstance(translation, DM):
+            translation = translation.toarray().flatten().tolist()
+        else:
+            translation = translation
         transform = vtk.vtkTransform()
         transform.Translate(translation)
         actor.SetUserTransform(transform)
@@ -243,7 +252,7 @@ class Visualizer:
     # Drawing methods
     #
 
-    @arrayify_args
+    # @arrayify_args
     def line(
         self,
         start: ArrayType = [0.0, 0.0, 0.0],
@@ -292,7 +301,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def sphere(
         self,
         radius: float = 1.0,
@@ -330,7 +339,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def sphere_traj(
         self,
         position_traj: ArrayType,
@@ -405,7 +414,7 @@ class Visualizer:
 
         return actors
 
-    @arrayify_args
+    # @arrayify_args
     def box(
         self,
         scale: ArrayType = [1, 1, 1],
@@ -454,7 +463,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def cylinder(
         self,
         radius: float = 1.0,
@@ -497,7 +506,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def cylinder_urdf(
         self,
         radius=1.0,
@@ -548,7 +557,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def text(
         self,
         msg: str = "Hello, world!",
@@ -566,8 +575,15 @@ class Visualizer:
         @param alpha Transparency of the actor in range [0, 1].
         @return The text actor.
         """
-        position = position.toarray().flatten().tolist()
-        scale = scale.toarray().flatten().tolist()
+        if isinstance(position, DM):
+            position = position.toarray().flatten().tolist()
+        else:
+            position = position
+
+        if isinstance(scale, DM):
+            scale = scale.toarray().flatten().tolist()
+        else:
+            scale = scale
 
         # Create a text source to generate the text
         textSource = vtk.vtkTextSource()
@@ -591,7 +607,7 @@ class Visualizer:
 
         return follower
 
-    @arrayify_args
+    # @arrayify_args
     def link(
         self,
         T: ArrayType = None,
@@ -670,7 +686,7 @@ class Visualizer:
 
         return actors
 
-    @arrayify_args
+    # @arrayify_args
     def grid_floor(
         self,
         num_cells: int = 10,
@@ -778,7 +794,7 @@ class Visualizer:
 
         return actors
 
-    @arrayify_args
+    # @arrayify_args
     def obj(
         self,
         obj_filename: str,
@@ -826,7 +842,7 @@ class Visualizer:
 
         return actor
 
-    @arrayify_args
+    # @arrayify_args
     def stl(
         self,
         filename,
@@ -861,7 +877,10 @@ class Visualizer:
             actor = vtk.vtkActor()
             actor.SetMapper(mapper)
         else:
-            scale = scale.toarray().flatten().tolist()
+            if isinstance(scale, DM):
+                scale = scale.toarray().flatten().tolist()
+            else:
+                scale = scale
 
             transform = vtk.vtkTransform()
             transform.Scale(*scale)
