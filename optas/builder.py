@@ -363,6 +363,52 @@ class OptimizationBuilder:
     # Common constraints
     #
 
+    def sphere_collision_avoidance_constraints(
+        self, name, obstacle_names, link_names=None, base_link=None
+    ) -> None:
+        # Get model
+        model = self.get_model(name)
+        assert isinstance(model, RobotModel), "this method only applies to robot models"
+
+        # Update base link
+        if base_link is None:
+            base_link = model.get_root_link()
+
+        # Get model states
+        Q = self.get_model_states(name)
+        n = Q.shape[1]
+
+        # Setup inks
+        if link_names is None:
+            link_names = model.link_names
+        assert len(link_names), "at least one link should be named"
+        links = {}
+        for name in link_names:
+            links[name] = (
+                model.get_link_position_function(name, base_link),
+                self.add_parameter(name + "_radii"),
+            )
+
+        # Setup obstacles
+        assert len(obstacle_names), "at least one obstacle should be named"
+        obstacles = {}
+        for name in obstacle_names:
+            obstacles[name] = (
+                self.add_parameter(name + "_position", 3),
+                self.add_parameter(name + "_radii"),
+            )
+
+        # Add constraints
+        for t in range(n):
+            q = Q[:, t]
+            for link_name, (pos, linkrad) in links.items():
+                p = pos(q)
+                for obs_name, (obs, obsrad) in obstacles.items():
+                    name = f"sphere_col_avoid_{t}_{link_name}_{obs_name}"
+                    dist2 = cs.sumsqr(p - obs)
+                    bnd2 = (linkrad + obsrad) ** 2
+                    self.add_leq_inequality_constraint(name, bnd2, dist2)
+
     def integrate_model_states(
         self, name: str, time_deriv: int, dt: CasADiArrayType
     ) -> None:
