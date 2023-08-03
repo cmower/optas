@@ -336,17 +336,24 @@ class OptimizationBuilder:
 
     @arrayify_args
     def add_equality_constraint(
-        self, name: str, lhs: CasADiArrayType, rhs: Union[None, CasADiArrayType] = None
+        self,
+        name: str,
+        lhs: CasADiArrayType,
+        rhs: Union[None, CasADiArrayType] = None,
+        reduce_constraint=False,
     ) -> None:
         """! Add the equality constraint lhs == rhs to the optimization problem.
 
         @param name Name for the constraint.
         @param lhs Left-hand side for the inequality constraint.
         @param rhs Right-hand side for the inequality constraint. If None, then it is replaced with the zero array with the same shape as lhs.
+        @param reduce_constraint When True, the constraints are specified by ||lhs - rhs||^2 = 0. This has the effect of reducing the number of equality constraints in the problem. However, if the constraints are linear they will be treated as nonlinear. Default is False.
         """
         if rhs is None:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
+        if reduce_constraint:
+            diff = optas.sumsqr(diff)
         if self._is_linear_in_x(diff):
             self._lin_eq_constraints[name] = diff
         else:
