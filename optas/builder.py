@@ -353,7 +353,7 @@ class OptimizationBuilder:
             rhs = cs.DM.zeros(*lhs.shape)
         diff = rhs - lhs  # diff == 0
         if reduce_constraint:
-            diff = optas.sumsqr(diff)
+            diff = cs.sumsqr(diff)
         if self._is_linear_in_x(diff):
             self._lin_eq_constraints[name] = diff
         else:
