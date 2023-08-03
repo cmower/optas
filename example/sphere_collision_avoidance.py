@@ -94,7 +94,7 @@ def main(vis=True):
 
     link_names = ['end_effector_ball', 'lwr_arm_7_link', 'lwr_arm_5_link', 'lwr_arm_6_link']
 
-    builder.sphere_collision_constraints(name, obstacle_names, link_names=link_names)
+    builder.sphere_collision_avoidance_constraints(name, obstacle_names, link_names=link_names)
 
     solver = optas.CasADiSolver(builder.build()).setup("ipopt")
 
