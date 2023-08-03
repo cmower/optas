@@ -89,6 +89,11 @@ def test_simple_joint_space_planner():
     assert main(gui=False) == 0
 
 
+def test_sphere_collision_avoidance():
+    main = load_main_function("sphere_collision_avoidance.py")
+    assert main(vis=False) == 0
+
+
 # def test_example():
 #     path = examples_path / "example.py"
 #     module = import_module(path)
