@@ -366,6 +366,13 @@ class OptimizationBuilder:
     def sphere_collision_avoidance_constraints(
         self, name, obstacle_names, link_names=None, base_link=None
     ) -> None:
+        """! Add collision avoidance constraints, based on spherical representations attached to the robot links and placed in the world.
+
+        @param name Name of the model.
+        @param obstacle_names A list of strings with names of obstacles. For each object, parameters will be created with labels NAME_position (size 3) and NAME_radii (size 1) that represent the obstacle position and radius respectively.
+        @param link_names The links you want to attach collision avoidance constraints onto; for each link a parameter is created with label NAME_radii (size 1). When None is passed, a sphere is attcahed to each link specified in the URDF.
+        @param base_link Name of the base frame link. When None is passed, the root link in the URDF is used.
+        """
         # Get model
         model = self.get_model(name)
         assert isinstance(model, RobotModel), "this method only applies to robot models"
