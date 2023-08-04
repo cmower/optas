@@ -16,7 +16,9 @@ OpTaS is an OPtimization-based TAsk Specification library for trajectory optimiz
 - Documentation: [https://cmower.github.io/optas/](https://cmower.github.io/optas/)
 - PyPI: [https://pypi.org/project/pyoptas/](https://pypi.org/project/pyoptas/)
 - Issues: [https://github.com/cmower/optas/issues](https://github.com/cmower/optas/issues)
-- ICRA 2023 paper (arXiv): [https://arxiv.org/abs/2301.13512](https://arxiv.org/abs/2301.13512)
+- ICRA 2023 paper:
+  - (arXiv) [https://arxiv.org/abs/2301.13512](https://arxiv.org/abs/2301.13512)
+  - (ieee) [https://ieeexplore.ieee.org/document/10161272](https://ieeexplore.ieee.org/document/10161272)
 - Video: [https://youtu.be/gCMNOenFngU](https://youtu.be/gCMNOenFngU)
 - Presentation: [https://vimeo.com/824802366](https://vimeo.com/824802366)
 
@@ -201,12 +203,15 @@ $ python -m pip install 'optas @ git+https://github.com/cmower/optas.git'
 If you use OpTaS in your work, please consider including the following citation.
 
 ```bibtex
-@inproceedings{Mower2023,
-  author={Mower, Christopher E. and Moura, João and Zamani Behabadi, Nazanin and Vijayakumar, Sethu and Vercauteren, Tom and Bergeles, Christos},
-  booktitle={2023 International Conference on Robotics and Automation (ICRA)},
+@inproceedings{mower23optas,
+  author={Mower, Christopher E. and Moura, João and Behabadi, Nazanin Zamani and Vijayakumar, Sethu and Vercauteren, Tom and Bergeles, Christos},
+  booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)},
   title={OpTaS: An Optimization-based Task Specification Library for Trajectory Optimization and Model Predictive Control},
   year={2023},
-  url = {https://github.com/cmower/optas},
+  volume={},
+  number={},
+  pages={9118-9124},
+  doi={10.1109/ICRA48891.2023.10161272}
 }
 ```
 
