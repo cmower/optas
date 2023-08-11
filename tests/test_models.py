@@ -7,7 +7,7 @@ import pybullet as pb
 import scipy.linalg as linalg
 import urdf_parser_py.urdf as urdf
 from scipy.spatial.transform import Rotation as Rot
-
+from roboticstoolbox.robot.ERobot import ERobot
 from .tester_robot_model import RobotModelTester
 
 NUM_RANDOM = 100
@@ -1050,3 +1050,38 @@ class TestRnea:
                 )
             )
             assert isclose(tau1.toarray().flatten(), tau2, atol=8.0e-2)
+
+
+class TestDualArm:
+    optas_path = pathlib.Path(
+        __file__
+    ).parent.parent.resolve()  # path to current working directory
+    examples_path = optas_path / "example"
+    nextage_urdf_path = examples_path / "robots" / "nextage" / "nextage.urdf"
+
+    model = optas.RobotModel(urdf_filename=str(nextage_urdf_path.absolute()))
+
+    class RobotModelTester(ERobot):
+        def __init__(self, filename):
+            links, name, urdf_string, urdf_filepath = self.URDF_read(filename)
+
+            super().__init__(
+                links,
+                name=name.upper(),
+                urdf_string=urdf_string,
+                urdf_filepath=urdf_filepath,
+            )
+
+            self.qz = np.zeros(self.n)
+
+    tester_robot_model = RobotModelTester(str(nextage_urdf_path.absolute()))
+
+    def test_dual_arm(self):
+        for _ in range(NUM_RANDOM):
+            q = self.model.get_random_joint_positions().toarray().flatten()
+            expected_fkine = [
+                np.array(fk) for fk in self.tester_robot_model.fkine_all(q)
+            ]
+            for link_name, expected_T in zip(self.model.link_names, expected_fkine[1:]):
+                T = self.model.get_global_link_transform(link_name, q).toarray()
+                assert isclose(T, expected_T)
