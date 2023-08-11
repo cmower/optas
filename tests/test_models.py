@@ -23,12 +23,8 @@ def random_vector(lo=-1, hi=1, n=3):
     return np.random.uniform(-lo, hi, size=(n,))
 
 
-def isclose(A: np.ndarray, B: np.ndarray):
-    return np.isclose(A, B).all()
-
-
-def iscloseRNEA(A: np.ndarray, B: np.ndarray):
-    return np.isclose(A, B, atol=8.0e-2).all()
+def isclose(A: np.ndarray, B: np.ndarray, atol=1e-08):
+    return np.isclose(A, B, atol=atol).all()
 
 
 ###########################################################################
@@ -1013,8 +1009,6 @@ class TestRobotModel:
         assert isinstance(axis(q), optas.SX)
 
 
-
-
 class TestRnea:
     # Setup path to tester robot URDF
     cwd = pathlib.Path(__file__).parent.resolve()  # path to current working directory
@@ -1055,4 +1049,4 @@ class TestRnea:
                     self.id, q.tolist(), qd.tolist(), qdd.tolist()
                 )
             )
-            assert iscloseRNEA(tau1.toarray().flatten(), tau2)
+            assert isclose(tau1.toarray().flatten(), tau2, atol=8.0e-2)
