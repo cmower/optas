@@ -251,7 +251,7 @@ class IK:
         q = qc + dt * dq
 
         # Get jacobian
-        Jl = kuka.get_global_linear_jacobian(link_ee, qc)
+        Jl = kuka.get_global_link_linear_jacobian(link_ee, qc)
 
         # Get end-effector velocity
         dp = Jl @ dq

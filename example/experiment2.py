@@ -74,10 +74,10 @@ class OpTaSIK(ExprIK):
         qF = builder.get_model_state(self.name, t=0)
         qd = (qF - qc) / dt
         pg = builder.add_parameter("pg", 3)  # goal position
-        Jp = robot.get_global_linear_jacobian(ee_link, qc)
+        Jp = robot.get_global_link_linear_jacobian(ee_link, qc)
         pc = pos(qc)
         p = pc + dt * Jp @ qd
-        Ja = robot.get_global_angular_geometric_jacobian(ee_link, qc)
+        Ja = robot.get_global_link_angular_geometric_jacobian(ee_link, qc)
         va = Ja @ qd
         Jg = robot.get_global_link_geometric_jacobian(ee_link, qF)
         manip = cs.sqrt(cs.det(Jg @ Jg.T))
