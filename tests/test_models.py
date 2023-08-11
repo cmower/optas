@@ -3,6 +3,7 @@ import pytest
 import optas
 import pathlib
 import numpy as np
+import pybullet as pb
 import scipy.linalg as linalg
 import urdf_parser_py.urdf as urdf
 from scipy.spatial.transform import Rotation as Rot
@@ -24,6 +25,10 @@ def random_vector(lo=-1, hi=1, n=3):
 
 def isclose(A: np.ndarray, B: np.ndarray):
     return np.isclose(A, B).all()
+
+
+def iscloseRNEA(A: np.ndarray, B: np.ndarray):
+    return np.isclose(A, B, atol=8.0e-2).all()
 
 
 ###########################################################################
@@ -1008,11 +1013,6 @@ class TestRobotModel:
         assert isinstance(axis(q), optas.SX)
 
 
-import pybullet as pb
-
-
-def iscloseRNEA(A: np.ndarray, B: np.ndarray):
-    return np.isclose(A, B, atol=8.0e-2).all()
 
 
 class TestRnea:
