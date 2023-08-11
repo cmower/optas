@@ -1,0 +1,781 @@
+<?xml version="1.0" ?>
+<robot name="nextage">
+  <material name="Black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="Blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+  <material name="Green">
+    <color rgba="0.0 0.8 0.0 1.0"/>
+  </material>
+  <material name="LightGrey">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
+  <material name="Grey">
+    <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+  <material name="DarkGrey">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+  <material name="Red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+  <material name="White">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>  
+  <joint name="CAMERA_HEAD_L" type="fixed">
+    <origin rpy="0 0.25 0" xyz="0.0175 0.0725 0.105"/>
+    <parent link="HEAD_JOINT1_Link"/>
+    <child link="CAMERA_HEAD_L_Link"/>
+  </joint>
+  <link name="CAMERA_HEAD_L_Link">
+    <visual>
+      <origin rpy="0 1.5707963267948966 -0.05" xyz="0.0325 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.015"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0.0" ixz="0.0" iyy="1e-12" iyz="0.0" izz="1e-12"/>
+    </inertial>
+  </link>
+  <joint name="CAMERA_HEAD_R" type="fixed">
+    <origin rpy="0 0.25 0" xyz="0.0175 -0.0725 0.105"/>
+    <parent link="HEAD_JOINT1_Link"/>
+    <child link="CAMERA_HEAD_R_Link"/>
+  </joint>
+  <link name="CAMERA_HEAD_R_Link">
+    <visual>
+      <origin rpy="0 1.5707963267948966 0.05" xyz="0.0325 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.015"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0.0" ixz="0.0" iyy="1e-12" iyz="0.0" izz="1e-12"/>
+    </inertial>
+  </link>
+  <link name="WAIST">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/WAIST_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0 0 0.098"/>
+      <geometry>
+        <cylinder length="0.376" radius="0.06"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="5"/>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <inertia ixx="0.05416666666666667" ixy="0.0" ixz="0.0" iyy="0.05416666666666667" iyz="0.0" izz="0.03333333333333334"/>
+    </inertial>
+  </link>
+  <gazebo reference="gazebo_CHEST_JOINT0_Link">
+    <material>Gazebo/Black</material>
+    <mu1 value="1.0"/>
+    <mu2 value="1.0"/>
+    <kp value="1e5"/>
+    <kd value="1e2"/>
+    <maxVel value="100.0"/>
+    <minDepth value="0.0"/>
+    <dampingFactor>0.01</dampingFactor>
+  </gazebo>
+  <link name="CHEST_JOINT0_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/CHEST_JOINT0_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1575"/>
+      <geometry>
+        <cylinder length="0.385" radius="0.08"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.04 0.135 0.0423"/>
+      <geometry>
+        <cylinder length="0.09" radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.04 -0.135 0.0423"/>
+      <geometry>
+        <cylinder length="0.09" radius="0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.055"/>
+      <geometry>
+        <box size="0.23 0.18 0.12"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.04 0 0.2325"/>
+      <geometry>
+        <box size="0.25 0.18 0.245"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.1525 0 0.279"/>
+      <geometry>
+        <box size="0.17 0.29 0.225"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.03 0 0.315"/>
+      <geometry>
+        <box size="0.085 0.5 0.0365"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="10.0"/>
+      <origin rpy="0 -0 0" xyz="0 0 0.2"/>
+      <inertia ixx="0.12708333333333333" ixy="0.0" ixz="0.0" iyy="0.12708333333333333" iyz="0.0" izz="0.10416666666666667"/>
+    </inertial>
+  </link>
+  <link name="HEAD_JOINT0_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/HEAD_JOINT0_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0 0.01 0.08"/>
+      <geometry>
+        <cylinder length="0.135" radius="0.035"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.317929"/>
+      <origin rpy="0 -0 0" xyz="0 0.00547848 0"/>
+      <inertia ixx="0.0005298816666666668" ixy="0.0" ixz="0.0" iyy="0.0005298816666666668" iyz="0.0" izz="0.0005298816666666668"/>
+    </inertial>
+  </link>
+  <link name="HEAD_JOINT1_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/HEAD_JOINT1_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0.26 0" xyz="-0.05 0 0.12"/>
+      <geometry>
+        <box size="0.27 0.22 0.115"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <origin rpy="0 0.26 0" xyz="-0.05 0 0.12"/>
+      <inertia ixx="0.002054166666666667" ixy="0.0" ixz="0.0" iyy="0.0028708333333333333" iyz="0.0" izz="0.004043333333333334"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT0_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT0_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.00775 0.095"/>
+      <geometry>
+        <box size="0.1 0.0815 0.19"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0 0.0875 0.066"/>
+      <geometry>
+        <cylinder length="0.175" radius="0.042"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="-0.7 0 0" xyz="0 0.125 0.145"/>
+      <geometry>
+        <box size="0.048 0.1 0.035"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.32626"/>
+      <origin rpy="0 -0 0" xyz="0.0 0.05 0.05"/>
+      <inertia ixx="0.00207537" ixy="0.00011276" ixz="8.927e-05" iyy="0.00240295" iyz="-4.57e-05" izz="0.00141912"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT1_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT1_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0.3 0" xyz="-0.043 0.12 -0.13"/>
+      <geometry>
+        <box size="0.08 0.11 0.28"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0.45 0" xyz="-0.03 0.0518 -0.236"/>
+      <geometry>
+        <box size="0.122 0.0338 0.062"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.14898"/>
+      <origin rpy="0 -0 0" xyz="-0.04 0.1 -0.12"/>
+      <inertia ixx="0.0154168" ixy="9.95417e-07" ixz="3.38147e-06" iyy="0.0147117" iyz="0.00213719" izz="0.0012658"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT2_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT2_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0 0.025 0"/>
+      <geometry>
+        <cylinder length="0.11" radius="0.049"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0945 0.015 -0.03"/>
+      <geometry>
+        <box size="0.119 0.125 0.1"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 1.57079 0" xyz="0.17 0 -0.03"/>
+      <geometry>
+        <cylinder length="0.04" radius="0.047"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.577518"/>
+      <origin rpy="0 -0 0" xyz="0.1 0.01167107 -0.04"/>
+      <inertia ixx="0.00143966" ixy="-3e-07" ixz="1.2e-06" iyy="0.00141763" iyz="-7.596e-05" izz="0.0001972"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT3_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT3_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0.1495 -0.003 0"/>
+      <geometry>
+        <cylinder length="0.12" radius="0.035"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 1.57079 0" xyz="0.075 0.0 0.018"/>
+      <geometry>
+        <cylinder length="0.15" radius="0.04"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0585 0.01 0.0185"/>
+      <geometry>
+        <box size="0.093 0.112 0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.457418"/>
+      <origin rpy="0 -0 0" xyz="0.1 -0.00395812 -0.00273"/>
+      <inertia ixx="0.00069205" ixy="3e-08" ixz="5.2e-07" iyy="0.00068903" iyz="-1.915e-05" izz="0.00013509"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT4_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT4_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002 -0.06"/>
+      <geometry>
+        <box size="0.04 0.118 0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.08"/>
+      <geometry>
+        <cylinder length="0.08" radius="0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.418434"/>
+      <origin rpy="0 -0 0" xyz="0.00243131 0.00379733 -0.0577036"/>
+      <inertia ixx="0.00052016" ixy="1.69e-06" ixz="7.9e-06" iyy="0.00050569" iyz="-5.377e-05" izz="0.00014004"/>
+    </inertial>
+  </link>
+  <link name="LARM_JOINT5_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/LARM_JOINT5_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0065"/>
+      <geometry>
+        <cylinder length="0.013" radius="0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.05156"/>
+      <origin rpy="0 -0 0" xyz="0.0 0.0 -0.08"/>
+      <inertia ixx="0.00194072" ixy="1.1e-07" ixz="-0.00042482" iyy="0.00209392" iyz="1.2e-07" izz="0.00035788"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT0_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT0_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.00775 0.095"/>
+      <geometry>
+        <box size="0.1 0.0815 0.19"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0 -0.0875 0.066"/>
+      <geometry>
+        <cylinder length="0.175" radius="0.042"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0.7 0 0" xyz="0 -0.125 0.145"/>
+      <geometry>
+        <box size="0.048 0.1 0.035"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.32626"/>
+      <origin rpy="0 -0 0" xyz="0.0 -0.05 0.05"/>
+      <inertia ixx="0.00207537" ixy="-0.00011276" ixz="8.927e-05" iyy="0.00240295" iyz="4.57e-05" izz="0.00141912"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT1_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT1_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0.3 0" xyz="-0.043 -0.12 -0.13"/>
+      <geometry>
+        <box size="0.08 0.11 0.28"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0.45 0" xyz="-0.03 -0.0518 -0.236"/>
+      <geometry>
+        <box size="0.122 0.0338 0.062"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.14898"/>
+      <origin rpy="0 -0 0" xyz="-0.04 -0.1 -0.12"/>
+      <inertia ixx="0.0154168" ixy="-9.95417e-07" ixz="3.38147e-06" iyy="0.0147117" iyz="-0.00213719" izz="0.0012658"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT2_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT2_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0 -0.025 0"/>
+      <geometry>
+        <cylinder length="0.11" radius="0.049"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0945 -0.015 -0.03"/>
+      <geometry>
+        <box size="0.119 0.125 0.1"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 1.57079 0" xyz="0.17 0 -0.03"/>
+      <geometry>
+        <cylinder length="0.04" radius="0.047"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.577518"/>
+      <origin rpy="0 -0 0" xyz="0.1 -0.01167107 -0.04"/>
+      <inertia ixx="0.00143966" ixy="3e-07" ixz="1.2e-06" iyy="0.00141763" iyz="7.596e-05" izz="0.0001972"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT3_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT3_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.57079 0 0" xyz="0.1495 -0.003 0"/>
+      <geometry>
+        <cylinder length="0.12" radius="0.035"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 1.57079 0" xyz="0.075 0.0 0.018"/>
+      <geometry>
+        <cylinder length="0.15" radius="0.04"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0585 -0.01 0.0185"/>
+      <geometry>
+        <box size="0.093 0.112 0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.457418"/>
+      <origin rpy="0 -0 0" xyz="0.1 0.00395812 -0.00273"/>
+      <inertia ixx="0.00069205" ixy="-3e-08" ixz="5.2e-07" iyy="0.00068903" iyz="1.915e-05" izz="0.00013509"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT4_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT4_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.002 -0.06"/>
+      <geometry>
+        <box size="0.04 0.118 0.06"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.08"/>
+      <geometry>
+        <cylinder length="0.08" radius="0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.418434"/>
+      <origin rpy="0 -0 0" xyz="0.00243131 -0.00379733 -0.0577036"/>
+      <inertia ixx="0.00052016" ixy="-1.69e-06" ixz="7.9e-06" iyy="0.00050569" iyz="5.377e-05" izz="0.00014004"/>
+    </inertial>
+  </link>
+  <link name="RARM_JOINT5_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/RARM_JOINT5_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0065"/>
+      <geometry>
+        <cylinder length="0.013" radius="0.037"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.05156"/>
+      <origin rpy="0 -0 0" xyz="0.0 0.0 -0.08"/>
+      <inertia ixx="0.00194072" ixy="-1.1e-07" ixz="-0.00042482" iyy="0.00209392" iyz="-1.2e-07" izz="0.00035788"/>
+    </inertial>
+  </link>
+  <joint name="CHEST_JOINT0" type="revolute">
+    <parent link="WAIST"/>
+    <child link="CHEST_JOINT0_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.267"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.14159" upper="3.14159" velocity="2.513274"/>
+    <dynamics damping="0.2" friction="0"/>
+  </joint>
+  <joint name="HEAD_JOINT0" type="revolute">
+    <parent link="CHEST_JOINT0_Link"/>
+    <child link="HEAD_JOINT0_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.302"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.22173" upper="1.22173" velocity="6.684611"/>
+  </joint>
+  <joint name="HEAD_JOINT1" type="revolute">
+    <parent link="HEAD_JOINT0_Link"/>
+    <child link="HEAD_JOINT1_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.08"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-0.401425" upper="1.308997" velocity="6.684611"/>
+  </joint>
+  <joint name="LARM_JOINT0" type="revolute">
+    <parent link="CHEST_JOINT0_Link"/>
+    <child link="LARM_JOINT0_Link"/>
+    <origin rpy="0 0 0" xyz="0.04 0.135 0.1015"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150" lower="-1.5707963" upper="1.5707963" velocity="3.892084"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="LARM_JOINT1" type="revolute">
+    <parent link="LARM_JOINT0_Link"/>
+    <child link="LARM_JOINT1_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.066"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-2.44346" upper="1.0471975" velocity="2.426008"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="LARM_JOINT2" type="revolute">
+    <parent link="LARM_JOINT1_Link"/>
+    <child link="LARM_JOINT2_Link"/>
+    <origin rpy="0 0 0" xyz="0 0.095 -0.25"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-1.22173" upper="1.5707963" velocity="3.630285"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="LARM_JOINT3" type="revolute">
+    <parent link="LARM_JOINT2_Link"/>
+    <child link="LARM_JOINT3_Link"/>
+    <origin rpy="0 0 0" xyz="0.1805 0 -0.03"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="150" lower="-3.1415926" upper="1.7453292" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="LARM_JOINT4" type="revolute">
+    <parent link="LARM_JOINT3_Link"/>
+    <child link="LARM_JOINT4_Link"/>
+    <origin rpy="0 0 0" xyz="0.1495 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-3.4" upper="1.134464" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="LARM_JOINT5" type="revolute">
+    <parent link="LARM_JOINT4_Link"/>
+    <child link="LARM_JOINT5_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.1335"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150" lower="-2.7123889" upper="2.7123889" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT0" type="revolute">
+    <parent link="CHEST_JOINT0_Link"/>
+    <child link="RARM_JOINT0_Link"/>
+    <origin rpy="0 0 0" xyz="0.04 -0.135 0.1015"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150" lower="-1.570796" upper="1.570796" velocity="3.892084"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT1" type="revolute">
+    <parent link="RARM_JOINT0_Link"/>
+    <child link="RARM_JOINT1_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.066"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-2.44346" upper="1.047197" velocity="2.426008"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT2" type="revolute">
+    <parent link="RARM_JOINT1_Link"/>
+    <child link="RARM_JOINT2_Link"/>
+    <origin rpy="0 0 0" xyz="0 -0.095 -0.25"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-1.22173" upper="1.570796" velocity="3.630285"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT3" type="revolute">
+    <parent link="RARM_JOINT2_Link"/>
+    <child link="RARM_JOINT3_Link"/>
+    <origin rpy="0 0 0" xyz="0.1805 0 -0.03"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="150" lower="-1.74532" upper="3.141592" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT4" type="revolute">
+    <parent link="RARM_JOINT3_Link"/>
+    <child link="RARM_JOINT4_Link"/>
+    <origin rpy="0 0 0" xyz="0.1495 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" lower="-3.4" upper="1.134464" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <joint name="RARM_JOINT5" type="revolute">
+    <parent link="RARM_JOINT4_Link"/>
+    <child link="RARM_JOINT5_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.1335"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150" lower="-2.712388" upper="2.712388" velocity="6.352998"/>
+    <dynamics damping="0.5" friction="0.5"/>
+  </joint>
+  <link name="base_link"/>
+  <joint name="base_to_dummy" type="fixed">
+    <parent link="base_link"/>
+    <child link="nextage_base"/>
+  </joint>
+  <link name="nextage_base">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/BASE_Link_mesh.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.19 0 -0.435"/>
+      <geometry>
+        <box size="0.585 0.585 0.72"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0675 0.2575 -0.82"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0675 -0.2575 -0.82"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.4475 0.2575 -0.82"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.4475 -0.2575 -0.82"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="40"/>
+      <origin rpy="0 0 0" xyz="-0.19 0 -0.435"/>
+      <inertia ixx="2.86875" ixy="0.0" ixz="0.0" iyy="2.86875" iyz="0.0" izz="2.2815"/>
+    </inertial>
+  </link>
+  <joint name="base_to_waist" type="fixed">
+    <parent link="nextage_base"/>
+    <child link="WAIST"/>
+  </joint>
+  <link name="LARM_camera_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/L_CAM.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.025"/>
+      <geometry>
+        <cylinder length="0.05" radius="0.037"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0525 0.029 -0.02"/>
+      <geometry>
+        <box size="0.057 0.106 0.042"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.05156"/>
+      <origin rpy="0 -0 0" xyz="0.0 0.0 -0.08"/>
+      <inertia ixx="0.00194072" ixy="1.1e-07" ixz="-0.00042482" iyy="0.00209392" iyz="1.2e-07" izz="0.00035788"/>
+    </inertial>
+  </link>
+  <joint name="LARM_JOINT6" type="fixed">
+    <parent link="LARM_JOINT5_Link"/>
+    <child link="LARM_camera_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <joint name="CAMERA_HAND_L" type="fixed">
+    <origin rpy="0 1.5708 0" xyz="0.0525 0.0525 0.0"/>
+    <parent link="LARM_JOINT5_Link"/>
+    <child link="CAMERA_HAND_L_Link"/>
+  </joint>
+  <link name="CAMERA_HAND_L_Link">
+    <visual>
+      <origin rpy="0 1.5707963267948966 -0.0" xyz="0.0325 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.015"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0.0" ixz="0.0" iyy="1e-12" iyz="0.0" izz="1e-12"/>
+    </inertial>
+  </link>
+  <link name="RARM_camera_Link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/R_CAM.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.025"/>
+      <geometry>
+        <cylinder length="0.05" radius="0.037"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0525 -0.029 -0.02"/>
+      <geometry>
+        <box size="0.057 0.106 0.042"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.05156"/>
+      <origin rpy="0 -0 0" xyz="0.0 0.0 -0.08"/>
+      <inertia ixx="0.00194072" ixy="-1.1e-07" ixz="-0.00042482" iyy="0.00209392" iyz="-1.2e-07" izz="0.00035788"/>
+    </inertial>
+  </link>
+  <joint name="RARM_JOINT6" type="fixed">
+    <parent link="RARM_JOINT5_Link"/>
+    <child link="RARM_camera_Link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <joint name="CAMERA_HAND_R" type="fixed">
+    <origin rpy="0 1.5708 0" xyz="0.0525 -0.0525 0.0"/>
+    <parent link="RARM_JOINT5_Link"/>
+    <child link="CAMERA_HAND_R_Link"/>
+  </joint>
+  <link name="CAMERA_HAND_R_Link">
+    <visual>
+      <origin rpy="0 1.5707963267948966 -0.0" xyz="0.0325 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.015"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-6"/>
+      <inertia ixx="1e-12" ixy="0.0" ixz="0.0" iyy="1e-12" iyz="0.0" izz="1e-12"/>
+    </inertial>
+  </link>
+</robot>
