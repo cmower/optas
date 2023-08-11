@@ -123,7 +123,6 @@ class VisualBox:
             base_orientation,
         )
 
-
 class FixedBaseRobot:
     def __init__(self, urdf_filename, base_position=[0.0] * 3):
         self._id = p.loadURDF(
@@ -172,6 +171,11 @@ class R2D2(FixedBaseRobot):
         self.urdf_filename = f
         super().__init__(f, base_position=base_position)
 
+class Nextage(FixedBaseRobot):
+    def __init__(self, base_position=[0.0, 0.0, 0.85]):
+        f = os.path.join(cwd, "robots", "nextage", "nextage.urdf")
+        self.urdf_file_name = f
+        super().__init__(f, base_position=base_position)
 
 class KukaLWR(FixedBaseRobot):
     def __init__(self, base_position=[0.0] * 3):
@@ -213,7 +217,8 @@ def main(gui=True):
     pb = PyBullet(dt, gui=gui)
     # robot = KukaLWR()
     # robot = KukaLBR()
-    robot = R2D2([0, 0, 0.5])
+    # robot = R2D2([0, 0, 0.5])
+    robot = Nextage()
 
     q0 = np.zeros(robot.ndof)
     qF = np.random.uniform(-np.pi, np.pi, size=(robot.ndof,))
