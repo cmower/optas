@@ -1,0 +1,8 @@
+<map id="optas.solver.Solver" name="optas.solver.Solver">
+<area shape="rect" id="node1" title="Solver base class." alt="" coords="103,81,249,108"/>
+<area shape="rect" id="node3" href="$classoptas_1_1solver_1_1CVXOPTSolver.html" title="CVXOPT solver interface." alt="" coords="298,5,497,32"/>
+<area shape="rect" id="node4" href="$classoptas_1_1solver_1_1CasADiSolver.html" title="This is a base class for CasADi solver interfaces." alt="" coords="301,56,494,83"/>
+<area shape="rect" id="node5" href="$classoptas_1_1solver_1_1OSQPSolver.html" title=" " alt="" coords="306,107,489,133"/>
+<area shape="rect" id="node6" href="$classoptas_1_1solver_1_1ScipyMinimizeSolver.html" title=" " alt="" coords="297,158,497,199"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,81,55,108"/>
+</map>

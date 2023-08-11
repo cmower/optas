@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classoptas_1_1models_1_1Model.html" title="The Model base class." alt="" coords="5,31,160,57"/>
+<area shape="rect" id="node2" href="$classoptas_1_1models_1_1RobotModel.html" title="A class that defines a robot model." alt="" coords="208,5,400,32"/>
+<area shape="rect" id="node3" href="$classoptas_1_1models_1_1TaskModel.html" title="Model class for tasks, e.g." alt="" coords="213,56,395,83"/>
+</map>

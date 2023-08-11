@@ -1,0 +1,5 @@
+<map id="optas.models.Model" name="optas.models.Model">
+<area shape="rect" id="node1" title="The Model base class." alt="" coords="129,5,284,32"/>
+<area shape="rect" id="node2" href="$classoptas_1_1models_1_1RobotModel.html" title="A class that defines a robot model." alt="" coords="5,80,197,107"/>
+<area shape="rect" id="node3" href="$classoptas_1_1models_1_1TaskModel.html" title="Model class for tasks, e.g." alt="" coords="222,80,405,107"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="optas.templates.ROSManager" name="optas.templates.ROSManager">
+<area shape="rect" id="node1" title="Manager setup specifically for ROS." alt="" coords="5,155,221,181"/>
+<area shape="rect" id="node2" href="$classoptas_1_1templates_1_1Manager.html" title="Base manager class." alt="" coords="19,80,208,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="73,5,153,32"/>
+</map>

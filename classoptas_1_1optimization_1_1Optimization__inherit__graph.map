@@ -1,0 +1,10 @@
+<map id="optas.optimization.Optimization" name="optas.optimization.Optimization">
+<area shape="rect" id="node1" title="Base optimization class." alt="" coords="5,177,237,203"/>
+<area shape="rect" id="node2" href="$classoptas_1_1optimization_1_1NonlinearCostLinearConstraints.html" title="Linear constrained optimization problem." alt="" coords="285,5,496,47"/>
+<area shape="rect" id="node3" href="$classoptas_1_1optimization_1_1NonlinearCostNonlinearConstraints.html" title="Nonlinear constrained optimization problem." alt="" coords="285,71,496,112"/>
+<area shape="rect" id="node5" href="$classoptas_1_1optimization_1_1NonlinearCostUnconstrained.html" title="Unconstrained optimization problem." alt="" coords="285,136,496,177"/>
+<area shape="rect" id="node6" href="$classoptas_1_1optimization_1_1QuadraticCostLinearConstraints.html" title="Linear constrained Quadratic Program." alt="" coords="285,201,496,243"/>
+<area shape="rect" id="node7" href="$classoptas_1_1optimization_1_1QuadraticCostNonlinearConstraints.html" title="Nonlinear constrained optimization problem with quadratic cost function." alt="" coords="285,267,496,308"/>
+<area shape="rect" id="node8" href="$classoptas_1_1optimization_1_1QuadraticCostUnconstrained.html" title="Unconstrained Quadratic Program." alt="" coords="285,332,496,373"/>
+<area shape="rect" id="node4" href="$classoptas_1_1optimization_1_1MixedIntegerNonlinearCostNonlinearConstrained.html" title=" " alt="" coords="544,63,767,119"/>
+</map>
