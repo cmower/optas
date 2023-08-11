@@ -1,5 +1,4 @@
 """! @brief Several Model classes are defined."""
-
 import os
 import warnings
 import functools
@@ -1197,11 +1196,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_geometric_jacobian")
-    def get_global_geometric_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_geometric_jacobian(
@@ -1224,7 +1218,6 @@ class RobotModel(Model):
         jacobian_columns = []
 
         for joint in self.urdf.joints:
-
             if joint.type == "fixed":
                 continue
 
@@ -1260,7 +1253,6 @@ class RobotModel(Model):
                 jcol = cs.DM.zeros(6)
                 jacobian_columns.append(jcol)
 
-
         # Sort columns of jacobian
         jacobian_columns_ordered = [jacobian_columns[idx] for idx in joint_index_order]
 
@@ -1270,11 +1262,6 @@ class RobotModel(Model):
             J = cs.horzcat(J, jacobian_columns_ordered.pop(0))
 
         return J
-
-    @deprecation_warning("get_global_link_geometric_jacobian_function")
-    def get_global_geometric_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_geometric_jacobian_function(
         self,
@@ -1293,11 +1280,6 @@ class RobotModel(Model):
             "J", link, self.get_global_link_geometric_jacobian, n=n
         )
 
-    @deprecation_warning("get_global_link_analytical_jacobian")
-    def get_global_analytical_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_analytical_jacobian(
@@ -1313,11 +1295,6 @@ class RobotModel(Model):
             self.get_global_link_linear_jacobian(link, q),
             self.get_global_link_angular_analytical_jacobian(link, q),
         )
-
-    @deprecation_warning("get_global_link_analytical_jacobian_function")
-    def get_global_analytical_jacobian_function(self, link):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_analytical_jacobian_function(
         self,
@@ -1339,11 +1316,6 @@ class RobotModel(Model):
             n=n,
             numpy_output=numpy_output,
         )
-
-    @deprecation_warning("get_link_geometric_jacobian")
-    def get_geometric_jacobian(self):
-        """! Deprecated function."""
-        pass
 
     @arrayify_args
     @listify_output
@@ -1371,11 +1343,6 @@ class RobotModel(Model):
 
         return J
 
-    @deprecation_warning("get_link_geometric_jacobian_function")
-    def get_geometric_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
-
     def get_link_geometric_jacobian_function(
         self,
         link: str,
@@ -1400,11 +1367,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_analytical_jacobian")
-    def get_analytical_jacobian(self):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_analytical_jacobian(
@@ -1421,11 +1383,6 @@ class RobotModel(Model):
             self.get_link_linear_jacobian(link, q, base_link),
             self.get_link_angular_analytical_jacobian(link, q, base_link),
         )
-
-    @deprecation_warning("get_link_analytical_jacobian_function")
-    def get_analytical_jacobian_function(self, link, base_link):
-        """! Deprecated function."""
-        pass
 
     def get_link_analytical_jacobian_function(
         self,
@@ -1451,11 +1408,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_linear_jacobian")
-    def get_global_linear_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_linear_jacobian(
@@ -1469,11 +1421,6 @@ class RobotModel(Model):
         """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[:3, :]
-
-    @deprecation_warning("get_global_link_linear_jacobian_function")
-    def get_global_linear_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_linear_jacobian_function(
         self,
@@ -1496,11 +1443,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_linear_jacobian")
-    def get_linear_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_linear_jacobian(
@@ -1515,11 +1457,6 @@ class RobotModel(Model):
         """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[:3, :]
-
-    @deprecation_warning("get_link_linear_jacobian_function")
-    def get_linear_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_link_linear_jacobian_function(
         self, link: str, base_link: str, n: int = 1, numpy_output: bool = False
@@ -1541,11 +1478,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_angular_geometric_jacobian")
-    def get_global_angular_geometric_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_angular_geometric_jacobian(
@@ -1560,11 +1492,6 @@ class RobotModel(Model):
         """
         J = self.get_global_link_geometric_jacobian(link, q)
         return J[3:, :]
-
-    @deprecation_warning("get_global_link_angular_geometric_jacobian_function")
-    def get_global_angular_geometric_jacobian_function(self, link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_angular_geometric_jacobian_function(
         self,
@@ -1587,11 +1514,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_global_link_angular_analytical_jacobian")
-    def get_global_angular_analytical_jacobian(self, link, q):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_global_link_angular_analytical_jacobian(
@@ -1604,11 +1526,6 @@ class RobotModel(Model):
         @return Angular part of the analytical Jacobian.
         """
         return self.get_link_angular_analytical_jacobian(link, q, self.get_root_link())
-
-    @deprecation_warning("get_global_link_angular_analytical_jacobian_function")
-    def get_global_angular_analytical_jacobian_function(self, link):
-        """! Deprecated function."""
-        pass
 
     def get_global_link_angular_analytical_jacobian_function(
         self,
@@ -1631,11 +1548,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_angular_geometric_jacobian")
-    def get_angular_geometric_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_angular_geometric_jacobian(
@@ -1650,11 +1562,6 @@ class RobotModel(Model):
         """
         J = self.get_link_geometric_jacobian(link, q, base_link)
         return J[3:, :]
-
-    @deprecation_warning("get_link_angular_geometric_jacobian_function")
-    def get_angular_geometric_jacobian_function(self, link, base_link, n=1):
-        """! Deprecated function."""
-        pass
 
     def get_link_angular_geometric_jacobian_function(
         self,
@@ -1680,11 +1587,6 @@ class RobotModel(Model):
             numpy_output=numpy_output,
         )
 
-    @deprecation_warning("get_link_angular_analytical_jacobian")
-    def get_angular_analytical_jacobian(self, link, q, base_link):
-        """! Deprecated function."""
-        pass
-
     @arrayify_args
     @listify_output
     def get_link_angular_analytical_jacobian(
@@ -1707,11 +1609,6 @@ class RobotModel(Model):
         Ja = cs.Function("Ja", [q_sym], [Ja])
 
         return Ja(q)
-
-    @deprecation_warning("get_link_angular_analytical_jacobian_function")
-    def get_angular_analytical_jacobian_function(self, link, base_link):
-        """! Deprecated function."""
-        pass
 
     def get_link_angular_analytical_jacobian_function(
         self,

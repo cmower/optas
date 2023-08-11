@@ -23,9 +23,9 @@ class DifferentialIK:
         self.qd = self.builder.get_model_state(self.robot_name, 0, time_deriv=1)
         self.qc = self.builder.add_parameter("qc", robot.ndof)
         if base_link is None:
-            self.J = robot.get_global_geometric_jacobian(eff_link, self.qc)
+            self.J = robot.get_global_link_geometric_jacobian(eff_link, self.qc)
         else:
-            self.J = robot.get_geometric_jacobian(eff_link, self.qc, base_link)
+            self.J = robot.get_link_geometric_jacobian(eff_link, self.qc, base_link)
         self.veff = self.J @ self.qd
         self._solver_duration = None
 
