@@ -402,36 +402,16 @@ class Quaternion:
         yaw = cs.atan2(siny_cosp, cosy_cosp)
 
         return cs.vertcat(roll, pitch, yaw)
-    
-
-    def getrotm(self) -> CasADiArrayType:
-        """
-
-        @ return rot matrix
-        """
-        x, y, z, w = self.split()
-
-        return cs.vertcat(
-            cs.horzcat(
-                1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * w * z, 2 * x * y + 2 * w * y
-            ),
-            cs.horzcat(
-                2 * x * y + 2 * w * z, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * w * z
-            ),
-            cs.horzcat(
-                2 * x * z - 2 * w * y, 2 * y * z + w * w * x, 1 - 2 * x * x - 2 * y * y
-            ),
-        )
 
     def getrotm(self) ->CasADiArrayType:
         """
-        
-        @ return rot matrix
+        @ return rotation matrix
+        R = 1 + 2 * w * skew([x, y, z]) + 2 * skew([x, y, z])**2
         """
         x, y, z, w = self.split()
 
         return cs.vertcat(
-            cs.horzcat(1-2*y*y-2*z*z, 2*x*y-2*w*z, 2*x*y+2*w*y),
-            cs.horzcat(2*x*y+2*w*z, 1-2*x*x-2*z*z, 2*y*z-2*w*z),
-            cs.horzcat(2*x*z-2*w*y, 2*y*z+w*w*x, 1-2*x*x-2*y*y),
+            cs.horzcat(1-2*y*y-2*z*z, 2*x*y-2*w*z, 2*x*z+2*w*y),
+            cs.horzcat(2*x*y+2*w*z, 1-2*x*x-2*z*z, 2*y*z-2*w*x),
+            cs.horzcat(2*x*z-2*w*y, 2*y*z+2*w*x, 1-2*x*x-2*y*y),
         )

@@ -62,12 +62,14 @@ class Optimization:
         decision_variables: SXContainer,
         parameters: SXContainer,
         cost_terms: SXContainer,
+        compute_derive: bool=True,
     ):
         """! Initializer for the Optimization class.
 
         @param decision_variables SXContainer containing decision variables.
         @param parameters SXContainer containing parameters.
         @param cost_terms SXContainer containing cost terms.
+        @param compute_derive a flag to compute or not the jacobian and hessian.
         @return Instance of the Optimization class.
         """
         # Set class attributes
@@ -180,6 +182,9 @@ class Optimization:
         ## CasADi function that evaluates the Hessian of the constraints v (set when specify_v is called).
         self.ddv = None
 
+        # flag for deriving jacobian/hessian (may lead to memory issue when True)
+        self.compute_derive = compute_derive
+
         # Get symbolic variables
 
         ## Vectorized decision variables.
@@ -194,14 +199,15 @@ class Optimization:
         ## CasADi function that evaluates the objective function.
         self.f = cs.Function("f", [self.x, self.p], [f])
 
-        # Derive jocobian/hessian of objective function
-        df, ddf = derive_jacobian_and_hessian_functions("f", self.f, self.x, self.p)
+        if self.compute_derive:
+            # Derive jocobian/hessian of objective function
+            df, ddf = derive_jacobian_and_hessian_functions("f", self.f, self.x, self.p)
 
-        ## Jacobian of the objective function.
-        self.df = df
+            ## Jacobian of the objective function.
+            self.df = df
 
-        ## Hessian of the objective function.
-        self.ddf = ddf
+            ## Hessian of the objective function.
+            self.ddf = ddf
 
         ## Number of decision variables.
         self.nx = decision_variables.numel()
@@ -276,18 +282,20 @@ class Optimization:
         self.ng = self.ineq_constraints.numel()
         self.lbg = cs.DM.zeros(self.ng)
         self.ubg = self.inf * cs.DM.ones(self.ng)
-        self.dg, self.ddg = derive_jacobian_and_hessian_functions(
-            "g", self.g, self.x, self.p
-        )
+        if self.compute_derive:
+            self.dg, self.ddg = derive_jacobian_and_hessian_functions(
+                "g", self.g, self.x, self.p
+            )
 
         # Setup h
         self.h = cs.Function("g", [self.x, self.p], [self.eq_constraints.vec()])
         self.nh = self.eq_constraints.numel()
         self.lbh = cs.DM.zeros(self.nh)
         self.ubh = cs.DM.zeros(self.nh)
-        self.dh, self.ddh = derive_jacobian_and_hessian_functions(
-            "h", self.h, self.x, self.p
-        )
+        if self.compute_derive:
+            self.dh, self.ddh = derive_jacobian_and_hessian_functions(
+                "h", self.h, self.x, self.p
+            )
 
     def specify_v(
         self, ineq: List[cs.Function] = [], eq: List[cs.Function] = []
@@ -301,9 +309,10 @@ class Optimization:
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf * cs.DM.ones(self.nv)
-        self.dv, self.ddv = derive_jacobian_and_hessian_functions(
-            "v", self.v, self.x, self.p
-        )
+        if self.compute_derive:
+            self.dv, self.ddv = derive_jacobian_and_hessian_functions(
+                "v", self.v, self.x, self.p
+            )
 
     def has_discrete_variables(self):
         return self.decision_variables.has_discrete_variables()
@@ -441,7 +450,7 @@ class NonlinearCostUnconstrained(Optimization):
         @param cost_terms SXContainer containing cost terms.
         @return Instance of the NonlinearCostUnconstrained class.
         """
-        super().__init__(decision_variables, parameters, cost_terms)
+        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
 
 
 class NonlinearCostLinearConstraints(Optimization):
@@ -481,7 +490,7 @@ class NonlinearCostLinearConstraints(Optimization):
         @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
         @return Instance of the NonlinearCostLinearConstraints class.
         """
-        super().__init__(decision_variables, parameters, cost_terms)
+        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_v(ineq=[self.k], eq=[self.a])
 
@@ -524,7 +533,7 @@ class NonlinearCostNonlinearConstraints(Optimization):
         @param ineq_constraints SXContainer containing the inequality constraints.
         @return Instance of the NonlinearCostNonlinearConstraints class.
         """
-        super().__init__(decision_variables, parameters, cost_terms)
+        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
