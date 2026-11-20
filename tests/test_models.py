@@ -7,7 +7,6 @@ import pybullet as pb
 import scipy.linalg as linalg
 import urdf_parser_py.urdf as urdf
 from scipy.spatial.transform import Rotation as Rot
-from roboticstoolbox.robot.ERobot import ERobot
 from .tester_robot_model import RobotModelTester
 
 NUM_RANDOM = 100
@@ -509,6 +508,26 @@ class TestRobotModel:
             T_expc = np.linalg.inv(T_W[-2]) @ T_W[-1]
             T = self.model.get_link_transform("eff", q, "link3")
             assert isclose(T.toarray(), T_expc)
+
+    def test_get_link_transform_non_adjacent_base(self):
+        # eff relative to link3 is a constant z-offset that commutes with the
+        # z-axis joints, so it cannot distinguish inv(T_B) @ T_L from
+        # T_L @ inv(T_B). Use link1 as base, where the two differ.
+        idx_eff, idx_base = -1, 2  # fkine_all: [base, world, link1, link2, link3, eff]
+        n = 5
+        q = self.model.get_random_joint_positions(n=n).toarray()
+        Tr = self.model.get_link_transform_function("eff", "link1", n=n)
+        pr = self.model.get_link_position_function("eff", "link1", n=n)
+        Rr = self.model.get_link_rotation_function("eff", "link1", n=n)
+        Trs, prs, Rrs = Tr(q), pr(q), Rr(q)
+        for i in range(n):
+            qi = q[:, i].flatten()
+            T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(qi)]
+            T_expc = np.linalg.inv(T_W[idx_base]) @ T_W[idx_eff]
+            assert isclose(self.model.get_link_transform("eff", qi, "link1").toarray(), T_expc)
+            assert isclose(Trs[i].toarray(), T_expc)
+            assert isclose(prs[:, i].toarray().flatten(), T_expc[:3, 3])
+            assert isclose(Rrs[i].toarray(), T_expc[:3, :3])
 
     def test_get_link_transform_function(self):
         for _ in range(NUM_RANDOM):
@@ -1060,19 +1079,6 @@ class TestDualArm:
     nextage_urdf_path = examples_path / "robots" / "nextage" / "nextage.urdf"
 
     model = optas.RobotModel(urdf_filename=str(nextage_urdf_path.absolute()))
-
-    class RobotModelTester(ERobot):
-        def __init__(self, filename):
-            links, name, urdf_string, urdf_filepath = self.URDF_read(filename)
-
-            super().__init__(
-                links,
-                name=name.upper(),
-                urdf_string=urdf_string,
-                urdf_filepath=urdf_filepath,
-            )
-
-            self.qz = np.zeros(self.n)
 
     tester_robot_model = RobotModelTester(str(nextage_urdf_path.absolute()))
 

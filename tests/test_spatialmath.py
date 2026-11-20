@@ -557,3 +557,20 @@ class Test_Quaternion:
     def test_getrpy_symbolic_output(self):
         quat = self._symbolic_quaternion()
         assert isinstance(quat.getrpy(), optas.SX)
+
+    # getrotm
+
+    def test_getrotm_numerical_output(self):
+        for _ in range(NUM_RANDOM):
+            assert isinstance(self._random_quaternion().getrotm(), optas.DM)
+
+    def test_getrotm_correct_output(self):
+        for _ in range(NUM_RANDOM):
+            quat = self._random_quaternion()
+            result_optas = quat.getrotm().toarray()
+            result_lib = Rot.from_quat(quat.getquat().toarray().flatten()).as_matrix()
+            assert isclose(result_optas, result_lib)
+
+    def test_getrotm_symbolic_output(self):
+        quat = self._symbolic_quaternion()
+        assert isinstance(quat.getrotm(), optas.SX)
