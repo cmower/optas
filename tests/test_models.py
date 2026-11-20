@@ -506,7 +506,7 @@ class TestRobotModel:
         for _ in range(NUM_RANDOM):
             q = self.model.get_random_joint_positions().toarray().flatten()
             T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-            T_expc = T_W[-1] @ np.linalg.inv(T_W[-2])
+            T_expc = np.linalg.inv(T_W[-2]) @ T_W[-1]
             T = self.model.get_link_transform("eff", q, "link3")
             assert isclose(T.toarray(), T_expc)
 
@@ -520,7 +520,7 @@ class TestRobotModel:
 
             for i in range(n):
                 T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-                T_expc = T_W[-1] @ np.linalg.inv(T_W[-2])
+                T_expc = np.linalg.inv(T_W[-2]) @ T_W[-1]
                 T = Trs[i].toarray()
                 assert isclose(T, T_expc)
 
@@ -561,7 +561,7 @@ class TestRobotModel:
         for _ in range(NUM_RANDOM):
             q = self.model.get_random_joint_positions().toarray().flatten()
             T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-            T_expc = (T_W[-1] @ np.linalg.inv(T_W[-2]))[:3, 3].flatten()
+            T_expc = (np.linalg.inv(T_W[-2]) @ T_W[-1])[:3, 3].flatten()
             T = self.model.get_link_position("eff", q, "link3")
             assert isclose(T.toarray().flatten(), T_expc)
 
@@ -575,7 +575,7 @@ class TestRobotModel:
 
             for i in range(n):
                 T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-                T_expc = (T_W[-1] @ np.linalg.inv(T_W[-2]))[:3, 3].flatten()
+                T_expc = (np.linalg.inv(T_W[-2]) @ T_W[-1])[:3, 3].flatten()
                 T = Trs[:, i].toarray().flatten()
                 assert isclose(T, T_expc)
 
@@ -609,7 +609,7 @@ class TestRobotModel:
         for _ in range(NUM_RANDOM):
             q = self.model.get_random_joint_positions().toarray().flatten()
             T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-            T_expc = T_W[-1] @ np.linalg.inv(T_W[-2])
+            T_expc = np.linalg.inv(T_W[-2]) @ T_W[-1]
             T = self.model.get_link_rotation("eff", q, "link3")
             assert isclose(T.toarray(), T_expc[:3, :3])
 
@@ -623,7 +623,7 @@ class TestRobotModel:
 
             for i in range(n):
                 T_W = [np.array(fk) for fk in tester_robot_model.fkine_all(q)]
-                T_expc = T_W[-1] @ np.linalg.inv(T_W[-2])
+                T_expc = np.linalg.inv(T_W[-2]) @ T_W[-1]
                 T = Trs[i].toarray()
                 assert isclose(T, T_expc[:3, :3])
 

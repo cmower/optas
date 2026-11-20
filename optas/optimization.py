@@ -24,6 +24,37 @@ def derive_jacobian_and_hessian_functions(
     return Jac, Hes
 
 
+def derive_jacobian_function(
+    name: str, fun: cs.Function, x: CasADiArrayType, p: CasADiArrayType
+) -> cs.Function:
+    """! Compute the Jacobian of a given function using automatic differentiation.
+
+    @param name The function name.
+    @param fun The CasADi function.
+    @param x The variables of the function.
+    @param p The parameters of the function.
+    @return The Jacobian of the function wrt the variables x.
+    """
+    jac = cs.jacobian(fun(x, p), x)
+    return cs.Function("d" + name, [x, p], [jac])
+
+
+def derive_hessian_function(
+    name: str, fun: cs.Function, x: CasADiArrayType, p: CasADiArrayType
+) -> cs.Function:
+    """! Compute the Hessian of a given function using automatic differentiation.
+
+    @param name The function name.
+    @param fun The CasADi function.
+    @param x The variables of the function.
+    @param p The parameters of the function.
+    @return The Hessian of the function wrt the variables x.
+    """
+    jac = cs.jacobian(fun(x, p), x)
+    hes = cs.jacobian(jac, x)
+    return cs.Function("dd" + name, [x, p], [hes])
+
+
 def vertcon(
     x: CasADiArrayType,
     p: CasADiArrayType,
@@ -51,28 +82,67 @@ def vertcon(
     return cs.Function("v", [x, p], [cs.vertcat(*con)])
 
 
+def _lazy_derivative(name: str, order: int, doc: str) -> property:
+    """! Create a read-only property that derives (and caches) a Jacobian/Hessian on first access.
+
+    Deriving these symbolically can be expensive in time and memory, and many
+    solvers (e.g. CasADi's nlpsol) never use them, so they are only computed
+    when actually requested.
+    """
+
+    def getter(self):
+        return self._get_derivative(name, order)
+
+    return property(getter, doc=doc)
+
+
 class Optimization:
     """! Base optimization class."""
 
     ## big number rather than np.inf
     inf = 1.0e10
 
+    ## Jacobian of the objective function (derived on first access).
+    df = _lazy_derivative("f", 1, "Jacobian of the objective function.")
+
+    ## Hessian of the objective function (derived on first access).
+    ddf = _lazy_derivative("f", 2, "Hessian of the objective function.")
+
+    ## Jacobian of the inequality constraints g (derived on first access, None if g is not set).
+    dg = _lazy_derivative("g", 1, "Jacobian of the inequality constraints g.")
+
+    ## Hessian of the inequality constraints g (derived on first access, None if g is not set).
+    ddg = _lazy_derivative("g", 2, "Hessian of the inequality constraints g.")
+
+    ## Jacobian of the equality constraints h (derived on first access, None if h is not set).
+    dh = _lazy_derivative("h", 1, "Jacobian of the equality constraints h.")
+
+    ## Hessian of the equality constraints h (derived on first access, None if h is not set).
+    ddh = _lazy_derivative("h", 2, "Hessian of the equality constraints h.")
+
+    ## Jacobian of the constraints v (derived on first access, None if v is not set).
+    dv = _lazy_derivative("v", 1, "Jacobian of the constraints v.")
+
+    ## Hessian of the constraints v (derived on first access, None if v is not set).
+    ddv = _lazy_derivative("v", 2, "Hessian of the constraints v.")
+
     def __init__(
         self,
         decision_variables: SXContainer,
         parameters: SXContainer,
         cost_terms: SXContainer,
-        compute_derive: bool=True,
     ):
         """! Initializer for the Optimization class.
 
         @param decision_variables SXContainer containing decision variables.
         @param parameters SXContainer containing parameters.
         @param cost_terms SXContainer containing cost terms.
-        @param compute_derive a flag to compute or not the jacobian and hessian.
         @return Instance of the Optimization class.
         """
         # Set class attributes
+
+        ## Cache of derived Jacobian/Hessian functions, see _get_derivative.
+        self._derivative_cache = {}
 
         ## A list of the task and robot models (set during build method in the OptimizationBuilder class)
         self.models = None
@@ -176,15 +246,6 @@ class Optimization:
         ## Upper bound for the verticle constraints v (i.e. inf).
         self.ubv = None
 
-        ## CasADi function that evaluates the Jacobian of the constraints v (set when specify_v is called).
-        self.dv = None
-
-        ## CasADi function that evaluates the Hessian of the constraints v (set when specify_v is called).
-        self.ddv = None
-
-        # flag for deriving jacobian/hessian (may lead to memory issue when True)
-        self.compute_derive = compute_derive
-
         # Get symbolic variables
 
         ## Vectorized decision variables.
@@ -199,21 +260,32 @@ class Optimization:
         ## CasADi function that evaluates the objective function.
         self.f = cs.Function("f", [self.x, self.p], [f])
 
-        if self.compute_derive:
-            # Derive jocobian/hessian of objective function
-            df, ddf = derive_jacobian_and_hessian_functions("f", self.f, self.x, self.p)
-
-            ## Jacobian of the objective function.
-            self.df = df
-
-            ## Hessian of the objective function.
-            self.ddf = ddf
-
         ## Number of decision variables.
         self.nx = decision_variables.numel()
 
         ## Number of parameters.
         self.np = parameters.numel()
+
+    def _get_derivative(self, name: str, order: int):
+        """! Return the Jacobian (order=1) or Hessian (order=2) of the function self.<name>, deriving it on first use.
+
+        @param name Name of the attribute holding the CasADi function (f, g, h, or v).
+        @param order 1 for the Jacobian, 2 for the Hessian.
+        @return The CasADi function, or None when self.<name> has not been specified.
+        """
+        fun = getattr(self, name)
+        if fun is None:
+            return None
+
+        key = (name, order)
+        cached = self._derivative_cache.get(key)
+        if cached is not None and cached[0] is fun:
+            return cached[1]
+
+        derive = derive_jacobian_function if order == 1 else derive_hessian_function
+        dfun = derive(name, fun, self.x, self.p)
+        self._derivative_cache[key] = (fun, dfun)
+        return dfun
 
     def set_models(self, models: List[Model]) -> None:
         """! Specify the models in the optimization problem.
@@ -282,20 +354,12 @@ class Optimization:
         self.ng = self.ineq_constraints.numel()
         self.lbg = cs.DM.zeros(self.ng)
         self.ubg = self.inf * cs.DM.ones(self.ng)
-        if self.compute_derive:
-            self.dg, self.ddg = derive_jacobian_and_hessian_functions(
-                "g", self.g, self.x, self.p
-            )
 
         # Setup h
         self.h = cs.Function("g", [self.x, self.p], [self.eq_constraints.vec()])
         self.nh = self.eq_constraints.numel()
         self.lbh = cs.DM.zeros(self.nh)
         self.ubh = cs.DM.zeros(self.nh)
-        if self.compute_derive:
-            self.dh, self.ddh = derive_jacobian_and_hessian_functions(
-                "h", self.h, self.x, self.p
-            )
 
     def specify_v(
         self, ineq: List[cs.Function] = [], eq: List[cs.Function] = []
@@ -309,10 +373,6 @@ class Optimization:
         self.nv = self.v.numel_out()
         self.lbv = cs.DM.zeros(self.nv)
         self.ubv = self.inf * cs.DM.ones(self.nv)
-        if self.compute_derive:
-            self.dv, self.ddv = derive_jacobian_and_hessian_functions(
-                "v", self.v, self.x, self.p
-            )
 
     def has_discrete_variables(self):
         return self.decision_variables.has_discrete_variables()
@@ -450,7 +510,7 @@ class NonlinearCostUnconstrained(Optimization):
         @param cost_terms SXContainer containing cost terms.
         @return Instance of the NonlinearCostUnconstrained class.
         """
-        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
+        super().__init__(decision_variables, parameters, cost_terms)
 
 
 class NonlinearCostLinearConstraints(Optimization):
@@ -490,7 +550,7 @@ class NonlinearCostLinearConstraints(Optimization):
         @param lin_ineq_constraints SXContainer containing the linear inequality constraints.
         @return Instance of the NonlinearCostLinearConstraints class.
         """
-        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
+        super().__init__(decision_variables, parameters, cost_terms)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_v(ineq=[self.k], eq=[self.a])
 
@@ -533,7 +593,7 @@ class NonlinearCostNonlinearConstraints(Optimization):
         @param ineq_constraints SXContainer containing the inequality constraints.
         @return Instance of the NonlinearCostNonlinearConstraints class.
         """
-        super().__init__(decision_variables, parameters, cost_terms, compute_derive=False)
+        super().__init__(decision_variables, parameters, cost_terms)
         self.specify_linear_constraints(lin_ineq_constraints, lin_eq_constraints)
         self.specify_nonlinear_constraints(ineq_constraints, eq_constraints)
         self.specify_v(ineq=[self.k, self.g], eq=[self.a, self.h])
